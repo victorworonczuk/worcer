@@ -231,6 +231,18 @@ button.toggle-facturas {
 }
 button.toggle-facturas:hover { background: #eef1ff; }
 
+button.copy-message {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text);
+  margin-top: 4px;
+}
+button.copy-message:hover { background: #eef1ff; color: var(--primary); }
+
 tr.factura-detail-row td {
   background: #fafbfc;
   padding: 8px 12px 14px 32px;

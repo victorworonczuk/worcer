@@ -25,6 +25,21 @@ const els = {
   nextBtn: document.getElementById('next-page'),
 };
 
+const MESSAGE_TEMPLATES = {
+  A: (nombre) => `Hola ${nombre}, te escribo de Worcer para agradecerte que sigas confiando en nosotros. Cualquier cosa que necesites, estamos para ayudarte.`,
+  B: (nombre) => `Hola ${nombre}, soy de Worcer. Vi que hace un par de meses no nos hacés pedidos — ¿va todo bien con el stock? Te paso la lista actualizada por las dudas necesites algo.`,
+  C: (nombre) => `Hola ${nombre}, te escribo de Worcer porque hace unos meses que no pasás pedido y quería saber si hay algo que podamos mejorar de nuestro lado — precio, plazos de entrega, algo puntual. Contame.`,
+  D: (nombre) => `Hola ${nombre}, te contacto de Worcer — hace un tiempo que no trabajamos juntos y quería reconectar. Tenemos condiciones especiales para retomar el pedido. ¿Tenés 5 minutos esta semana?`,
+  E: (nombre) => `Hola ${nombre}, somos Worcer — hace bastante que no tenemos novedades tuyas. Actualizamos precios y catálogo de nuestras dos líneas (económica y media). Te dejamos la lista actualizada por si querés retomar pedidos.`,
+  F: (nombre) => `Hola, somos Worcer, fabricamos sanitarios y juegos de baño de loza. Facturamos con ${nombre} hace un tiempo y queríamos reconectar — ¿siguen comprando para el rubro?`,
+};
+
+function buildMessage(r) {
+  const letter = (r.segmento || 'F').trim()[0].toUpperCase();
+  const fn = MESSAGE_TEMPLATES[letter] || MESSAGE_TEMPLATES.F;
+  return fn(r.nombre || 'estimado cliente');
+}
+
 function segClass(segmento) {
   if (!segmento) return 'badge-seg-f';
   const letter = segmento.trim()[0].toLowerCase();
@@ -173,6 +188,27 @@ function renderTable() {
   els.tbody.querySelectorAll('.toggle-facturas').forEach((btn) => {
     btn.addEventListener('click', onToggleFacturas);
   });
+  els.tbody.querySelectorAll('.copy-message').forEach((btn) => {
+    btn.addEventListener('click', onCopyMessage);
+  });
+}
+
+async function onCopyMessage(e) {
+  const id = Number(e.target.dataset.id);
+  const rec = state.all.find((r) => r.id === id);
+  if (!rec) return;
+  const text = buildMessage(rec);
+  try {
+    await navigator.clipboard.writeText(text);
+    const original = e.target.textContent;
+    e.target.textContent = '✓ Copiado';
+    setTimeout(() => {
+      e.target.textContent = original;
+    }, 1500);
+  } catch (err) {
+    console.error('No se pudo copiar', err);
+    alert(text);
+  }
 }
 
 function facturasDetailHtml(r) {
@@ -217,15 +253,18 @@ function contactLinks(r) {
   if (r.telefono) links.push(`<a href="tel:${r.telefono.replace(/[^0-9+]/g, '')}">☎ ${escapeHtml(r.telefono)}</a>`);
   if (r.whatsapp) {
     const num = r.whatsapp.replace(/[^0-9]/g, '');
-    links.push(`<a href="https://wa.me/${num}" target="_blank" rel="noopener">WhatsApp</a>`);
+    const text = encodeURIComponent(buildMessage(r));
+    links.push(`<a href="https://wa.me/${num}?text=${text}" target="_blank" rel="noopener">WhatsApp</a>`);
   }
   if (r.email) links.push(`<a href="mailto:${r.email}">${escapeHtml(r.email)}</a>`);
   if (r.web) links.push(`<a href="${r.web.startsWith('http') ? r.web : 'https://' + r.web}" target="_blank" rel="noopener">Web/redes</a>`);
-  if (links.length) return links.join('<br>');
+  links.push(`<button type="button" class="copy-message" data-id="${r.id}">📋 Copiar mensaje</button>`);
+  if (links.length > 1) return links.join('<br>');
   const esDormido = (r.segmento || '').trim().startsWith('F');
-  return esDormido
+  const sinDatos = esDormido
     ? '<span class="none">Sin datos</span>'
     : '<span class="none">Pendiente: exportar de tu sistema de facturación</span>';
+  return `${sinDatos}<br>${links[0]}`;
 }
 
 function facturacionCell(r) {
