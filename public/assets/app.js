@@ -7,6 +7,8 @@ const state = {
   filtered: [],
   page: 1,
   filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '' },
+  facturasByCliente: new Map(),
+  openFacturas: new Set(),
 };
 
 const els = {
@@ -44,7 +46,7 @@ function fmtMoney(n) {
 }
 
 async function loadData() {
-  els.tbody.innerHTML = `<tr><td colspan="9" class="loading">Cargando clientes…</td></tr>`;
+  els.tbody.innerHTML = `<tr><td colspan="10" class="loading">Cargando clientes…</td></tr>`;
   const { data, error } = await client
     .from('clientes')
     .select('*')
@@ -53,11 +55,30 @@ async function loadData() {
     .limit(2000);
 
   if (error) {
-    els.tbody.innerHTML = `<tr><td colspan="9" class="empty-state">Error cargando datos: ${error.message}</td></tr>`;
+    els.tbody.innerHTML = `<tr><td colspan="10" class="empty-state">Error cargando datos: ${error.message}</td></tr>`;
     console.error(error);
     return;
   }
   state.all = data;
+
+  const { data: facturas, error: facturasError } = await client
+    .from('facturas')
+    .select('cliente_id, fecha, empresa, mes, importe_ars, importe_usd')
+    .not('cliente_id', 'is', null)
+    .order('fecha', { ascending: false })
+    .limit(3000);
+
+  if (facturasError) {
+    console.error('Error cargando facturas', facturasError);
+  } else {
+    state.facturasByCliente = new Map();
+    for (const f of facturas) {
+      const list = state.facturasByCliente.get(f.cliente_id) || [];
+      list.push(f);
+      state.facturasByCliente.set(f.cliente_id, list);
+    }
+  }
+
   populateFilterOptions();
   renderStats();
   applyFilters();
@@ -135,11 +156,13 @@ function renderTable() {
   els.nextBtn.disabled = state.page >= totalPages;
 
   if (pageRows.length === 0) {
-    els.tbody.innerHTML = `<tr><td colspan="9" class="empty-state">No hay clientes que coincidan con estos filtros.</td></tr>`;
+    els.tbody.innerHTML = `<tr><td colspan="10" class="empty-state">No hay clientes que coincidan con estos filtros.</td></tr>`;
     return;
   }
 
-  els.tbody.innerHTML = pageRows.map(rowHtml).join('');
+  els.tbody.innerHTML = pageRows
+    .map((r) => rowHtml(r) + (state.openFacturas.has(r.id) ? facturasDetailHtml(r) : ''))
+    .join('');
 
   els.tbody.querySelectorAll('.estado-select').forEach((sel) => {
     sel.addEventListener('change', onEstadoChange);
@@ -147,6 +170,46 @@ function renderTable() {
   els.tbody.querySelectorAll('.notas-input').forEach((ta) => {
     ta.addEventListener('blur', onNotasBlur);
   });
+  els.tbody.querySelectorAll('.toggle-facturas').forEach((btn) => {
+    btn.addEventListener('click', onToggleFacturas);
+  });
+}
+
+function facturasDetailHtml(r) {
+  const facturas = state.facturasByCliente.get(r.id) || [];
+  if (facturas.length === 0) {
+    return `<tr class="factura-detail-row"><td colspan="10">Sin facturas registradas.</td></tr>`;
+  }
+  const rows = facturas
+    .map(
+      (f) => `<tr>
+        <td>${f.fecha ? new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-AR') : ''}</td>
+        <td>${escapeHtml(f.empresa || '')}</td>
+        <td>${fmtMoney(f.importe_ars)}</td>
+        <td>US$ ${f.importe_usd ? Number(f.importe_usd).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : ''}</td>
+      </tr>`
+    )
+    .join('');
+  return `
+    <tr class="factura-detail-row">
+      <td colspan="10">
+        <table class="factura-table">
+          <thead><tr><th>Fecha</th><th>Línea</th><th>Importe ARS</th><th>Importe USD</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </td>
+    </tr>
+  `;
+}
+
+function onToggleFacturas(e) {
+  const id = Number(e.target.dataset.id);
+  if (state.openFacturas.has(id)) {
+    state.openFacturas.delete(id);
+  } else {
+    state.openFacturas.add(id);
+  }
+  renderTable();
 }
 
 function contactLinks(r) {
@@ -165,6 +228,16 @@ function contactLinks(r) {
     : '<span class="none">Pendiente: exportar de tu sistema de facturación</span>';
 }
 
+function facturacionCell(r) {
+  const n = state.facturasByCliente.get(r.id)?.length || 0;
+  const total = r.usd_total_2025_2026
+    ? `US$ ${Number(r.usd_total_2025_2026).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
+    : '';
+  const meses = r.meses_compra_2025_2026 ? `${r.meses_compra_2025_2026} meses activos` : '';
+  const toggle = n > 0 ? `<button type="button" class="toggle-facturas" data-id="${r.id}">${state.openFacturas.has(r.id) ? '▾' : '▸'} ${n} factura${n === 1 ? '' : 's'}</button>` : '<span class="none">Sin facturas</span>';
+  return `${total ? `<strong>${total}</strong><br>` : ''}${meses ? `<span class="cuit">${meses}</span><br>` : ''}${toggle}`;
+}
+
 function rowHtml(r) {
   const segLabel = (r.segmento || '').split(' - ')[0] || '?';
   return `
@@ -179,6 +252,7 @@ function rowHtml(r) {
       <td class="contact-links">${contactLinks(r)}</td>
       <td>${escapeHtml(r.rubro || '')}</td>
       <td class="desc-cell">${escapeHtml(r.descripcion || '')}</td>
+      <td class="factura-cell">${facturacionCell(r)}</td>
       <td>
         <select class="estado-select ${estadoClass(r.estado_contacto)}" data-field="estado_contacto">
           <option value="pendiente" ${r.estado_contacto === 'pendiente' || !r.estado_contacto ? 'selected' : ''}>Pendiente</option>

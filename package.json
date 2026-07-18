@@ -4,7 +4,9 @@
   "description": "Panel interno para gestionar la base de clientes históricos y activos de Worcer.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "repository": {
     "type": "git",
@@ -13,12 +15,16 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/victorworonczuk/worcer/issues"
   },
   "homepage": "https://github.com/victorworonczuk/worcer#readme",
   "dependencies": {
-    "pg": "^8.22.0"
+    "dotenv": "^17.4.2",
+    "next": "^16.2.10",
+    "pg": "^8.22.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }

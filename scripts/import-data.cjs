@@ -2,7 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 
-const CONNECTION_STRING = 'postgresql://postgres.ycjrzxdstkhbwdroqxfw:z0PTYfDhN6VPbaur@aws-0-us-east-1.pooler.supabase.com:5432/postgres';
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env.local'), quiet: true });
+const CONNECTION_STRING = process.env.DATABASE_URL;
+if (!CONNECTION_STRING) {
+  console.error('Falta DATABASE_URL en .env.local');
+  process.exit(1);
+}
 
 const COLUMNS = [
   'cuit', 'nombre', 'nombre_fantasia', 'provincia', 'localidad', 'domicilio',

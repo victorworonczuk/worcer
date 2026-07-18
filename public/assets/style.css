@@ -202,6 +202,44 @@ tbody tr:hover {
 .contact-links a:hover { text-decoration: underline; }
 .contact-links .none { color: var(--text-muted); font-size: 12px; }
 
+.factura-cell {
+  min-width: 140px;
+  font-size: 12px;
+}
+.factura-cell .none { color: var(--text-muted); }
+button.toggle-facturas {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--primary);
+}
+button.toggle-facturas:hover { background: #eef1ff; }
+
+tr.factura-detail-row td {
+  background: #fafbfc;
+  padding: 8px 12px 14px 32px;
+}
+table.factura-table {
+  width: auto;
+  min-width: 360px;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+table.factura-table th {
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 4px 10px 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+table.factura-table td {
+  padding: 3px 10px 3px 0;
+  border-bottom: none;
+}
+
 select.estado-select {
   border-radius: 6px;
   border: 1px solid var(--border);
