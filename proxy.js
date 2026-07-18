@@ -2,7 +2,28 @@ import { NextResponse } from 'next/server';
 
 const PUBLIC_PATHS = ['/login', '/api/login'];
 
-export function proxy(request) {
+async function verifyToken(token, secret) {
+  if (!token) return null;
+  const parts = token.split(':');
+  if (parts.length !== 3) return null;
+  const [username, exp, sig] = parts;
+  if (!username || !exp || !sig) return null;
+  if (Date.now() > Number(exp)) return null;
+
+  const payload = `${username}:${exp}`;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sigBuffer = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+  const expectedSig = [...new Uint8Array(sigBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  return expectedSig === sig ? username : null;
+}
+
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
   if (PUBLIC_PATHS.includes(pathname)) {
@@ -10,7 +31,8 @@ export function proxy(request) {
   }
 
   const cookie = request.cookies.get('worcer_auth');
-  if (cookie && cookie.value === process.env.SESSION_SECRET) {
+  const username = await verifyToken(cookie?.value, process.env.SESSION_SECRET);
+  if (username) {
     return NextResponse.next();
   }
 

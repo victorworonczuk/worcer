@@ -22,7 +22,10 @@ async function main() {
   await client.query(schema);
   console.log('Tabla facturas creada/verificada.');
 
-  await client.query('truncate table public.facturas restart identity');
+  // Solo se borran las filas del import histórico (cargado_por is null); las
+  // facturas cargadas a mano por empleados desde /nueva-factura.html se conservan.
+  const { rowCount: borradas } = await client.query('delete from public.facturas where cargado_por is null');
+  console.log(`Filas del import histórico anterior borradas: ${borradas} (se conservaron las cargadas a mano).`);
 
   const rows = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'facturas_export.json'), 'utf8'));
   const batchSize = 200;

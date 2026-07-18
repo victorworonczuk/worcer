@@ -73,6 +73,23 @@ header.topbar .subtitle {
   color: var(--text);
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nav-link {
+  font-size: 13px;
+  color: var(--primary);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+.nav-link:hover {
+  background: #eef1ff;
+}
+
 main {
   max-width: 1400px;
   margin: 0 auto;

@@ -1,45 +1,63 @@
 # Worcer CRM
 
-Panel interno para gestionar la base de clientes históricos y activos de Worcer (873 registros: 561 dormidos + 312 activos 2025-2026), más el detalle de 1.615 facturas.
+Panel interno para gestionar la base de clientes históricos y activos de Worcer (873 registros: 561 dormidos + 312 activos 2025-2026), más el detalle de facturación (histórico importado + carga diaria manual).
 
 ## Stack
 
-- Next.js (App Router) — solo para servir el sitio protegido con login y habilitar API routes server-side a futuro (envío de emails con Resend, operaciones privilegiadas en Supabase).
-- El dashboard en sí sigue siendo HTML/CSS/JS plano (sin frameworks), servido desde `/public`, con Supabase JS v2 vía CDN para leer/escribir datos.
+- Next.js (App Router) — sirve el sitio protegido con login y expone API routes server-side (login/logout/me hoy; envío de emails con Resend a futuro).
+- El dashboard y la carga de facturas son HTML/CSS/JS plano (sin frameworks), servidos desde `/public`, con Supabase JS v2 vía CDN para leer/escribir datos.
 - Base de datos: Supabase (Postgres).
 - Hosting: Vercel.
 
-## Autenticación
+## Autenticación (multi-usuario)
 
-Login con formulario propio (no el diálogo nativo del navegador, para que Chrome/gestores de contraseñas puedan ofrecer guardarla):
+Login con formulario propio (no el diálogo nativo del navegador, para que el gestor de contraseñas del navegador pueda ofrecer guardarla) y usuarios individuales guardados en la tabla `usuarios`:
 
 - `app/login/page.js` — pantalla de login.
-- `app/api/login/route.js` — valida usuario/clave contra `BASIC_AUTH_USER` / `BASIC_AUTH_PASS` y, si son correctos, setea una cookie `worcer_auth` (httpOnly, 30 días) con el valor de `SESSION_SECRET`.
+- `app/api/login/route.js` — busca el `username` en la tabla `usuarios` (vía `DATABASE_URL`, conexión directa a Postgres — no pasa por la API pública de Supabase), valida la clave con `scrypt`, y si es correcta firma una cookie `worcer_auth` = `usuario:expiración:HMAC-SHA256(SESSION_SECRET)`.
+- `proxy.js` (Edge) — en cada request salvo `/login` y `/api/login`, verifica la firma HMAC de la cookie con Web Crypto; si no es válida, redirige a `/login`.
+- `app/api/me/route.js` — devuelve el usuario logueado (lo consume el frontend para mostrar "Sesión: x" y para completar `cargado_por` al cargar una factura).
 - `app/api/logout/route.js` — borra la cookie.
-- `proxy.js` — en cada request (salvo `/login` y `/api/login`), chequea que la cookie tenga el valor de `SESSION_SECRET`; si no, redirige a `/login`.
 
-**Importante**: esto protege el *sitio*, no la base de datos en sí. Supabase tiene RLS desactivado por velocidad en esta primera etapa — cualquiera que consiga la URL + clave pública de Supabase (visibles en `public/assets/config.js`) puede leer/escribir la tabla directamente, sin pasar por el login del sitio. Para cerrar eso hace falta Supabase Auth + políticas RLS.
+Administrar usuarios: editar el array `USUARIOS` en `scripts/setup-usuarios.cjs` y correr `node scripts/setup-usuarios.cjs` (crea o actualiza por `username`, imprime las claves una sola vez).
+
+**Importante**: esto protege el *sitio*. La tabla `usuarios` está explícitamente bloqueada para la clave pública de Supabase (ver nota de seguridad abajo), pero `clientes` y `facturas` no — cualquiera que consiga la URL + clave pública de Supabase (visibles en `public/assets/config.js`) puede leer/escribir esas dos tablas directamente, sin pasar por el login del sitio. Para cerrar eso hace falta Supabase Auth + políticas RLS reales.
+
+### ⚠️ Nota de seguridad — privilegios por defecto de Supabase
+
+Supabase le otorga privilegios por defecto a los roles `anon`/`authenticated` sobre **tablas nuevas** del schema `public`, aunque no se los pidamos explícitamente con `GRANT`. Lo descubrimos cuando la tabla `usuarios` (con hashes de contraseñas) quedó legible con la clave pública sin que nadie se lo otorgara. Cualquier tabla nueva que no deba ser pública necesita, explícitamente:
+
+```sql
+revoke all on public.<tabla> from anon, authenticated, public;
+alter table public.<tabla> enable row level security;
+alter table public.<tabla> force row level security;
+```
+
+(ver `schema_usuarios.sql` para el caso real). No asumir que "no otorgué permisos" = "está protegida".
 
 ## Variables de entorno
 
 Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción hay que cargarlas en Vercel: Project Settings → Environment Variables.
 
-- `BASIC_AUTH_USER` / `BASIC_AUTH_PASS` — usuario/clave del login.
-- `SESSION_SECRET` — valor aleatorio usado como token de la cookie de sesión (generar con `openssl rand -hex 24`).
+- `SESSION_SECRET` — valor aleatorio usado para firmar la cookie de sesión (generar con `openssl rand -hex 24`).
+- `DATABASE_URL` — connection string de Postgres. **Ahora es obligatoria en producción** (antes era opcional): la usan los scripts de import y, sobre todo, `/api/login` para validar usuarios contra la tabla `usuarios`.
 - `RESEND_API_KEY` — para cuando se implemente el envío de emails de la campaña de recupero (todavía no hay ninguna ruta que la use).
 
 ## Estructura
 
-- `public/index.html` — dashboard principal (filtros, tabla, edición de estado/notas).
+- `public/index.html` — dashboard principal (filtros, tabla, edición de estado/notas, plantillas de mensaje).
+- `public/nueva-factura.html` — carga diaria de facturas por parte de empleados (ver abajo).
 - `public/assets/config.js` — URL y clave pública (`sb_publishable_...`) de Supabase.
-- `public/assets/app.js` — lógica de carga, filtros, paginación y guardado.
-- `public/assets/style.css` — estilos.
+- `public/assets/app.js` — lógica del dashboard.
+- `public/assets/nueva-factura.js` — lógica de la carga de facturas.
+- `public/assets/style.css` / `nueva-factura.css` — estilos.
 - `app/page.js` — redirige `/` a `/index.html`.
-- `app/login/page.js`, `app/api/login/route.js`, `app/api/logout/route.js` — login por cookie (ver más arriba).
+- `app/login/page.js`, `app/api/login`, `app/api/logout`, `app/api/me` — autenticación (ver más arriba).
 - `proxy.js` — protege todo el sitio salvo `/login` y `/api/login`.
-- `schema.sql` / `schema_facturas.sql` — definición de las tablas `clientes` y `facturas`.
+- `schema.sql` / `schema_facturas.sql` / `schema_usuarios.sql` — definición de las tablas.
 - `scripts/import-data.cjs` — importa `clientes_export.json` (base unificada) a Supabase.
-- `scripts/import-facturas.cjs` — importa `facturas_export.json` (detalle de facturación) a Supabase y las vincula a `clientes` por CUIT.
+- `scripts/import-facturas.cjs` — importa `facturas_export.json` (detalle histórico de facturación) a Supabase y las vincula a `clientes` por CUIT.
+- `scripts/setup-usuarios.cjs` — crea/actualiza los logins.
 
 ## Tablas
 
@@ -48,7 +66,18 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 - `estado_contacto`: `pendiente` | `contactado` | `recuperado` | `descartado`
 - `notas`: texto libre
 
-**`facturas`**: detalle factura por factura (línea Cerámica/Porcelanas, fecha, importe ARS/USD), vinculada a `clientes` vía `cliente_id` cuando el CUIT coincide.
+**`facturas`**: detalle factura por factura (línea, fecha, importe ARS/USD), vinculada a `clientes` vía `cliente_id` cuando el CUIT coincide. `cargado_por` es `null` en las 1.615 filas del import histórico, y tiene el username de quien la cargó a mano desde `/nueva-factura.html`.
+
+**`usuarios`**: login de cada persona (`username`, `password_hash` + `salt` con scrypt, `nombre`, `rol`). No accesible vía API pública de Supabase (ver nota de seguridad).
+
+## Carga diaria de facturas (`/nueva-factura.html`)
+
+Pensada para que el empleado de facturación o de ventas la use día a día:
+
+1. Busca al cliente por nombre o CUIT (autocompleta contra `clientes`; si no lo encuentra, igual puede cargar la factura solo con el nombre escrito, sin vincular a un cliente existente).
+2. Elige la línea: **Cerámica** o **Porcelanas** → se marca automáticamente como Factura A (facturado). **Presupuesto** → se marca automáticamente como Remito X (sin factura). El empleado no tiene que pensar en esa lógica, ya está resuelta por el radio button.
+3. Completa fecha, N° de comprobante (opcional), importe ARS e importe USD (opcional — si carga los dos, el tipo de cambio se calcula solo).
+4. Al guardar, queda registrado quién lo cargó (`cargado_por`) y aparece al instante en la lista "Cargadas hoy" de la misma pantalla.
 
 ## Correr en local
 
@@ -58,17 +87,16 @@ npm run dev
 # http://localhost:3000 (redirige a /login)
 ```
 
-## Re-importar datos
-
-Si el Excel cambia y hay que refrescar la base (esto BORRA y reinserta todo):
+## Re-importar / re-crear datos
 
 ```bash
-node scripts/import-data.cjs
-node scripts/import-facturas.cjs
+node scripts/import-data.cjs       # BORRA y reinserta toda la tabla clientes
+node scripts/import-facturas.cjs   # BORRA y reinserta toda la tabla facturas (incluye las cargadas a mano — usar con cuidado)
+node scripts/setup-usuarios.cjs    # crea/actualiza usuarios, no borra nada
 ```
 
 ## Pendiente
 
 - Los segmentos A-E (312 clientes activos 2025-2026) tienen los campos de contacto vacíos a propósito — Worcer los tiene que exportar de su sistema de facturación y cargarlos acá.
-- Endpoint de envío de emails (Resend) — todavía no implementado, a definir junto con la estrategia de recontactación.
-- RLS en Supabase si se quiere cerrar el acceso directo a la base (ver nota de seguridad arriba).
+- Endpoint de envío de emails (Resend) — todavía no implementado.
+- RLS real (con Supabase Auth) en `clientes` y `facturas` si se quiere cerrar el acceso directo a esas tablas también.

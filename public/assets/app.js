@@ -380,4 +380,18 @@ els.nextBtn.addEventListener('click', () => {
   renderTable();
 });
 
+async function loadUser() {
+  try {
+    const res = await fetch('/api/me');
+    const me = await res.json();
+    if (me.user) {
+      const subtitle = document.getElementById('user-subtitle');
+      subtitle.textContent = `Sesión: ${me.user} · Base histórica y activa unificada — 873 registros`;
+    }
+  } catch (err) {
+    console.error('No se pudo obtener el usuario', err);
+  }
+}
+
+loadUser();
 loadData();
