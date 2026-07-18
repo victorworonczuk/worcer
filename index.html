@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer CRM — Recupero de clientes</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Worcer · Recupero de clientes</h1>
+      <div class="subtitle">Base histórica y activa unificada — 873 registros</div>
+    </div>
+  </header>
+
+  <main>
+    <div id="stats" class="stats-grid"></div>
+
+    <div class="panel">
+      <div class="filters">
+        <input type="search" id="f-search" placeholder="Buscar por nombre, CUIT, localidad..." />
+        <select id="f-segmento">
+          <option value="">Todos los segmentos</option>
+          <option value="A">A · Activo sano</option>
+          <option value="B">B · Alerta temprana</option>
+          <option value="C">C · Riesgo medio</option>
+          <option value="D">D · Riesgo alto</option>
+          <option value="E">E · Muy frío</option>
+          <option value="F">F · Dormido total</option>
+        </select>
+        <select id="f-provincia">
+          <option value="">Todas las provincias</option>
+        </select>
+        <select id="f-confianza">
+          <option value="">Toda confianza</option>
+          <option value="alta">Alta</option>
+          <option value="media">Media</option>
+          <option value="baja">Baja</option>
+          <option value="sin_datos">Sin datos</option>
+        </select>
+        <select id="f-estado">
+          <option value="">Todo estado</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="contactado">Contactado</option>
+          <option value="recuperado">Recuperado</option>
+          <option value="descartado">Descartado</option>
+        </select>
+        <span id="result-count" class="result-count"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Ubicación</th>
+              <th>Segmento</th>
+              <th>Confianza</th>
+              <th>Contacto</th>
+              <th>Rubro</th>
+              <th>Descripción</th>
+              <th>Estado</th>
+              <th>Notas</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="9" class="loading">Cargando clientes…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button id="prev-page">← Anterior</button>
+        <span id="page-info" class="page-info"></span>
+        <button id="next-page">Siguiente →</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/config.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

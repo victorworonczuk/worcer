@@ -1,0 +1,24 @@
+{
+  "name": "worcer-crm",
+  "version": "1.0.0",
+  "description": "Panel interno para gestionar la base de clientes históricos y activos de Worcer.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/victorworonczuk/worcer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/victorworonczuk/worcer/issues"
+  },
+  "homepage": "https://github.com/victorworonczuk/worcer#readme",
+  "dependencies": {
+    "pg": "^8.22.0"
+  }
+}
