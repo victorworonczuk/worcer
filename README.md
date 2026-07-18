@@ -11,10 +11,12 @@ Panel interno para gestionar la base de clientes históricos y activos de Worcer
 
 ## Autenticación
 
-Todo el sitio está protegido con HTTP Basic Auth (`proxy.js`, corre en cada request). Usuario y clave se definen por variables de entorno:
+Login con formulario propio (no el diálogo nativo del navegador, para que Chrome/gestores de contraseñas puedan ofrecer guardarla):
 
-- `BASIC_AUTH_USER`
-- `BASIC_AUTH_PASS`
+- `app/login/page.js` — pantalla de login.
+- `app/api/login/route.js` — valida usuario/clave contra `BASIC_AUTH_USER` / `BASIC_AUTH_PASS` y, si son correctos, setea una cookie `worcer_auth` (httpOnly, 30 días) con el valor de `SESSION_SECRET`.
+- `app/api/logout/route.js` — borra la cookie.
+- `proxy.js` — en cada request (salvo `/login` y `/api/login`), chequea que la cookie tenga el valor de `SESSION_SECRET`; si no, redirige a `/login`.
 
 **Importante**: esto protege el *sitio*, no la base de datos en sí. Supabase tiene RLS desactivado por velocidad en esta primera etapa — cualquiera que consiga la URL + clave pública de Supabase (visibles en `public/assets/config.js`) puede leer/escribir la tabla directamente, sin pasar por el login del sitio. Para cerrar eso hace falta Supabase Auth + políticas RLS.
 
@@ -22,7 +24,8 @@ Todo el sitio está protegido con HTTP Basic Auth (`proxy.js`, corre en cada req
 
 Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción hay que cargarlas en Vercel: Project Settings → Environment Variables.
 
-- `BASIC_AUTH_USER` / `BASIC_AUTH_PASS` — login del sitio.
+- `BASIC_AUTH_USER` / `BASIC_AUTH_PASS` — usuario/clave del login.
+- `SESSION_SECRET` — valor aleatorio usado como token de la cookie de sesión (generar con `openssl rand -hex 24`).
 - `RESEND_API_KEY` — para cuando se implemente el envío de emails de la campaña de recupero (todavía no hay ninguna ruta que la use).
 
 ## Estructura
@@ -32,7 +35,8 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 - `public/assets/app.js` — lógica de carga, filtros, paginación y guardado.
 - `public/assets/style.css` — estilos.
 - `app/page.js` — redirige `/` a `/index.html`.
-- `proxy.js` — Basic Auth para todo el sitio.
+- `app/login/page.js`, `app/api/login/route.js`, `app/api/logout/route.js` — login por cookie (ver más arriba).
+- `proxy.js` — protege todo el sitio salvo `/login` y `/api/login`.
 - `schema.sql` / `schema_facturas.sql` — definición de las tablas `clientes` y `facturas`.
 - `scripts/import-data.cjs` — importa `clientes_export.json` (base unificada) a Supabase.
 - `scripts/import-facturas.cjs` — importa `facturas_export.json` (detalle de facturación) a Supabase y las vincula a `clientes` por CUIT.
@@ -51,7 +55,7 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 ```bash
 npm install
 npm run dev
-# http://localhost:3000 (pide usuario/clave de BASIC_AUTH_*)
+# http://localhost:3000 (redirige a /login)
 ```
 
 ## Re-importar datos
