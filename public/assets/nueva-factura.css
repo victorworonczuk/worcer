@@ -119,6 +119,56 @@
 .tag-facturado { background: var(--conf-alta); }
 .tag-sin-factura { background: var(--conf-sin); }
 
+.opcional-tag {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.pieza-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.pieza-row select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: var(--surface);
+}
+.pieza-row .pieza-linea-select { flex: 1; }
+.pieza-row .pieza-select { flex: 2; }
+.pieza-row .pieza-cantidad {
+  width: 76px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 6px;
+  font-size: 13px;
+}
+.pieza-row .remove-pieza-btn {
+  border: none;
+  background: transparent;
+  color: var(--seg-e);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+}
+
+.add-pieza-btn {
+  align-self: flex-start;
+  border: 1px dashed var(--border);
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--primary);
+  cursor: pointer;
+}
+.add-pieza-btn:hover { background: #eef1ff; }
+
 .form-error {
   color: var(--seg-e);
   font-size: 13px;

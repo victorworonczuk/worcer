@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Análisis de piezas</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="stylesheet" href="assets/piezas.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Worcer · Análisis de piezas</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    <div class="topbar-actions">
+      <a href="/nueva-factura.html" class="nav-link">Cargar factura</a>
+      <a href="/index.html" class="nav-link">← Ver dashboard</a>
+      <a href="/api/logout" class="logout-link">Cerrar sesión</a>
+    </div>
+  </header>
+
+  <main class="piezas-main">
+    <div class="panel">
+      <div class="filters">
+        <div class="field-inline">
+          <label for="f-cliente">Cliente</label>
+          <input type="text" id="f-cliente" autocomplete="off" placeholder="Todos los clientes..." />
+          <div id="cliente-suggestions" class="suggestions"></div>
+          <input type="hidden" id="f-cliente-id" />
+        </div>
+        <div class="field-inline">
+          <label for="f-linea">Línea</label>
+          <select id="f-linea">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="field-inline">
+          <label for="f-pieza">Pieza / calidad</label>
+          <select id="f-pieza">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="field-inline">
+          <label for="f-desde">Desde</label>
+          <input type="date" id="f-desde" />
+        </div>
+        <div class="field-inline">
+          <label for="f-hasta">Hasta</label>
+          <input type="date" id="f-hasta" />
+        </div>
+        <button type="button" id="buscar-btn" class="buscar-btn">Buscar</button>
+        <button type="button" id="limpiar-btn" class="limpiar-btn">Limpiar</button>
+      </div>
+
+      <div id="resumen" class="resumen"></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Línea</th>
+              <th>Pieza</th>
+              <th>Calidad</th>
+              <th>Cantidad total</th>
+              <th>N° de facturas</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="6" class="loading">Elegí filtros y hacé clic en Buscar (o buscá sin filtros para ver todo).</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/config.js"></script>
+  <script src="assets/piezas.js"></script>
+</body>
+</html>

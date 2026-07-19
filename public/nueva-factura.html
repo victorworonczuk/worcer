@@ -14,6 +14,7 @@
       <div class="subtitle" id="user-subtitle">Cargando…</div>
     </div>
     <div class="topbar-actions">
+      <a href="/piezas.html" class="nav-link">Análisis de piezas</a>
       <a href="/index.html" class="nav-link">← Ver dashboard</a>
       <a href="/api/logout" class="logout-link">Cerrar sesión</a>
     </div>
@@ -30,11 +31,11 @@
       </div>
 
       <div class="field">
-        <label>Línea</label>
+        <label>Empresa que factura</label>
         <div class="linea-options">
-          <label class="linea-radio"><input type="radio" name="linea" value="Ceramica" required /> Cerámica <span class="tag-facturado">Factura A</span></label>
-          <label class="linea-radio"><input type="radio" name="linea" value="Porcelanas" /> Porcelanas <span class="tag-facturado">Factura A</span></label>
-          <label class="linea-radio"><input type="radio" name="linea" value="Presupuesto" /> Presupuesto <span class="tag-sin-factura">Remito X</span></label>
+          <label class="linea-radio"><input type="radio" name="empresa" value="Ceramica" required /> Cerámica <span class="tag-facturado">Factura A</span></label>
+          <label class="linea-radio"><input type="radio" name="empresa" value="Porcelanas" /> Porcelanas <span class="tag-facturado">Factura A</span></label>
+          <label class="linea-radio"><input type="radio" name="empresa" value="Presupuesto" /> Presupuesto <span class="tag-sin-factura">Remito X</span></label>
         </div>
       </div>
 
@@ -58,6 +59,12 @@
           <label for="usd-input">Importe USD (opcional)</label>
           <input type="number" id="usd-input" step="0.01" min="0" />
         </div>
+      </div>
+
+      <div class="field">
+        <label>Piezas vendidas <span class="opcional-tag">(opcional)</span></label>
+        <div id="piezas-rows"></div>
+        <button type="button" id="add-pieza-btn" class="add-pieza-btn">+ Agregar otra pieza</button>
       </div>
 
       <div id="form-error" class="form-error"></div>

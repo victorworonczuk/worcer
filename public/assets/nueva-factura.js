@@ -2,16 +2,21 @@ const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_K
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-const LINEA_CONFIG = {
+const EMPRESA_CONFIG = {
   Ceramica: { empresa: 'Ceramica', tipo_comprobante: 'F A' },
   Porcelanas: { empresa: 'Porcelanas', tipo_comprobante: 'F A' },
   Presupuesto: { empresa: 'Presupuesto', tipo_comprobante: 'Remito X' },
 };
 
+const CALIDAD_LABEL = { '1era': '1ª', comercial: 'Comercial', '3era': '3ª' };
+
 const state = {
   currentUser: null,
   clientes: [],
   clienteSeleccionado: null,
+  piezas: [],
+  piezasPorLinea: new Map(),
+  lineasDisponibles: [],
 };
 
 const els = {
@@ -24,6 +29,8 @@ const els = {
   numero: document.getElementById('numero-input'),
   ars: document.getElementById('ars-input'),
   usd: document.getElementById('usd-input'),
+  piezasRows: document.getElementById('piezas-rows'),
+  addPiezaBtn: document.getElementById('add-pieza-btn'),
   form: document.getElementById('factura-form'),
   formError: document.getElementById('form-error'),
   submitBtn: document.getElementById('submit-btn'),
@@ -42,11 +49,29 @@ async function init() {
 
   els.fecha.value = new Date().toISOString().slice(0, 10);
 
-  const { data, error } = await client.from('clientes').select('id, cuit, nombre').limit(2000);
-  if (!error) state.clientes = data;
+  const { data: clientesData, error: clientesError } = await client.from('clientes').select('id, cuit, nombre').limit(2000);
+  if (!clientesError) state.clientes = clientesData;
 
+  const { data: piezasData, error: piezasError } = await client
+    .from('piezas')
+    .select('id, linea, tipo_pieza, variante, calidad')
+    .eq('activo', true);
+  if (!piezasError) {
+    state.piezas = piezasData;
+    state.lineasDisponibles = [...new Set(piezasData.map((p) => p.linea))].sort();
+    state.piezasPorLinea = new Map();
+    for (const p of piezasData) {
+      const list = state.piezasPorLinea.get(p.linea) || [];
+      list.push(p);
+      state.piezasPorLinea.set(p.linea, list);
+    }
+  }
+
+  addPiezaRow();
   loadRecientes();
 }
+
+// --- Autocompletar cliente ---
 
 els.clienteInput.addEventListener('input', () => {
   state.clienteSeleccionado = null;
@@ -92,18 +117,97 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// --- Filas de piezas vendidas (dinámicas) ---
+
+function piezaLabel(p) {
+  const variante = p.variante ? ` (${p.variante})` : '';
+  return `${p.tipo_pieza}${variante} — ${CALIDAD_LABEL[p.calidad] || p.calidad}`;
+}
+
+function addPiezaRow() {
+  const row = document.createElement('div');
+  row.className = 'pieza-row';
+
+  const lineaSelect = document.createElement('select');
+  lineaSelect.className = 'pieza-linea-select';
+  lineaSelect.innerHTML =
+    '<option value="">Línea...</option>' + state.lineasDisponibles.map((l) => `<option value="${l}">${l}</option>`).join('');
+
+  const piezaSelect = document.createElement('select');
+  piezaSelect.className = 'pieza-select';
+  piezaSelect.innerHTML = '<option value="">Elegí una línea primero</option>';
+  piezaSelect.disabled = true;
+
+  const cantidadInput = document.createElement('input');
+  cantidadInput.type = 'number';
+  cantidadInput.min = '1';
+  cantidadInput.step = '1';
+  cantidadInput.placeholder = 'Cant.';
+  cantidadInput.className = 'pieza-cantidad';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'remove-pieza-btn';
+  removeBtn.textContent = '✕';
+  removeBtn.title = 'Quitar esta pieza';
+  removeBtn.addEventListener('click', () => row.remove());
+
+  lineaSelect.addEventListener('change', () => {
+    const opciones = state.piezasPorLinea.get(lineaSelect.value) || [];
+    if (opciones.length === 0) {
+      piezaSelect.innerHTML = '<option value="">Sin piezas para esta línea</option>';
+      piezaSelect.disabled = true;
+      return;
+    }
+    piezaSelect.innerHTML =
+      '<option value="">Elegí pieza y calidad...</option>' +
+      opciones.map((p) => `<option value="${p.id}">${escapeHtml(piezaLabel(p))}</option>`).join('');
+    piezaSelect.disabled = false;
+  });
+
+  row.appendChild(lineaSelect);
+  row.appendChild(piezaSelect);
+  row.appendChild(cantidadInput);
+  row.appendChild(removeBtn);
+  els.piezasRows.appendChild(row);
+}
+
+els.addPiezaBtn.addEventListener('click', addPiezaRow);
+
+function recolectarPiezasSeleccionadas() {
+  const items = [];
+  els.piezasRows.querySelectorAll('.pieza-row').forEach((row) => {
+    const piezaSelect = row.querySelector('.pieza-select');
+    const cantidadInput = row.querySelector('.pieza-cantidad');
+    const piezaId = piezaSelect.value ? Number(piezaSelect.value) : null;
+    const cantidad = cantidadInput.value ? Number(cantidadInput.value) : null;
+    if (piezaId && cantidad && cantidad > 0) {
+      items.push({ pieza_id: piezaId, cantidad });
+    }
+  });
+  return items;
+}
+
+function resetPiezasRows() {
+  els.piezasRows.innerHTML = '';
+  addPiezaRow();
+}
+
+// --- Envío del formulario ---
+
 els.form.addEventListener('submit', async (e) => {
   e.preventDefault();
   els.formError.textContent = '';
 
   const nombreInput = els.clienteInput.value.trim();
-  const lineaEl = document.querySelector('input[name="linea"]:checked');
+  const empresaEl = document.querySelector('input[name="empresa"]:checked');
   const fecha = els.fecha.value;
   const ars = els.ars.value ? Number(els.ars.value) : null;
   const usd = els.usd.value ? Number(els.usd.value) : null;
+  const piezasSeleccionadas = recolectarPiezasSeleccionadas();
 
-  if (!nombreInput || !lineaEl || !fecha || !ars) {
-    els.formError.textContent = 'Completá cliente, línea, fecha e importe.';
+  if (!nombreInput || !empresaEl || !fecha || !ars) {
+    els.formError.textContent = 'Completá cliente, empresa, fecha e importe.';
     return;
   }
 
@@ -112,7 +216,7 @@ els.form.addEventListener('submit', async (e) => {
     els.clienteSelected.className = 'selected-hint warn';
   }
 
-  const linea = LINEA_CONFIG[lineaEl.value];
+  const empresaCfg = EMPRESA_CONFIG[empresaEl.value];
   const mesIdx = new Date(fecha + 'T00:00:00').getMonth();
   const nombreFacturado = state.clienteSeleccionado ? state.clienteSeleccionado.nombre : nombreInput;
   const cuitOriginal = state.clienteSeleccionado ? state.clienteSeleccionado.cuit : null;
@@ -122,10 +226,10 @@ els.form.addEventListener('submit', async (e) => {
     cuit_normalizado: cuitNormalizado,
     cuit_original: cuitOriginal,
     nombre_facturado: nombreFacturado,
-    empresa: linea.empresa,
+    empresa: empresaCfg.empresa,
     fecha,
     mes: MESES[mesIdx],
-    tipo_comprobante: linea.tipo_comprobante,
+    tipo_comprobante: empresaCfg.tipo_comprobante,
     numero_comprobante: els.numero.value.trim() || null,
     importe_ars: ars,
     importe_usd: usd,
@@ -137,20 +241,31 @@ els.form.addEventListener('submit', async (e) => {
   els.submitBtn.disabled = true;
   els.submitBtn.textContent = 'Cargando...';
 
-  const { error } = await client.from('facturas').insert(payload);
-
-  els.submitBtn.disabled = false;
-  els.submitBtn.textContent = 'Cargar factura';
+  const { data: facturaInsertada, error } = await client.from('facturas').insert(payload).select('id').single();
 
   if (error) {
+    els.submitBtn.disabled = false;
+    els.submitBtn.textContent = 'Cargar factura';
     els.formError.textContent = 'Error al guardar: ' + error.message;
     return;
   }
+
+  if (piezasSeleccionadas.length > 0) {
+    const itemsPayload = piezasSeleccionadas.map((it) => ({ ...it, factura_id: facturaInsertada.id }));
+    const { error: itemsError } = await client.from('factura_items').insert(itemsPayload);
+    if (itemsError) {
+      els.formError.textContent = 'La factura se guardó, pero hubo un error guardando las piezas: ' + itemsError.message;
+    }
+  }
+
+  els.submitBtn.disabled = false;
+  els.submitBtn.textContent = 'Cargar factura';
 
   els.form.reset();
   els.fecha.value = new Date().toISOString().slice(0, 10);
   state.clienteSeleccionado = null;
   els.clienteId.value = '';
+  resetPiezasRows();
   els.clienteSelected.textContent = '✓ Factura cargada correctamente';
   els.clienteSelected.className = 'selected-hint';
   setTimeout(() => {

@@ -47,18 +47,21 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 
 - `public/index.html` — dashboard principal (filtros, tabla, edición de estado/notas, plantillas de mensaje).
 - `public/nueva-factura.html` — carga diaria de facturas por parte de empleados (ver abajo).
+- `public/piezas.html` — análisis de piezas vendidas por cliente/período (ver abajo).
 - `public/assets/config.js` — URL y clave pública (`sb_publishable_...`) de Supabase.
 - `public/assets/app.js` — lógica del dashboard.
 - `public/assets/nueva-factura.js` — lógica de la carga de facturas.
-- `public/assets/style.css` / `nueva-factura.css` — estilos.
+- `public/assets/piezas.js` — lógica del análisis de piezas.
+- `public/assets/style.css` / `nueva-factura.css` / `piezas.css` — estilos.
 - `app/page.js` — redirige `/` a `/index.html`.
 - `app/login/page.js`, `app/api/login`, `app/api/logout`, `app/api/me` — autenticación (ver más arriba).
 - `app/api/send-email/route.js` — envía un email vía Resend. Requiere sesión válida, y el `from` tiene que ser `ventas@porcelanasalberti.com.ar` o `administracion@porcelanasalberti.com.ar` (whitelist server-side, no se puede mandar desde cualquier dirección).
 - `proxy.js` — protege todo el sitio salvo `/login` y `/api/login`.
-- `schema.sql` / `schema_facturas.sql` / `schema_usuarios.sql` — definición de las tablas.
+- `schema.sql` / `schema_facturas.sql` / `schema_usuarios.sql` / `schema_piezas.sql` — definición de las tablas.
 - `scripts/import-data.cjs` — importa `clientes_export.json` (base unificada) a Supabase.
 - `scripts/import-facturas.cjs` — importa `facturas_export.json` (detalle histórico de facturación) a Supabase y las vincula a `clientes` por CUIT.
 - `scripts/setup-usuarios.cjs` — crea/actualiza los logins.
+- `scripts/setup-piezas.cjs` — crea/actualiza el catálogo de piezas (idempotente, no duplica si ya existen).
 
 ## Tablas
 
@@ -71,14 +74,23 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 
 **`usuarios`**: login de cada persona (`username`, `password_hash` + `salt` con scrypt, `nombre`, `rol`). No accesible vía API pública de Supabase (ver nota de seguridad).
 
+**`piezas`**: catálogo de producto — combinaciones válidas de `linea` (Napoles, Lyon, Lira, Belmond) × `tipo_pieza` × `variante` (los bidet tienen "3 agujeros" / "Monocomando") × `calidad` (`1era` / `comercial` / `3era`, esta última solo en piezas que incluyen un inodoro). Napoles y Lyon venden cada pieza por separado; Lira y Belmond son un combo único (inodoro largo + depósito) que no se abre en piezas sueltas. Administrar: editar `CATALOGO` en `scripts/setup-piezas.cjs` y correr el script (no borra lo existente, solo agrega combinaciones nuevas).
+
+**`factura_items`**: piezas vendidas en cada factura (`factura_id`, `pieza_id`, `cantidad`). Es lo que permite responder "¿cuántos inodoros cortos comercial le vendimos a tal cliente en tal mes?". Se borra en cascada si se borra la factura.
+
 ## Carga diaria de facturas (`/nueva-factura.html`)
 
 Pensada para que el empleado de facturación o de ventas la use día a día:
 
 1. Busca al cliente por nombre o CUIT (autocompleta contra `clientes`; si no lo encuentra, igual puede cargar la factura solo con el nombre escrito, sin vincular a un cliente existente).
-2. Elige la línea: **Cerámica** o **Porcelanas** → se marca automáticamente como Factura A (facturado). **Presupuesto** → se marca automáticamente como Remito X (sin factura). El empleado no tiene que pensar en esa lógica, ya está resuelta por el radio button.
+2. Elige la **empresa que factura**: **Cerámica** o **Porcelanas** → se marca automáticamente como Factura A (facturado). **Presupuesto** → se marca automáticamente como Remito X (sin factura). El empleado no tiene que pensar en esa lógica, ya está resuelta por el radio button. (Nota: Cerámica y Porcelanas son dos sociedades/fábricas distintas que producen las mismas líneas de producto — no tiene relación con la calidad de la pieza.)
 3. Completa fecha, N° de comprobante (opcional), importe ARS e importe USD (opcional — si carga los dos, el tipo de cambio se calcula solo).
-4. Al guardar, queda registrado quién lo cargó (`cargado_por`) y aparece al instante en la lista "Cargadas hoy" de la misma pantalla.
+4. Opcionalmente, en "Piezas vendidas" agrega una o más filas: elige línea de producto → pieza+calidad (el selector se filtra según la línea elegida) → cantidad. Se pueden agregar tantas filas como piezas distintas incluya la venta.
+5. Al guardar, queda registrado quién lo cargó (`cargado_por`) y aparece al instante en la lista "Cargadas hoy" de la misma pantalla.
+
+## Análisis de piezas (`/piezas.html`)
+
+Filtra `factura_items` por cliente, línea, pieza+calidad y rango de fechas, y muestra la cantidad total vendida agrupada por cliente/pieza/calidad (con cantidad de facturas involucradas). Responde directamente preguntas tipo "¿cuántos inodoros cortos comercial compró tal cliente en julio?". Solo tiene datos para facturas cargadas desde `/nueva-factura.html` con piezas completadas — el import histórico de 1.615 facturas no tiene desglose por pieza.
 
 ## Correr en local
 
@@ -111,6 +123,8 @@ No hay envío masivo/bulk todavía — es un botón por cliente, a propósito, p
 
 ## Pendiente
 
+- Confirmar con Víctor si los combos Lira/Belmond realmente pueden salir en 3ª calidad (se habilitó por tener un inodoro adentro, pero es un supuesto sin confirmar explícitamente) — corregir en `scripts/setup-piezas.cjs` si no.
+- El análisis de piezas es solo hacia adelante: no hay forma de reconstruir qué piezas específicas componían las 1.615 facturas históricas importadas del Excel (esa planilla no tenía ese nivel de detalle).
 - Verificar `porcelanasalberti.com.ar` en Resend (ver arriba) — sin esto, el botón de email no manda nada a clientes reales.
 - Los segmentos A-E (312 clientes activos 2025-2026) tienen los campos de contacto vacíos a propósito — Worcer los tiene que exportar de su sistema de facturación y cargarlos acá.
 - RLS real (con Supabase Auth) en `clientes` y `facturas` si se quiere cerrar el acceso directo a esas tablas también.
