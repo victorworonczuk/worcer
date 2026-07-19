@@ -18,27 +18,39 @@ if (!CONNECTION_STRING) {
 const IVA = 1.21;
 const FACTOR_3ERA = 0.5;
 
-function precioParaCalidad(precioComercial, calidad) {
+function precioParaCalidad(precioComercial, calidad, tercera_sin_precio) {
   if (precioComercial == null) return null;
   if (calidad === 'comercial') return Math.round(precioComercial);
   if (calidad === '1era') return Math.round(precioComercial * IVA);
-  if (calidad === '3era') return Math.round(precioComercial * FACTOR_3ERA);
+  if (calidad === '3era') {
+    // La regla del 50% está confirmada solo para inodoro corto/largo. Para el
+    // resto de las piezas la fábrica sí produce 3ª calidad (ver módulo producción),
+    // pero su precio de venta no está definido -> se deja en blanco (null) hasta
+    // que Víctor lo confirme, para no inventar un precio de venta.
+    if (tercera_sin_precio) return null;
+    return Math.round(precioComercial * FACTOR_3ERA);
+  }
   return null;
 }
 
 // Catálogo: línea, tipo_pieza, variante (o null), calidades disponibles, precio de lista comercial (sin IVA).
+// Nota: las calidades '3era' agregadas a Bidet / Lavatorio / Columna existen porque
+// la fábrica produce 3ª de esas piezas (histórico 2026). Van con `tercera_sin_precio: true`
+// -> se insertan en el catálogo con precio null (venta a definir), pero permiten que el
+// módulo producción resuelva su pieza_id.
 const CATALOGO = [
   { linea: 'Napoles', tipo_pieza: 'Inodoro corto', variante: null, calidades: ['1era', 'comercial', '3era'], precioListaComercial: 92906 },
   { linea: 'Napoles', tipo_pieza: 'Deposito de codo', variante: null, calidades: ['1era', 'comercial'], precioListaComercial: 92648.5 },
-  { linea: 'Napoles', tipo_pieza: 'Lavatorio', variante: null, calidades: ['1era', 'comercial'], precioListaComercial: 64272 },
-  { linea: 'Napoles', tipo_pieza: 'Columna', variante: null, calidades: ['1era', 'comercial'], precioListaComercial: 48101 },
-  { linea: 'Napoles', tipo_pieza: 'Bidet', variante: '3 agujeros', calidades: ['1era', 'comercial'], precioListaComercial: 92597 },
+  { linea: 'Napoles', tipo_pieza: 'Lavatorio', variante: null, calidades: ['1era', 'comercial', '3era'], precioListaComercial: 64272, tercera_sin_precio: true },
+  { linea: 'Napoles', tipo_pieza: 'Lavatorio', variante: 'Monocomando', calidades: ['1era', 'comercial'], precioListaComercial: 64272 }, // NUEVO (19/07). Precio = mismo que lavatorio base, confirmar con Víctor.
+  { linea: 'Napoles', tipo_pieza: 'Columna', variante: null, calidades: ['1era', 'comercial', '3era'], precioListaComercial: 48101, tercera_sin_precio: true },
+  { linea: 'Napoles', tipo_pieza: 'Bidet', variante: '3 agujeros', calidades: ['1era', 'comercial', '3era'], precioListaComercial: 92597, tercera_sin_precio: true },
   { linea: 'Napoles', tipo_pieza: 'Bidet', variante: 'Monocomando', calidades: ['1era', 'comercial'], precioListaComercial: 92597 },
 
   { linea: 'Lyon', tipo_pieza: 'Inodoro largo', variante: null, calidades: ['1era', 'comercial', '3era'], precioListaComercial: 109592 },
   { linea: 'Lyon', tipo_pieza: 'Deposito de apoyo', variante: null, calidades: ['1era', 'comercial'], precioListaComercial: 107532 },
-  { linea: 'Lyon', tipo_pieza: 'Bidet', variante: '3 agujeros', calidades: ['1era', 'comercial'], precioListaComercial: 106502 },
-  { linea: 'Lyon', tipo_pieza: 'Bidet', variante: 'Monocomando', calidades: ['1era', 'comercial'], precioListaComercial: 106502 },
+  { linea: 'Lyon', tipo_pieza: 'Bidet', variante: '3 agujeros', calidades: ['1era', 'comercial', '3era'], precioListaComercial: 106502, tercera_sin_precio: true },
+  { linea: 'Lyon', tipo_pieza: 'Bidet', variante: 'Monocomando', calidades: ['1era', 'comercial', '3era'], precioListaComercial: 106502, tercera_sin_precio: true },
 
   // Lira y Belmond NO tienen 3era calidad (confirmado por Víctor) — solo 1era y comercial.
   // Nota: la hoja "Condiciones de venta" marca julio como "SIN STOCK" para estos dos combos,
@@ -62,7 +74,7 @@ async function main() {
   let actualizadas = 0;
   for (const item of CATALOGO) {
     for (const calidad of item.calidades) {
-      const precio = precioParaCalidad(item.precioListaComercial, calidad);
+      const precio = precioParaCalidad(item.precioListaComercial, calidad, item.tercera_sin_precio);
       const { rows } = await client.query(
         `insert into public.piezas (linea, tipo_pieza, variante, calidad, precio_ars, precio_actualizado)
          values ($1, $2, $3, $4, $5, now())

@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Worcer · Análisis de piezas</title>
+  <title>Worcer · Producción</title>
   <link rel="stylesheet" href="assets/style.css" />
   <link rel="stylesheet" href="assets/piezas.css" />
+  <link rel="stylesheet" href="assets/produccion.css" />
 </head>
 <body>
   <header class="topbar">
     <div>
-      <h1>Worcer · Análisis de piezas</h1>
+      <h1>Worcer · Producción</h1>
       <div class="subtitle" id="user-subtitle">Cargando…</div>
     </div>
     <div class="topbar-actions">
-      <a href="/nueva-factura.html" class="nav-link">Cargar factura</a>
-      <a href="/produccion.html" class="nav-link">Producción</a>
+      <a href="/produccion-carga.html" class="nav-link">Cargar producción</a>
+      <a href="/piezas.html" class="nav-link">Análisis de piezas</a>
       <a href="/index.html" class="nav-link">← Ver dashboard</a>
       <a href="/api/logout" class="logout-link">Cerrar sesión</a>
     </div>
@@ -24,22 +25,25 @@
   <main class="piezas-main">
     <div class="panel">
       <div class="filters">
-        <div class="field-inline field-cliente">
-          <label for="f-cliente">Cliente <span class="opcional-tag">(elegí 2 o 3 para comparar)</span></label>
-          <input type="text" id="f-cliente" autocomplete="off" placeholder="Todos los clientes..." />
-          <div id="cliente-suggestions" class="suggestions"></div>
-          <div id="cliente-chips" class="cliente-chips"></div>
-        </div>
         <div class="field-inline">
           <label for="f-linea">Línea</label>
-          <select id="f-linea">
-            <option value="">Todas</option>
+          <select id="f-linea"><option value="">Todas</option></select>
+        </div>
+        <div class="field-inline">
+          <label for="f-agrupar">Agrupar por</label>
+          <select id="f-agrupar">
+            <option value="pieza">Pieza (calidades sumadas)</option>
+            <option value="pieza_calidad">Pieza + calidad</option>
+            <option value="linea">Línea</option>
           </select>
         </div>
         <div class="field-inline">
-          <label for="f-pieza">Pieza / calidad</label>
-          <select id="f-pieza">
+          <label for="f-calidad">Calidad</label>
+          <select id="f-calidad">
             <option value="">Todas</option>
+            <option value="1era">1ª</option>
+            <option value="comercial">Comercial (2ª)</option>
+            <option value="3era">3ª</option>
           </select>
         </div>
         <div class="field-inline">
@@ -50,35 +54,31 @@
           <label for="f-hasta">Hasta</label>
           <input type="date" id="f-hasta" />
         </div>
-        <button type="button" id="buscar-btn" class="buscar-btn">Buscar</button>
         <button type="button" id="limpiar-btn" class="limpiar-btn">Limpiar</button>
       </div>
 
       <div id="resumen" class="resumen"></div>
 
+      <div class="metric-tabs" id="metric-tabs">
+        <button type="button" class="metric-tab active" data-tipo="produccion">Producción</button>
+        <button type="button" class="metric-tab" data-tipo="venta">Venta</button>
+        <button type="button" class="metric-tab" data-tipo="rotura">Rotura</button>
+      </div>
+
       <div class="table-wrap">
-        <table>
-          <thead id="thead">
-            <tr>
-              <th>Cliente</th>
-              <th>Línea</th>
-              <th>Pieza</th>
-              <th>Calidad</th>
-              <th>Cantidad total</th>
-              <th>Monto total</th>
-              <th>N° de facturas</th>
-            </tr>
-          </thead>
+        <table class="pivot">
+          <thead id="thead"></thead>
           <tbody id="tbody">
-            <tr><td colspan="7" class="loading">Elegí filtros y hacé clic en Buscar (o buscá sin filtros para ver todo).</td></tr>
+            <tr><td class="loading">Cargando datos…</td></tr>
           </tbody>
         </table>
       </div>
+      <p class="nota-pie" id="nota-pie"></p>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/config.js"></script>
-  <script src="assets/piezas.js"></script>
+  <script src="assets/produccion.js"></script>
 </body>
 </html>

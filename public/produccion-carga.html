@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Cargar producción</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="stylesheet" href="assets/nueva-factura.css" />
+  <link rel="stylesheet" href="assets/produccion-carga.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Worcer · Cargar producción</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    <div class="topbar-actions">
+      <a href="/produccion.html" class="nav-link">Ver consolidado</a>
+      <a href="/index.html" class="nav-link">← Ver dashboard</a>
+      <a href="/api/logout" class="logout-link">Cerrar sesión</a>
+    </div>
+  </header>
+
+  <main class="carga-main">
+    <div class="panel">
+      <div class="carga-toolbar">
+        <div class="field-inline">
+          <label for="f-fecha">Fecha</label>
+          <input type="date" id="f-fecha" />
+        </div>
+        <div class="field-inline">
+          <label for="f-linea">Línea</label>
+          <select id="f-linea"><option value="">Todas</option></select>
+        </div>
+        <div class="carga-status" id="carga-status"></div>
+        <button type="button" id="guardar-btn" class="buscar-btn">Guardar día</button>
+      </div>
+
+      <p class="carga-hint">
+        Cargá las cantidades del día por pieza y calidad. Lo que dejes en blanco no se toca;
+        podés escribir <strong>0</strong> para registrar un cero. Al guardar, se actualiza lo ya cargado de esa fecha.
+      </p>
+
+      <div class="table-wrap">
+        <table class="carga-table">
+          <thead>
+            <tr>
+              <th class="col-pieza">Pieza</th>
+              <th class="col-cal">Calidad</th>
+              <th>Producción</th>
+              <th>Venta</th>
+              <th>Rotura</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="5" class="loading">Cargando piezas…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="form-error" class="form-error"></div>
+    </div>
+
+    <div class="panel recientes-panel">
+      <h2>Últimas cargas</h2>
+      <div id="recientes-list" class="recientes-list">
+        <div class="loading">Cargando…</div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/config.js"></script>
+  <script src="assets/produccion-carga.js"></script>
+</body>
+</html>

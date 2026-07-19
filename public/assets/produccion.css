@@ -1,0 +1,44 @@
+/* Pestañas de métrica (Producción / Venta / Rotura) */
+.metric-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px 0;
+}
+.metric-tab {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.metric-tab:hover { background: var(--bg); }
+.metric-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* Tabla pivot mensual */
+table.pivot { font-variant-numeric: tabular-nums; }
+table.pivot th, table.pivot td { text-align: right; }
+table.pivot th.col-grupo, table.pivot td.col-grupo {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  min-width: 200px;
+}
+table.pivot thead th.col-grupo { background: var(--bg); }
+table.pivot td.zero { color: var(--text-muted); }
+table.pivot .col-total { border-left: 2px solid var(--border); font-weight: 600; }
+table.pivot .fila-total td.col-grupo { background: var(--bg); }
+
+.nota-pie {
+  padding: 10px 16px 16px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}

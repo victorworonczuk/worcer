@@ -1,0 +1,77 @@
+.carga-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .carga-main { grid-template-columns: 1fr; }
+}
+
+.carga-toolbar {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.carga-toolbar .field-inline { display: flex; flex-direction: column; gap: 4px; }
+.carga-toolbar label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.carga-toolbar input, .carga-toolbar select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: var(--surface);
+}
+.carga-status {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-muted);
+  align-self: center;
+  padding-bottom: 2px;
+}
+
+.carga-hint {
+  padding: 12px 16px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.carga-table { width: 100%; font-variant-numeric: tabular-nums; }
+.carga-table th { text-align: center; }
+.carga-table th.col-pieza, .carga-table th.col-cal { text-align: left; }
+.carga-table td { vertical-align: middle; }
+.carga-table td.col-pieza { font-weight: 500; }
+.carga-table td.col-cal { color: var(--text-muted); font-size: 12px; }
+
+.carga-table tr.linea-header td {
+  background: var(--bg);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  padding: 8px 12px;
+}
+
+.cell-input {
+  width: 70px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  text-align: right;
+  background: var(--surface);
+}
+.cell-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+.carga-table td:nth-child(n+3) { text-align: center; }
