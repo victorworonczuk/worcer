@@ -6,7 +6,7 @@ const state = {
   all: [],
   filtered: [],
   page: 1,
-  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '' },
+  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '', soloVencidos: false },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
   interaccionesByCliente: new Map(),
@@ -215,17 +215,20 @@ function renderStats() {
   const segCounts = {};
   const estadoCounts = {};
   let conContacto = 0;
+  let vencidos = 0;
   for (const r of state.all) {
     const seg = (r.segmento || '?').trim()[0];
     segCounts[seg] = (segCounts[seg] || 0) + 1;
     const est = r.estado_contacto || 'pendiente';
     estadoCounts[est] = (estadoCounts[est] || 0) + 1;
     if (r.telefono || r.whatsapp || r.email) conContacto += 1;
+    if (esVencido(proximoSeguimientoDe(r.id))) vencidos += 1;
   }
 
   const cards = [
     { label: 'Total clientes', value: total },
     { label: 'Con dato de contacto', value: conContacto },
+    { label: '📅 Seguimientos vencidos', value: vencidos, id: 'card-vencidos', special: true },
     { label: 'Recuperados', value: estadoCounts.recuperado || 0 },
     { label: 'Contactados', value: estadoCounts.contactado || 0 },
     { label: 'Descartados', value: estadoCounts.descartado || 0 },
@@ -238,12 +241,24 @@ function renderStats() {
   ];
 
   els.stats.innerHTML = cards
-    .map((c) => `<div class="stat-card"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`)
+    .map(
+      (c) =>
+        `<div class="stat-card${c.special ? ' stat-card-clickable' : ''}${state.filters.soloVencidos && c.id === 'card-vencidos' ? ' active' : ''}" ${c.id ? `id="${c.id}"` : ''}><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
+    )
     .join('');
+
+  const cardVencidos = document.getElementById('card-vencidos');
+  if (cardVencidos) {
+    cardVencidos.addEventListener('click', () => {
+      state.filters.soloVencidos = !state.filters.soloVencidos;
+      applyFilters();
+      renderStats();
+    });
+  }
 }
 
 function applyFilters() {
-  const { q, segmento, provincia, confianza, estado } = state.filters;
+  const { q, segmento, provincia, confianza, estado, soloVencidos } = state.filters;
   const qLower = q.trim().toLowerCase();
 
   state.filtered = state.all.filter((r) => {
@@ -251,6 +266,7 @@ function applyFilters() {
     if (provincia && r.provincia !== provincia) return false;
     if (confianza && r.confianza_dato !== confianza) return false;
     if (estado && (r.estado_contacto || 'pendiente') !== estado) return false;
+    if (soloVencidos && !esVencido(proximoSeguimientoDe(r.id))) return false;
     if (qLower) {
       const hay = `${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`.toLowerCase();
       if (!hay.includes(qLower)) return false;
@@ -363,6 +379,10 @@ function onToggleFacturas(e) {
   renderTable();
 }
 
+function fmtFecha(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-AR');
+}
+
 function historialDetailHtml(r) {
   const interacciones = state.interaccionesByCliente.get(r.id) || [];
   const filas = interacciones
@@ -373,6 +393,7 @@ function historialDetailHtml(r) {
         <td>${CANAL_LABEL[i.canal] || escapeHtml(i.canal)}</td>
         <td><span class="badge estado-${i.resultado}">${RESULTADO_LABEL[i.resultado] || escapeHtml(i.resultado)}</span></td>
         <td>${escapeHtml(i.nota || '')}</td>
+        <td>${i.proximo_seguimiento ? fmtFecha(i.proximo_seguimiento) : ''}</td>
       </tr>`
     )
     .join('');
@@ -393,12 +414,15 @@ function historialDetailHtml(r) {
             <option value="descartado">Descartado</option>
           </select>
           <input type="text" class="int-nota" placeholder="Nota breve (opcional)" />
+          <label class="int-fecha-label">Volver a contactar el
+            <input type="date" class="int-fecha" />
+          </label>
           <button type="button" class="guardar-interaccion" data-id="${r.id}">Guardar</button>
         </div>
         ${
           filas
             ? `<table class="historial-table">
-                <thead><tr><th>Fecha</th><th>Usuario</th><th>Canal</th><th>Resultado</th><th>Nota</th></tr></thead>
+                <thead><tr><th>Fecha</th><th>Usuario</th><th>Canal</th><th>Resultado</th><th>Nota</th><th>Próximo seguimiento</th></tr></thead>
                 <tbody>${filas}</tbody>
               </table>`
             : '<div class="none">Todavía no hay interacciones registradas con este cliente.</div>'
@@ -424,13 +448,14 @@ async function onGuardarInteraccion(e) {
   const canal = row.querySelector('.int-canal').value;
   const resultado = row.querySelector('.int-resultado').value;
   const nota = row.querySelector('.int-nota').value.trim() || null;
+  const proximo_seguimiento = row.querySelector('.int-fecha').value || null;
 
   e.target.disabled = true;
   e.target.textContent = 'Guardando...';
 
   const { data, error } = await client
     .from('interacciones')
-    .insert({ cliente_id: id, usuario: state.currentUser, canal, resultado, nota })
+    .insert({ cliente_id: id, usuario: state.currentUser, canal, resultado, nota, proximo_seguimiento })
     .select()
     .single();
 
@@ -514,11 +539,30 @@ function rowHtml(r) {
   `;
 }
 
+function proximoSeguimientoDe(clienteId) {
+  const lista = state.interaccionesByCliente.get(clienteId);
+  if (!lista || lista.length === 0) return null;
+  return lista[0].proximo_seguimiento || null;
+}
+
+function esVencido(fechaStr) {
+  if (!fechaStr) return false;
+  return fechaStr <= todayStr();
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function historialCell(r) {
   const n = state.interaccionesByCliente.get(r.id)?.length || 0;
   const abierto = state.openHistorial.has(r.id);
   const label = n > 0 ? `${abierto ? '▾' : '▸'} ${n} interacci${n === 1 ? 'ón' : 'ones'}` : 'Registrar contacto';
-  return `<button type="button" class="toggle-historial" data-id="${r.id}">${label}</button>`;
+  const proximo = proximoSeguimientoDe(r.id);
+  const seguimientoHtml = proximo
+    ? `<br><span class="seguimiento-tag ${esVencido(proximo) ? 'vencido' : ''}">📅 ${fmtFecha(proximo)}</span>`
+    : '';
+  return `<button type="button" class="toggle-historial" data-id="${r.id}">${label}</button>${seguimientoHtml}`;
 }
 
 function escapeHtml(str) {

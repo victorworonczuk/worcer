@@ -123,6 +123,28 @@ main {
   margin-top: 2px;
 }
 
+.stat-card-clickable {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.stat-card-clickable:hover { border-color: var(--seg-d); }
+.stat-card-clickable .value { color: var(--seg-d); }
+.stat-card-clickable.active {
+  border-color: var(--seg-d);
+  background: #fff4ec;
+}
+
+.seguimiento-tag {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: inline-block;
+  margin-top: 4px;
+}
+.seguimiento-tag.vencido {
+  color: var(--seg-d);
+  font-weight: 600;
+}
+
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -345,6 +367,15 @@ tr.historial-detail-row td {
   font-size: 12px;
 }
 .historial-form .int-nota { min-width: 220px; flex: 1; }
+.int-fecha-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.int-fecha-label input { padding: 5px 6px !important; }
 .historial-form button {
   background: var(--primary);
   color: #fff;

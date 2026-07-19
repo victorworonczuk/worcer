@@ -5,6 +5,9 @@ create table if not exists public.interacciones (
   canal text not null,
   resultado text not null,
   nota text,
+  -- Fecha en que hay que volver a contactar (opcional). La interacción más
+  -- reciente de cada cliente define su "próximo seguimiento" vigente.
+  proximo_seguimiento date,
   created_at timestamptz not null default now()
 );
 
