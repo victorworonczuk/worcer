@@ -1,13 +1,8 @@
 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 const CALIDAD_LABEL = { '1era': '1ª', comercial: 'Comercial', '3era': '3ª' };
-const TIPOS = ['produccion', 'venta', 'rotura', 'rotura_deposito'];
 
-const state = {
-  currentUser: null,
-  piezas: [],        // catálogo ordenado
-  lineas: [],
-};
+const state = { currentUser: null, piezas: [], lineas: [] };
 
 const els = {
   userSubtitle: document.getElementById('user-subtitle'),
@@ -38,7 +33,7 @@ async function init() {
     .select('id, linea, tipo_pieza, variante, calidad, activo')
     .eq('activo', true);
   if (error) {
-    els.tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Error al cargar piezas: ${error.message}</td></tr>`;
+    els.tbody.innerHTML = `<tr><td colspan="3" class="empty-state">Error al cargar piezas: ${error.message}</td></tr>`;
     return;
   }
   const ordenCalidad = { '1era': 0, comercial: 1, '3era': 2 };
@@ -61,7 +56,7 @@ function renderGrid() {
   const lineaFiltro = els.linea.value || null;
   const piezas = state.piezas.filter((p) => !lineaFiltro || p.linea === lineaFiltro);
   if (piezas.length === 0) {
-    els.tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No hay piezas.</td></tr>';
+    els.tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No hay piezas.</td></tr>';
     return;
   }
   let html = '';
@@ -69,59 +64,52 @@ function renderGrid() {
   for (const p of piezas) {
     if (p.linea !== lineaActual) {
       lineaActual = p.linea;
-      html += `<tr class="linea-header"><td colspan="6">${escapeHtml(p.linea)}</td></tr>`;
+      html += `<tr class="linea-header"><td colspan="3">${escapeHtml(p.linea)}</td></tr>`;
     }
     html += `<tr data-pieza="${p.id}">
       <td class="col-pieza">${escapeHtml(piezaLabel(p))}</td>
       <td class="col-cal">${CALIDAD_LABEL[p.calidad] || p.calidad}</td>
-      ${TIPOS.map((t) => `<td><input type="number" min="0" step="1" class="cell-input" data-tipo="${t}" data-pieza="${p.id}" /></td>`).join('')}
+      <td><input type="number" min="0" step="1" class="cell-input" data-pieza="${p.id}" /></td>
     </tr>`;
   }
   els.tbody.innerHTML = html;
 }
 
 async function prefill() {
-  // Limpiar inputs visibles
   els.tbody.querySelectorAll('.cell-input').forEach((i) => { i.value = ''; });
   const fecha = els.fecha.value;
   if (!fecha) return;
-  els.status.textContent = 'Cargando datos del día…';
+  els.status.textContent = 'Cargando recuento de la fecha…';
   const { data, error } = await client
     .from('produccion')
-    .select('pieza_id, tipo, cantidad')
+    .select('pieza_id, cantidad')
     .eq('fecha', fecha)
+    .eq('tipo', 'recuento')
     .limit(2000);
   if (error) { els.status.textContent = ''; return; }
-  const byKey = new Map();
-  for (const r of (data || [])) byKey.set(`${r.pieza_id}|${r.tipo}`, r.cantidad);
+  const byPieza = new Map();
+  for (const r of (data || [])) byPieza.set(String(r.pieza_id), r.cantidad);
   els.tbody.querySelectorAll('.cell-input').forEach((inp) => {
-    const k = `${inp.dataset.pieza}|${inp.dataset.tipo}`;
-    if (byKey.has(k)) inp.value = byKey.get(k);
+    if (byPieza.has(inp.dataset.pieza)) inp.value = byPieza.get(inp.dataset.pieza);
   });
   const n = data ? data.length : 0;
-  els.status.textContent = n ? `${n} registro(s) ya cargados para esta fecha.` : 'Sin datos cargados para esta fecha todavía.';
+  els.status.textContent = n ? `${n} pieza(s) ya tienen recuento en esta fecha.` : 'Sin recuento cargado para esta fecha todavía.';
 }
 
 async function guardar() {
   els.formError.textContent = '';
   const fecha = els.fecha.value;
-  if (!fecha) { els.formError.textContent = 'Elegí una fecha.'; return; }
+  if (!fecha) { els.formError.textContent = 'Elegí la fecha del recuento.'; return; }
 
   const filas = [];
   els.tbody.querySelectorAll('.cell-input').forEach((inp) => {
-    if (inp.value === '') return; // en blanco: no se toca
+    if (inp.value === '') return;
     const cantidad = Number(inp.value);
     if (Number.isNaN(cantidad) || cantidad < 0) return;
-    filas.push({
-      fecha,
-      pieza_id: Number(inp.dataset.pieza),
-      tipo: inp.dataset.tipo,
-      cantidad,
-      cargado_por: state.currentUser,
-    });
+    filas.push({ fecha, pieza_id: Number(inp.dataset.pieza), tipo: 'recuento', cantidad, cargado_por: state.currentUser });
   });
 
-  if (filas.length === 0) { els.formError.textContent = 'No cargaste ninguna cantidad.'; return; }
+  if (filas.length === 0) { els.formError.textContent = 'No cargaste ninguna cantidad contada.'; return; }
 
   els.guardarBtn.disabled = true;
   els.guardarBtn.textContent = 'Guardando…';
@@ -129,41 +117,38 @@ async function guardar() {
     .from('produccion')
     .upsert(filas, { onConflict: 'fecha,pieza_id,tipo' });
   els.guardarBtn.disabled = false;
-  els.guardarBtn.textContent = 'Guardar día';
+  els.guardarBtn.textContent = 'Guardar recuento';
 
   if (error) { els.formError.textContent = 'Error al guardar: ' + error.message; return; }
 
-  els.status.textContent = `✓ Guardado: ${filas.length} valor(es) para el ${new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR')}.`;
+  els.status.textContent = `✓ Recuento guardado: ${filas.length} pieza(s) para el ${new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR')}.`;
   loadRecientes();
 }
 
 async function loadRecientes() {
-  // Últimas fechas con carga manual (cargado_por no nulo).
   const { data, error } = await client
     .from('produccion')
-    .select('fecha, tipo, cantidad, cargado_por, created_at')
-    .not('cargado_por', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(500);
+    .select('fecha, cantidad, cargado_por')
+    .eq('tipo', 'recuento')
+    .order('fecha', { ascending: false })
+    .limit(2000);
   if (error) { els.recientesList.innerHTML = `<div class="loading">Error: ${error.message}</div>`; return; }
   if (!data || !data.length) {
-    els.recientesList.innerHTML = '<div class="loading">Todavía no se cargó producción a mano.</div>';
+    els.recientesList.innerHTML = '<div class="loading">Todavía no se cargó ningún recuento.</div>';
     return;
   }
-  // Agrupar por fecha
   const porFecha = new Map();
   for (const r of data) {
-    if (!porFecha.has(r.fecha)) porFecha.set(r.fecha, { prod: 0, venta: 0, rotura: 0, por: r.cargado_por });
+    if (!porFecha.has(r.fecha)) porFecha.set(r.fecha, { piezas: 0, total: 0, por: r.cargado_por });
     const g = porFecha.get(r.fecha);
-    if (r.tipo === 'produccion') g.prod += r.cantidad;
-    else if (r.tipo === 'venta') g.venta += r.cantidad;
-    else if (r.tipo === 'rotura' || r.tipo === 'rotura_deposito') g.rotura += r.cantidad;
+    g.piezas += 1;
+    g.total += r.cantidad;
   }
   const fechas = [...porFecha.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, 15);
   els.recientesList.innerHTML = fechas.map(([fecha, g]) => `<div class="recientes-item">
       <div>
         <div class="nombre">${new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR')}</div>
-        <div class="meta">Prod ${g.prod} · Venta ${g.venta} · Rotura ${g.rotura} · ${escapeHtml(g.por || '')}</div>
+        <div class="meta">${g.piezas} pieza(s) · ${g.total} u. contadas · ${escapeHtml(g.por || '')}</div>
       </div>
     </div>`).join('');
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Worcer · Cargar producción</title>
+  <title>Worcer · Recuento de stock</title>
   <link rel="stylesheet" href="assets/style.css" />
   <link rel="stylesheet" href="assets/nueva-factura.css" />
   <link rel="stylesheet" href="assets/produccion-carga.css" />
@@ -11,12 +11,12 @@
 <body>
   <header class="topbar">
     <div>
-      <h1>Worcer · Cargar producción</h1>
+      <h1>Worcer · Recuento de stock</h1>
       <div class="subtitle" id="user-subtitle">Cargando…</div>
     </div>
     <div class="topbar-actions">
       <a href="/produccion.html" class="nav-link">Ver consolidado</a>
-      <a href="/recuento.html" class="nav-link">Recuento</a>
+      <a href="/produccion-carga.html" class="nav-link">Cargar producción</a>
       <a href="/index.html" class="nav-link">← Ver dashboard</a>
       <a href="/api/logout" class="logout-link">Cerrar sesión</a>
     </div>
@@ -26,7 +26,7 @@
     <div class="panel">
       <div class="carga-toolbar">
         <div class="field-inline">
-          <label for="f-fecha">Fecha</label>
+          <label for="f-fecha">Fecha del recuento</label>
           <input type="date" id="f-fecha" />
         </div>
         <div class="field-inline">
@@ -34,12 +34,13 @@
           <select id="f-linea"><option value="">Todas</option></select>
         </div>
         <div class="carga-status" id="carga-status"></div>
-        <button type="button" id="guardar-btn" class="buscar-btn">Guardar día</button>
+        <button type="button" id="guardar-btn" class="buscar-btn">Guardar recuento</button>
       </div>
 
       <p class="carga-hint">
-        Cargá las cantidades del día por pieza y calidad. Lo que dejes en blanco no se toca;
-        podés escribir <strong>0</strong> para registrar un cero. Al guardar, se actualiza lo ya cargado de esa fecha.
+        Un <strong>recuento</strong> es un conteo físico: la cantidad que ponés acá <strong>fija el stock</strong> de cada
+        pieza a esa fecha, y desde ahí el sistema vuelve a sumar la producción y restar ventas y roturas.
+        El <strong>primer recuento es tu stock inicial</strong>. Dejá en blanco lo que no cuentes.
       </p>
 
       <div class="table-wrap">
@@ -48,14 +49,11 @@
             <tr>
               <th class="col-pieza">Pieza</th>
               <th class="col-cal">Calidad</th>
-              <th>Producción</th>
-              <th>Venta</th>
-              <th>Rotura fábrica</th>
-              <th>Rotura depósito</th>
+              <th>Cantidad contada</th>
             </tr>
           </thead>
           <tbody id="tbody">
-            <tr><td colspan="6" class="loading">Cargando piezas…</td></tr>
+            <tr><td colspan="3" class="loading">Cargando piezas…</td></tr>
           </tbody>
         </table>
       </div>
@@ -64,7 +62,7 @@
     </div>
 
     <div class="panel recientes-panel">
-      <h2>Últimas cargas</h2>
+      <h2>Recuentos anteriores</h2>
       <div id="recientes-list" class="recientes-list">
         <div class="loading">Cargando…</div>
       </div>
@@ -73,6 +71,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/config.js"></script>
-  <script src="assets/produccion-carga.js"></script>
+  <script src="assets/recuento.js"></script>
 </body>
 </html>

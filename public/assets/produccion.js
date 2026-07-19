@@ -98,13 +98,17 @@ function grupoDe(r) {
 function render() {
   const items = filtrar();
   renderResumen(items);
-  if (state.tipo === 'stock') renderStock(items);
+  if (state.tipo === 'stock') renderStock();
   else renderPivot(items);
 }
 
 function renderResumen(items) {
   const tot = { produccion: 0, venta: 0, rotura: 0 };
-  for (const r of items) tot[r.tipo] += r.cantidad;
+  for (const r of items) {
+    if (r.tipo === 'produccion') tot.produccion += r.cantidad;
+    else if (r.tipo === 'venta') tot.venta += r.cantidad;
+    else if (r.tipo === 'rotura' || r.tipo === 'rotura_deposito') tot.rotura += r.cantidad;
+  }
   const ratio = tot.produccion > 0 ? (tot.venta / tot.produccion) * 100 : 0;
   els.resumen.innerHTML = `
     <div><strong>${fmt(tot.produccion)}</strong><span class="label">producción</span></div>
@@ -115,7 +119,7 @@ function renderResumen(items) {
 }
 
 function renderPivot(items) {
-  const deTipo = items.filter((r) => r.tipo === state.tipo);
+  const deTipo = items.filter((r) => r.tipo === state.tipo || (state.tipo === 'rotura' && r.tipo === 'rotura_deposito'));
 
   // Meses presentes (col) a partir de los datos filtrados de esta métrica.
   const mesesSet = new Set(deTipo.map((r) => `${anioDe(r.fecha)}-${String(mesDe(r.fecha)).padStart(2, '0')}`));
@@ -176,50 +180,84 @@ function renderPivot(items) {
 
 function fmtPesos(n) { return '$' + Math.round(n).toLocaleString('es-AR'); }
 
-function renderStock(items) {
-  // Agrupa TODOS los tipos (prod/venta/rotura) por grupo, y calcula derivados.
-  const grupos = new Map();
+function piezaKeyDe(r) { return `${r.linea}|${r.tipo_pieza}|${r.variante || ''}|${r.calidad}`; }
+
+// El stock es "actual": para cada pieza toma el último recuento como base y suma
+// los movimientos posteriores. No depende del rango de fechas del filtro.
+function renderStock() {
+  const lineaFiltro = els.linea.value || null;
+  const calidadFiltro = els.calidad.value || null;
+  const base = state.rows.filter((r) =>
+    (!lineaFiltro || r.linea === lineaFiltro) && (!calidadFiltro || r.calidad === calidadFiltro));
+
+  // 1) Calcular por pieza individual (con calidad = pieza_id), usando el ancla del recuento.
+  const porPieza = new Map();
+  for (const r of base) {
+    const k = piezaKeyDe(r);
+    if (!porPieza.has(k)) porPieza.set(k, { rows: [], grupo: grupoDe(r), precio: r.precio });
+    porPieza.get(k).rows.push(r);
+  }
   let faltaPrecio = false;
-  for (const r of items) {
-    const g = grupoDe(r);
-    if (!grupos.has(g.key)) grupos.set(g.key, { label: g.label, produccion: 0, venta: 0, rotura: 0, valorProd: 0, valorRoto: 0 });
-    const it = grupos.get(g.key);
-    it[r.tipo] += r.cantidad;
-    if (r.precio == null) { if (r.tipo !== 'venta') faltaPrecio = true; }
-    else {
-      if (r.tipo === 'produccion') it.valorProd += r.precio * r.cantidad;
-      if (r.tipo === 'rotura') it.valorRoto += r.precio * r.cantidad;
+  let hayRecuento = false;
+  const piezasCalc = [];
+  for (const { rows, grupo, precio } of porPieza.values()) {
+    const recuentos = rows.filter((r) => r.tipo === 'recuento');
+    let baseFecha = null, baseQty = 0;
+    if (recuentos.length) {
+      hayRecuento = true;
+      const ult = recuentos.reduce((a, b) => (b.fecha > a.fecha ? b : a));
+      baseFecha = ult.fecha; baseQty = ult.cantidad;
     }
+    let prod = 0, venta = 0, rotura = 0;
+    for (const r of rows) {
+      if (r.tipo === 'recuento') continue;
+      if (baseFecha && r.fecha <= baseFecha) continue; // solo movimientos posteriores al recuento
+      if (r.tipo === 'produccion') prod += r.cantidad;
+      else if (r.tipo === 'venta') venta += r.cantidad;
+      else if (r.tipo === 'rotura' || r.tipo === 'rotura_deposito') rotura += r.cantidad;
+    }
+    const stock = baseQty + prod - venta - rotura;
+    const valorProd = precio != null ? precio * prod : 0;
+    const valorRoto = precio != null ? precio * rotura : 0;
+    if (precio == null && (prod || rotura)) faltaPrecio = true;
+    piezasCalc.push({ grupo, baseQty, prod, venta, rotura, stock, valorProd, valorRoto });
   }
 
-  const filas = [...grupos.values()].map((g) => ({
-    ...g,
-    stock: g.produccion - g.venta - g.rotura,
-    pctRotura: g.produccion > 0 ? (g.rotura / g.produccion) * 100 : 0,
-  })).sort((a, b) => b.produccion - a.produccion);
+  // 2) Agrupar según "Agrupar por".
+  const grupos = new Map();
+  for (const p of piezasCalc) {
+    if (!grupos.has(p.grupo.key)) grupos.set(p.grupo.key, { label: p.grupo.label, base: 0, prod: 0, venta: 0, rotura: 0, stock: 0, valorProd: 0, valorRoto: 0 });
+    const g = grupos.get(p.grupo.key);
+    g.base += p.baseQty; g.prod += p.prod; g.venta += p.venta; g.rotura += p.rotura;
+    g.stock += p.stock; g.valorProd += p.valorProd; g.valorRoto += p.valorRoto;
+  }
+  const filas = [...grupos.values()]
+    .map((g) => ({ ...g, pctRotura: g.prod > 0 ? (g.rotura / g.prod) * 100 : 0 }))
+    .sort((a, b) => b.prod - a.prod);
 
   els.thead.innerHTML = `<tr>
     <th class="col-grupo">${els.agrupar.value === 'linea' ? 'Línea' : 'Pieza'}</th>
-    <th>Producción</th><th>Venta</th><th>Rotura</th>
-    <th>Stock estim.</th><th>% Rotura</th>
+    <th>Base recuento</th><th>Producción</th><th>Venta</th><th>Rotura</th>
+    <th>Stock actual</th><th>% Rotura</th>
     <th>Valor producido</th><th>Pérdida rotura</th>
   </tr>`;
 
   if (filas.length === 0) {
-    els.tbody.innerHTML = '<tr><td class="empty-state" colspan="8">No hay datos con estos filtros.</td></tr>';
+    els.tbody.innerHTML = '<tr><td class="empty-state" colspan="9">No hay datos con estos filtros.</td></tr>';
     els.notaPie.textContent = '';
     return;
   }
 
   const t = filas.reduce((a, f) => ({
-    produccion: a.produccion + f.produccion, venta: a.venta + f.venta, rotura: a.rotura + f.rotura,
+    base: a.base + f.base, prod: a.prod + f.prod, venta: a.venta + f.venta, rotura: a.rotura + f.rotura,
     stock: a.stock + f.stock, valorProd: a.valorProd + f.valorProd, valorRoto: a.valorRoto + f.valorRoto,
-  }), { produccion: 0, venta: 0, rotura: 0, stock: 0, valorProd: 0, valorRoto: 0 });
-  const pctRoturaTotal = t.produccion > 0 ? (t.rotura / t.produccion) * 100 : 0;
+  }), { base: 0, prod: 0, venta: 0, rotura: 0, stock: 0, valorProd: 0, valorRoto: 0 });
+  const pctRoturaTotal = t.prod > 0 ? (t.rotura / t.prod) * 100 : 0;
 
   els.tbody.innerHTML = filas.map((f) => `<tr>
     <td class="col-grupo">${escapeHtml(f.label)}</td>
-    <td>${fmt(f.produccion)}</td>
+    <td>${f.base ? fmt(f.base) : '·'}</td>
+    <td>${fmt(f.prod)}</td>
     <td>${fmt(f.venta)}</td>
     <td>${fmt(f.rotura)}</td>
     <td class="${f.stock < 0 ? 'stock-neg' : ''}"><strong>${fmt(f.stock)}</strong></td>
@@ -228,13 +266,17 @@ function renderStock(items) {
     <td class="${f.valorRoto ? 'stock-neg' : ''}">${f.valorRoto ? fmtPesos(f.valorRoto) : '·'}</td>
   </tr>`).join('') + `<tr class="fila-total">
     <td class="col-grupo">TOTAL</td>
-    <td>${fmt(t.produccion)}</td><td>${fmt(t.venta)}</td><td>${fmt(t.rotura)}</td>
+    <td>${t.base ? fmt(t.base) : '·'}</td>
+    <td>${fmt(t.prod)}</td><td>${fmt(t.venta)}</td><td>${fmt(t.rotura)}</td>
     <td>${fmt(t.stock)}</td><td>${pctRoturaTotal.toFixed(1)}%</td>
     <td>${fmtPesos(t.valorProd)}</td><td>${fmtPesos(t.valorRoto)}</td>
   </tr>`;
 
-  const notas = ['Stock estimado = Producción − Venta − Rotura (acumulado del período filtrado). La "venta" es la de la planilla de producción, no la facturación.'];
-  if (faltaPrecio) notas.push('Algunas piezas de 3ª calidad no tienen precio cargado — su valorización queda sin contar.');
+  const notas = [];
+  if (hayRecuento) notas.push('Stock actual = último recuento + producción − venta − roturas posteriores. Producción/Venta/Rotura son desde el último recuento.');
+  else notas.push('Stock = Producción − Venta − Rotura desde enero (sin recuento todavía: cargá el stock inicial en "Recuento" para corregir los negativos). Rotura incluye fábrica + depósito.');
+  notas.push('No depende del rango de fechas.');
+  if (faltaPrecio) notas.push('Algunas piezas de 3ª calidad no tienen precio — su valorización no se cuenta.');
   els.notaPie.textContent = notas.join(' ');
 }
 

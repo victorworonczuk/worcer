@@ -9,7 +9,14 @@ create table if not exists public.produccion (
   -- ya está codificada en la pieza, por eso la carga "por calidad" no necesita
   -- una columna calidad aparte.
   pieza_id    bigint not null references public.piezas(id),
-  tipo        text not null check (tipo in ('produccion', 'venta', 'rotura')),
+  -- Tipos de movimiento:
+  --   produccion       (+) piezas fabricadas
+  --   venta            (-) piezas vendidas/despachadas
+  --   rotura           (-) rotura en fábrica / línea de producción
+  --   rotura_deposito  (-) rotura en el depósito (manipuleo / guardado)
+  --   recuento         (=) conteo físico: FIJA el stock a esa fecha (ancla).
+  --                        El "stock inicial" es simplemente el primer recuento.
+  tipo        text not null check (tipo in ('produccion', 'venta', 'rotura', 'rotura_deposito', 'recuento')),
   cantidad    integer not null check (cantidad >= 0),
   cargado_por text,
   created_at  timestamptz not null default now(),
