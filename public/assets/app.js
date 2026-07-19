@@ -36,6 +36,11 @@ const els = {
   pageInfo: document.getElementById('page-info'),
   prevBtn: document.getElementById('prev-page'),
   nextBtn: document.getElementById('next-page'),
+  btnNuevoCliente: document.getElementById('btn-nuevo-cliente'),
+  modalOverlay: document.getElementById('modal-overlay'),
+  formNuevoCliente: document.getElementById('form-nuevo-cliente'),
+  btnCancelarNuevoCliente: document.getElementById('btn-cancelar-nuevo-cliente'),
+  ncError: document.getElementById('nc-error'),
 };
 
 const MESSAGE_TEMPLATES = {
@@ -478,6 +483,61 @@ async function onGuardarInteraccion(e) {
   renderTable();
 }
 
+function openNuevoClienteModal() {
+  els.formNuevoCliente.reset();
+  els.ncError.textContent = '';
+  els.modalOverlay.classList.remove('hidden');
+  document.getElementById('nc-nombre').focus();
+}
+
+function closeNuevoClienteModal() {
+  els.modalOverlay.classList.add('hidden');
+}
+
+async function onSubmitNuevoCliente(e) {
+  e.preventDefault();
+  const nombre = document.getElementById('nc-nombre').value.trim();
+  if (!nombre) {
+    els.ncError.textContent = 'La razón social / nombre es obligatoria.';
+    return;
+  }
+
+  const nuevo = {
+    nombre,
+    cuit: document.getElementById('nc-cuit').value.trim() || null,
+    provincia: document.getElementById('nc-provincia').value || null,
+    localidad: document.getElementById('nc-localidad').value.trim() || null,
+    domicilio: document.getElementById('nc-domicilio').value.trim() || null,
+    telefono: document.getElementById('nc-telefono').value.trim() || null,
+    whatsapp: document.getElementById('nc-whatsapp').value.trim() || null,
+    email: document.getElementById('nc-email').value.trim() || null,
+    rubro: document.getElementById('nc-rubro').value.trim() || null,
+    confianza_dato: 'alta',
+    origen: 'Alta manual',
+  };
+
+  const submitBtn = els.formNuevoCliente.querySelector('.btn-primary');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Guardando...';
+  els.ncError.textContent = '';
+
+  const { data, error } = await client.from('clientes').insert(nuevo).select().single();
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Guardar cliente';
+
+  if (error) {
+    els.ncError.textContent = 'No se pudo guardar: ' + error.message;
+    return;
+  }
+
+  state.all.unshift(data);
+  populateFilterOptions();
+  renderStats();
+  applyFilters();
+  closeNuevoClienteModal();
+}
+
 function contactLinks(r) {
   const links = [];
   if (r.telefono) links.push(`<a href="tel:${r.telefono.replace(/[^0-9+]/g, '')}">☎ ${escapeHtml(r.telefono)}</a>`);
@@ -626,6 +686,12 @@ els.nextBtn.addEventListener('click', () => {
   state.page += 1;
   renderTable();
 });
+els.btnNuevoCliente.addEventListener('click', openNuevoClienteModal);
+els.btnCancelarNuevoCliente.addEventListener('click', closeNuevoClienteModal);
+els.modalOverlay.addEventListener('click', (e) => {
+  if (e.target === els.modalOverlay) closeNuevoClienteModal();
+});
+els.formNuevoCliente.addEventListener('submit', onSubmitNuevoCliente);
 
 async function loadUser() {
   try {

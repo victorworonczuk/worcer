@@ -13,6 +13,7 @@
       <div class="subtitle" id="user-subtitle">Base histórica y activa unificada — 873 registros</div>
     </div>
     <div class="topbar-actions">
+      <button type="button" id="btn-nuevo-cliente" class="nav-link">+ Nuevo cliente</button>
       <a href="/nueva-factura.html" class="nav-link">+ Cargar factura</a>
       <a href="/piezas.html" class="nav-link">Análisis de piezas</a>
       <a href="/api/logout" class="logout-link">Cerrar sesión</a>
@@ -83,6 +84,74 @@
       </div>
     </div>
   </main>
+
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal-panel">
+      <h2>Nuevo cliente</h2>
+      <form id="form-nuevo-cliente">
+        <label>Razón social / Nombre *
+          <input type="text" id="nc-nombre" required />
+        </label>
+        <label>CUIT
+          <input type="text" id="nc-cuit" placeholder="30-12345678-9" />
+        </label>
+        <div class="modal-row">
+          <label>Provincia
+            <select id="nc-provincia">
+              <option value="">—</option>
+              <option>Bs As</option>
+              <option>Capital</option>
+              <option>Catamarca</option>
+              <option>Chaco</option>
+              <option>Corrientes</option>
+              <option>Córdoba</option>
+              <option>Entre Ríos</option>
+              <option>Formosa</option>
+              <option>Jujuy</option>
+              <option>La Pampa</option>
+              <option>Mendoza</option>
+              <option>Misiones</option>
+              <option>Neuquén</option>
+              <option>Río Negro</option>
+              <option>Salta</option>
+              <option>San Juan</option>
+              <option>San Luis</option>
+              <option>Santa Cruz</option>
+              <option>Santa Fe</option>
+              <option>Sgo Estero</option>
+              <option>T.Fuego</option>
+              <option>Tucumán</option>
+            </select>
+          </label>
+          <label>Localidad
+            <input type="text" id="nc-localidad" />
+          </label>
+        </div>
+        <label>Domicilio
+          <input type="text" id="nc-domicilio" />
+        </label>
+        <div class="modal-row">
+          <label>Teléfono
+            <input type="text" id="nc-telefono" />
+          </label>
+          <label>WhatsApp
+            <input type="text" id="nc-whatsapp" placeholder="549..." />
+          </label>
+        </div>
+        <label>Email
+          <input type="email" id="nc-email" />
+        </label>
+        <label>Rubro
+          <input type="text" id="nc-rubro" placeholder="Corralón, ferretería, sanitarios..." />
+        </label>
+        <div class="modal-error" id="nc-error"></div>
+        <div class="modal-actions">
+          <button type="button" id="btn-cancelar-nuevo-cliente" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/config.js"></script>
