@@ -9,9 +9,14 @@ const state = {
   filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '' },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
+  interaccionesByCliente: new Map(),
+  openHistorial: new Set(),
   currentUser: null,
   currentUserRol: null,
 };
+
+const CANAL_LABEL = { llamado: '☎ Llamado', whatsapp: 'WhatsApp', email: 'Email', otro: 'Otro' };
+const RESULTADO_LABEL = { contactado: 'Contactado', recuperado: 'Recuperado', descartado: 'Descartado' };
 
 const FROM_BY_ROL = {
   ventas: 'ventas@porcelanasalberti.com.ar',
@@ -176,6 +181,23 @@ async function loadData() {
     }
   }
 
+  const { data: interacciones, error: interaccionesError } = await client
+    .from('interacciones')
+    .select('id, cliente_id, usuario, canal, resultado, nota, created_at')
+    .order('created_at', { ascending: false })
+    .limit(3000);
+
+  if (interaccionesError) {
+    console.error('Error cargando interacciones', interaccionesError);
+  } else {
+    state.interaccionesByCliente = new Map();
+    for (const i of interacciones) {
+      const list = state.interaccionesByCliente.get(i.cliente_id) || [];
+      list.push(i);
+      state.interaccionesByCliente.set(i.cliente_id, list);
+    }
+  }
+
   populateFilterOptions();
   renderStats();
   applyFilters();
@@ -258,17 +280,25 @@ function renderTable() {
   }
 
   els.tbody.innerHTML = pageRows
-    .map((r) => rowHtml(r) + (state.openFacturas.has(r.id) ? facturasDetailHtml(r) : ''))
+    .map((r) => {
+      let out = rowHtml(r);
+      if (state.openFacturas.has(r.id)) out += facturasDetailHtml(r);
+      if (state.openHistorial.has(r.id)) out += historialDetailHtml(r);
+      return out;
+    })
     .join('');
 
   els.tbody.querySelectorAll('.estado-select').forEach((sel) => {
     sel.addEventListener('change', onEstadoChange);
   });
-  els.tbody.querySelectorAll('.notas-input').forEach((ta) => {
-    ta.addEventListener('blur', onNotasBlur);
-  });
   els.tbody.querySelectorAll('.toggle-facturas').forEach((btn) => {
     btn.addEventListener('click', onToggleFacturas);
+  });
+  els.tbody.querySelectorAll('.toggle-historial').forEach((btn) => {
+    btn.addEventListener('click', onToggleHistorial);
+  });
+  els.tbody.querySelectorAll('.guardar-interaccion').forEach((btn) => {
+    btn.addEventListener('click', onGuardarInteraccion);
   });
   els.tbody.querySelectorAll('.copy-message').forEach((btn) => {
     btn.addEventListener('click', onCopyMessage);
@@ -333,6 +363,96 @@ function onToggleFacturas(e) {
   renderTable();
 }
 
+function historialDetailHtml(r) {
+  const interacciones = state.interaccionesByCliente.get(r.id) || [];
+  const filas = interacciones
+    .map(
+      (i) => `<tr>
+        <td>${new Date(i.created_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+        <td>${escapeHtml(i.usuario)}</td>
+        <td>${CANAL_LABEL[i.canal] || escapeHtml(i.canal)}</td>
+        <td><span class="badge estado-${i.resultado}">${RESULTADO_LABEL[i.resultado] || escapeHtml(i.resultado)}</span></td>
+        <td>${escapeHtml(i.nota || '')}</td>
+      </tr>`
+    )
+    .join('');
+
+  return `
+    <tr class="historial-detail-row">
+      <td colspan="10">
+        <div class="historial-form">
+          <select class="int-canal">
+            <option value="llamado">☎ Llamado</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="email">Email</option>
+            <option value="otro">Otro</option>
+          </select>
+          <select class="int-resultado">
+            <option value="contactado">Contactado</option>
+            <option value="recuperado">Recuperado</option>
+            <option value="descartado">Descartado</option>
+          </select>
+          <input type="text" class="int-nota" placeholder="Nota breve (opcional)" />
+          <button type="button" class="guardar-interaccion" data-id="${r.id}">Guardar</button>
+        </div>
+        ${
+          filas
+            ? `<table class="historial-table">
+                <thead><tr><th>Fecha</th><th>Usuario</th><th>Canal</th><th>Resultado</th><th>Nota</th></tr></thead>
+                <tbody>${filas}</tbody>
+              </table>`
+            : '<div class="none">Todavía no hay interacciones registradas con este cliente.</div>'
+        }
+      </td>
+    </tr>
+  `;
+}
+
+function onToggleHistorial(e) {
+  const id = Number(e.target.dataset.id);
+  if (state.openHistorial.has(id)) {
+    state.openHistorial.delete(id);
+  } else {
+    state.openHistorial.add(id);
+  }
+  renderTable();
+}
+
+async function onGuardarInteraccion(e) {
+  const id = Number(e.target.dataset.id);
+  const row = e.target.closest('.historial-detail-row');
+  const canal = row.querySelector('.int-canal').value;
+  const resultado = row.querySelector('.int-resultado').value;
+  const nota = row.querySelector('.int-nota').value.trim() || null;
+
+  e.target.disabled = true;
+  e.target.textContent = 'Guardando...';
+
+  const { data, error } = await client
+    .from('interacciones')
+    .insert({ cliente_id: id, usuario: state.currentUser, canal, resultado, nota })
+    .select()
+    .single();
+
+  if (error) {
+    alert('No se pudo guardar la interacción: ' + error.message);
+    e.target.disabled = false;
+    e.target.textContent = 'Guardar';
+    return;
+  }
+
+  const list = state.interaccionesByCliente.get(id) || [];
+  list.unshift(data);
+  state.interaccionesByCliente.set(id, list);
+
+  await client.from('clientes').update({ estado_contacto: resultado }).eq('id', id);
+  const rec = state.all.find((r) => r.id === id);
+  if (rec) rec.estado_contacto = resultado;
+
+  renderStats();
+  renderTable();
+}
+
 function contactLinks(r) {
   const links = [];
   if (r.telefono) links.push(`<a href="tel:${r.telefono.replace(/[^0-9+]/g, '')}">☎ ${escapeHtml(r.telefono)}</a>`);
@@ -389,11 +509,16 @@ function rowHtml(r) {
         </select>
         <span class="save-indicator">✓</span>
       </td>
-      <td class="notas-cell">
-        <textarea class="notas-input" placeholder="Notas...">${escapeHtml(r.notas || '')}</textarea>
-      </td>
+      <td class="historial-cell">${historialCell(r)}</td>
     </tr>
   `;
+}
+
+function historialCell(r) {
+  const n = state.interaccionesByCliente.get(r.id)?.length || 0;
+  const abierto = state.openHistorial.has(r.id);
+  const label = n > 0 ? `${abierto ? '▾' : '▸'} ${n} interacci${n === 1 ? 'ón' : 'ones'}` : 'Registrar contacto';
+  return `<button type="button" class="toggle-historial" data-id="${r.id}">${label}</button>`;
 }
 
 function escapeHtml(str) {
@@ -413,16 +538,6 @@ async function onEstadoChange(e) {
   const rec = state.all.find((r) => String(r.id) === String(id));
   if (rec) rec.estado_contacto = value;
   renderStats();
-}
-
-async function onNotasBlur(e) {
-  const tr = e.target.closest('tr');
-  const id = tr.dataset.id;
-  const value = e.target.value;
-  const rec = state.all.find((r) => String(r.id) === String(id));
-  if (rec && rec.notas === value) return;
-  await saveField(id, 'notas', value, e.target);
-  if (rec) rec.notas = value;
 }
 
 async function saveField(id, field, value, targetEl) {

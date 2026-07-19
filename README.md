@@ -45,7 +45,7 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 
 ## Estructura
 
-- `public/index.html` — dashboard principal (filtros, tabla, edición de estado/notas, plantillas de mensaje).
+- `public/index.html` — dashboard principal (filtros, tabla, historial de contacto por cliente, plantillas de mensaje).
 - `public/nueva-factura.html` — carga diaria de facturas por parte de empleados (ver abajo).
 - `public/piezas.html` — análisis de piezas vendidas por cliente/período (ver abajo).
 - `public/assets/config.js` — URL y clave pública (`sb_publishable_...`) de Supabase.
@@ -62,13 +62,11 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 - `scripts/import-facturas.cjs` — importa `facturas_export.json` (detalle histórico de facturación) a Supabase y las vincula a `clientes` por CUIT.
 - `scripts/setup-usuarios.cjs` — crea/actualiza los logins.
 - `scripts/setup-piezas.cjs` — crea/actualiza el catálogo de piezas (idempotente, no duplica si ya existen).
+- `schema_interacciones.sql` — tabla del historial de contacto (ver abajo).
 
 ## Tablas
 
-**`clientes`**: datos de la base unificada (CUIT, ubicación, segmento A-F, facturación total 2025-2026, datos de contacto encontrados) más dos campos de gestión:
-
-- `estado_contacto`: `pendiente` | `contactado` | `recuperado` | `descartado`
-- `notas`: texto libre
+**`clientes`**: datos de la base unificada (CUIT, ubicación, segmento A-F, facturación total 2025-2026, datos de contacto encontrados) más `estado_contacto` (`pendiente` | `contactado` | `recuperado` | `descartado`) — refleja el resultado de la interacción más reciente, se actualiza solo al registrar una en `interacciones`. La columna `notas` sigue existiendo en la base por compatibilidad pero **ya no se usa** desde el dashboard — reemplazada por el historial (ver abajo), porque un campo de texto único se pisaba en cada edición y perdía todo rastro de contactos anteriores.
 
 **`facturas`**: detalle factura por factura (línea, fecha, importe ARS/USD), vinculada a `clientes` vía `cliente_id` cuando el CUIT coincide. `cargado_por` es `null` en las 1.615 filas del import histórico, y tiene el username de quien la cargó a mano desde `/nueva-factura.html`.
 
@@ -79,6 +77,8 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 **Reglas de precio** (lista julio 2026, confirmadas por Víctor): `comercial` = precio de lista sin IVA tal cual; `1era` = precio de lista × 1.21 (+21% IVA); `3era` = precio de lista × 0.50. Administrar: editar `CATALOGO` en `scripts/setup-piezas.cjs` (con el precio base "comercial" por pieza) y correr el script — es un upsert, actualiza precios de las que ya existen y agrega las nuevas, no duplica ni borra.
 
 **`factura_items`**: piezas vendidas en cada factura (`factura_id`, `pieza_id`, `cantidad`, `precio_unitario`). Es lo que permite responder "¿cuántos inodoros cortos comercial le vendimos a tal cliente en tal mes, y por cuánta plata?". `precio_unitario` es una copia del precio en el momento de la venta (no el precio actual del catálogo) — así el monto histórico no se mueve si más adelante actualizamos la lista de precios. Se borra en cascada si se borra la factura.
+
+**`interacciones`**: historial de contacto con cada cliente (`cliente_id`, `usuario`, `canal` — llamado/whatsapp/email/otro —, `resultado` — contactado/recuperado/descartado —, `nota`, `created_at`). Cada registro es un evento nuevo, nunca se pisa uno anterior. Al guardar una interacción, `clientes.estado_contacto` se actualiza automáticamente para que coincida con el `resultado` más reciente — así los filtros del dashboard siguen funcionando sin que nadie tenga que tocar el estado a mano por separado.
 
 ## Carga diaria de facturas (`/nueva-factura.html`)
 
