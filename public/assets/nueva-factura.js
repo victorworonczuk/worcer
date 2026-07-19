@@ -28,6 +28,7 @@ const els = {
   fecha: document.getElementById('fecha-input'),
   numero: document.getElementById('numero-input'),
   ars: document.getElementById('ars-input'),
+  arsHint: document.getElementById('ars-hint'),
   usd: document.getElementById('usd-input'),
   piezasRows: document.getElementById('piezas-rows'),
   addPiezaBtn: document.getElementById('add-pieza-btn'),
@@ -54,7 +55,7 @@ async function init() {
 
   const { data: piezasData, error: piezasError } = await client
     .from('piezas')
-    .select('id, linea, tipo_pieza, variante, calidad')
+    .select('id, linea, tipo_pieza, variante, calidad, precio_ars')
     .eq('activo', true);
   if (!piezasError) {
     state.piezas = piezasData;
@@ -163,7 +164,11 @@ function addPiezaRow() {
       '<option value="">Elegí pieza y calidad...</option>' +
       opciones.map((p) => `<option value="${p.id}">${escapeHtml(piezaLabel(p))}</option>`).join('');
     piezaSelect.disabled = false;
+    recalcularImporteAutomatico();
   });
+  piezaSelect.addEventListener('change', recalcularImporteAutomatico);
+  cantidadInput.addEventListener('input', recalcularImporteAutomatico);
+  removeBtn.addEventListener('click', () => setTimeout(recalcularImporteAutomatico, 0));
 
   row.appendChild(lineaSelect);
   row.appendChild(piezaSelect);
@@ -173,6 +178,35 @@ function addPiezaRow() {
 }
 
 els.addPiezaBtn.addEventListener('click', addPiezaRow);
+
+function recalcularImporteAutomatico() {
+  const items = recolectarPiezasSeleccionadas();
+  if (items.length === 0) {
+    els.arsHint.textContent = '';
+    els.arsHint.className = 'ars-hint';
+    return;
+  }
+
+  let total = 0;
+  let faltaPrecio = false;
+  for (const it of items) {
+    const pieza = state.piezas.find((p) => p.id === it.pieza_id);
+    if (!pieza || pieza.precio_ars == null) {
+      faltaPrecio = true;
+      continue;
+    }
+    total += Number(pieza.precio_ars) * it.cantidad;
+  }
+
+  els.ars.value = total.toFixed(2);
+  if (faltaPrecio) {
+    els.arsHint.textContent = '⚠ Alguna pieza no tiene precio cargado — el total puede estar incompleto. Revisalo.';
+    els.arsHint.className = 'ars-hint warn';
+  } else {
+    els.arsHint.textContent = `Calculado automáticamente desde las piezas cargadas (podés ajustarlo a mano si hace falta).`;
+    els.arsHint.className = 'ars-hint';
+  }
+}
 
 function recolectarPiezasSeleccionadas() {
   const items = [];
@@ -191,6 +225,8 @@ function recolectarPiezasSeleccionadas() {
 function resetPiezasRows() {
   els.piezasRows.innerHTML = '';
   addPiezaRow();
+  els.arsHint.textContent = '';
+  els.arsHint.className = 'ars-hint';
 }
 
 // --- Envío del formulario ---

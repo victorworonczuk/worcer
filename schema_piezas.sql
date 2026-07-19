@@ -2,8 +2,13 @@ create table if not exists public.piezas (
   id bigint generated always as identity primary key,
   linea text not null,
   tipo_pieza text not null,
-  variante text,
+  -- '' (no NULL) cuando no aplica variante: NULL rompe el UNIQUE de abajo porque
+  -- Postgres nunca considera dos NULL como iguales (el ON CONFLICT del seed
+  -- generaba duplicados en vez de actualizar el precio). Ver setup-piezas.cjs.
+  variante text not null default '',
   calidad text not null,
+  precio_ars numeric,
+  precio_actualizado timestamptz,
   activo boolean not null default true,
   created_at timestamptz not null default now(),
   unique (linea, tipo_pieza, variante, calidad)

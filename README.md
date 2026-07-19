@@ -74,7 +74,9 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 
 **`usuarios`**: login de cada persona (`username`, `password_hash` + `salt` con scrypt, `nombre`, `rol`). No accesible vía API pública de Supabase (ver nota de seguridad).
 
-**`piezas`**: catálogo de producto — combinaciones válidas de `linea` (Napoles, Lyon, Lira, Belmond) × `tipo_pieza` × `variante` (los bidet tienen "3 agujeros" / "Monocomando") × `calidad` (`1era` / `comercial` / `3era`). La `3era` solo existe en los inodoros sueltos (Inodoro corto de Napoles, Inodoro largo de Lyon) — los combos Lira y Belmond nunca salen en 3ª, aunque llevan un inodoro adentro. Napoles y Lyon venden cada pieza por separado; Lira y Belmond son un combo único (inodoro largo + depósito) que no se abre en piezas sueltas. Administrar: editar `CATALOGO` en `scripts/setup-piezas.cjs` y correr el script (no borra lo existente, solo agrega combinaciones nuevas).
+**`piezas`**: catálogo de producto — combinaciones válidas de `linea` (Napoles, Lyon, Lira, Belmond, Bachas) × `tipo_pieza` × `variante` (los bidet tienen "3 agujeros" / "Monocomando", mismo precio en ambos) × `calidad` (`1era` / `comercial` / `3era`) × `precio_ars`. La `3era` solo existe en los inodoros sueltos (Inodoro corto de Napoles, Inodoro largo de Lyon) — los combos Lira y Belmond nunca salen en 3ª, aunque llevan un inodoro adentro (confirmado). `variante` es `''` (no `NULL`) cuando no aplica — importante: un `UNIQUE` sobre una columna nullable no funciona como upsert-key en Postgres porque `NULL != NULL`, así que un `ON CONFLICT` con variante `NULL` inserta duplicados en vez de actualizar (nos pasó, ver historial de `schema_piezas.sql`).
+
+**Reglas de precio** (lista julio 2026, confirmadas por Víctor): `comercial` = precio de lista sin IVA tal cual; `1era` = precio de lista × 1.21 (+21% IVA); `3era` = precio de lista × 0.50. Administrar: editar `CATALOGO` en `scripts/setup-piezas.cjs` (con el precio base "comercial" por pieza) y correr el script — es un upsert, actualiza precios de las que ya existen y agrega las nuevas, no duplica ni borra.
 
 **`factura_items`**: piezas vendidas en cada factura (`factura_id`, `pieza_id`, `cantidad`). Es lo que permite responder "¿cuántos inodoros cortos comercial le vendimos a tal cliente en tal mes?". Se borra en cascada si se borra la factura.
 
@@ -84,8 +86,8 @@ Pensada para que el empleado de facturación o de ventas la use día a día:
 
 1. Busca al cliente por nombre o CUIT (autocompleta contra `clientes`; si no lo encuentra, igual puede cargar la factura solo con el nombre escrito, sin vincular a un cliente existente).
 2. Elige la **empresa que factura**: **Cerámica** o **Porcelanas** → se marca automáticamente como Factura A (facturado). **Presupuesto** → se marca automáticamente como Remito X (sin factura). El empleado no tiene que pensar en esa lógica, ya está resuelta por el radio button. (Nota: Cerámica y Porcelanas son dos sociedades/fábricas distintas que producen las mismas líneas de producto — no tiene relación con la calidad de la pieza.)
-3. Completa fecha, N° de comprobante (opcional), importe ARS e importe USD (opcional — si carga los dos, el tipo de cambio se calcula solo).
-4. Opcionalmente, en "Piezas vendidas" agrega una o más filas: elige línea de producto → pieza+calidad (el selector se filtra según la línea elegida) → cantidad. Se pueden agregar tantas filas como piezas distintas incluya la venta.
+3. Completa fecha, N° de comprobante (opcional) e importe USD (opcional — si lo carga junto con el ARS, el tipo de cambio se calcula solo).
+4. En "Piezas vendidas" (opcional) agrega una o más filas: elige línea de producto → pieza+calidad (el selector se filtra según la línea elegida) → cantidad. Se pueden agregar tantas filas como piezas distintas incluya la venta. **El importe ARS se calcula solo** sumando precio × cantidad de las piezas cargadas — el empleado no tiene que tipearlo a mano, aunque el campo sigue siendo editable por si hay que ajustarlo (descuento puntual, etc.). Si no carga ninguna pieza, el importe queda en blanco y hay que completarlo a mano como antes.
 5. Al guardar, queda registrado quién lo cargó (`cargado_por`) y aparece al instante en la lista "Cargadas hoy" de la misma pantalla.
 
 ## Análisis de piezas (`/piezas.html`)

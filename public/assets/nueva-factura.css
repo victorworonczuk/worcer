@@ -88,6 +88,13 @@
 }
 .selected-hint.warn { color: var(--seg-d); }
 
+.ars-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  min-height: 14px;
+}
+.ars-hint.warn { color: var(--seg-d); }
+
 .linea-options {
   display: flex;
   flex-direction: column;
