@@ -19,6 +19,10 @@ create table if not exists public.factura_items (
   factura_id bigint not null references public.facturas(id) on delete cascade,
   pieza_id bigint not null references public.piezas(id),
   cantidad integer not null check (cantidad > 0),
+  -- Precio ARS de la pieza al momento de la venta (copiado de piezas.precio_ars
+  -- al insertar). No se recalcula con el precio actual del catálogo, para que
+  -- el monto histórico no cambie si más adelante actualizamos la lista de precios.
+  precio_unitario numeric,
   created_at timestamptz not null default now()
 );
 

@@ -120,6 +120,13 @@
 .cliente-chip button:hover { color: var(--seg-e); }
 
 .none { color: var(--text-muted); }
+.sub-value { color: var(--text-muted); font-size: 11px; }
+
+.fila-total {
+  background: var(--bg);
+  font-weight: 700;
+}
+.fila-total td { border-top: 2px solid var(--border); }
 
 .resumen {
   display: flex;

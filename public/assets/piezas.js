@@ -26,6 +26,22 @@ const els = {
   tbody: document.getElementById('tbody'),
 };
 
+function fmtMonto(n) {
+  return '$' + Math.round(n).toLocaleString('es-AR');
+}
+
+// Usa el precio guardado al momento de la venta; si un ítem viejo no lo tiene,
+// cae al precio actual del catálogo como aproximación.
+function precioDe(item) {
+  const p = item.precio_unitario ?? (item.piezas ? item.piezas.precio_ars : null);
+  return p == null ? null : Number(p);
+}
+
+function montoDe(item) {
+  const precio = precioDe(item);
+  return precio == null ? 0 : precio * item.cantidad;
+}
+
 function piezaLabel(p) {
   const variante = p.variante ? ` (${p.variante})` : '';
   return `${p.tipo_pieza}${variante} — ${CALIDAD_LABEL[p.calidad] || p.calidad}`;
@@ -130,15 +146,15 @@ els.limpiarBtn.addEventListener('click', () => {
 });
 
 async function buscar() {
-  els.tbody.innerHTML = '<tr><td colspan="6" class="loading">Buscando…</td></tr>';
+  els.tbody.innerHTML = '<tr><td colspan="7" class="loading">Buscando…</td></tr>';
 
   const { data, error } = await client
     .from('factura_items')
-    .select('cantidad, factura_id, pieza_id, facturas(fecha, cliente_id, nombre_facturado), piezas(linea, tipo_pieza, variante, calidad)')
+    .select('cantidad, precio_unitario, factura_id, pieza_id, facturas(fecha, cliente_id, nombre_facturado), piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
     .limit(5000);
 
   if (error) {
-    els.tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Error: ${error.message}</td></tr>`;
+    els.tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Error: ${error.message}</td></tr>`;
     return;
   }
 
@@ -169,10 +185,12 @@ async function buscar() {
 
 function renderResumen(items) {
   const totalPiezas = items.reduce((sum, it) => sum + it.cantidad, 0);
+  const totalMonto = items.reduce((sum, it) => sum + montoDe(it), 0);
   const totalFacturas = new Set(items.map((it) => it.factura_id)).size;
   const totalClientes = new Set(items.map((it) => it.facturas.cliente_id).filter(Boolean)).size;
   els.resumen.innerHTML = `
     <div><strong>${totalPiezas}</strong><span class="label">piezas totales</span></div>
+    <div><strong>${fmtMonto(totalMonto)}</strong><span class="label">monto total</span></div>
     <div><strong>${totalFacturas}</strong><span class="label">facturas involucradas</span></div>
     <div><strong>${totalClientes}</strong><span class="label">clientes distintos</span></div>
   `;
@@ -180,11 +198,11 @@ function renderResumen(items) {
 
 function renderTablaSimple(items) {
   els.thead.innerHTML = `<tr>
-    <th>Cliente</th><th>Línea</th><th>Pieza</th><th>Calidad</th><th>Cantidad total</th><th>N° de facturas</th>
+    <th>Cliente</th><th>Línea</th><th>Pieza</th><th>Calidad</th><th>Cantidad total</th><th>Monto total</th><th>N° de facturas</th>
   </tr>`;
 
   if (items.length === 0) {
-    els.tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No hay piezas cargadas que coincidan con estos filtros.</td></tr>';
+    els.tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay piezas cargadas que coincidan con estos filtros.</td></tr>';
     return;
   }
 
@@ -201,15 +219,17 @@ function renderTablaSimple(items) {
         variante: it.piezas.variante,
         calidad: it.piezas.calidad,
         cantidad: 0,
+        monto: 0,
         facturaIds: new Set(),
       });
     }
     const g = grupos.get(key);
     g.cantidad += it.cantidad;
+    g.monto += montoDe(it);
     g.facturaIds.add(it.factura_id);
   }
 
-  const filas = [...grupos.values()].sort((a, b) => b.cantidad - a.cantidad);
+  const filas = [...grupos.values()].sort((a, b) => b.monto - a.monto);
 
   els.tbody.innerHTML = filas
     .map(
@@ -219,6 +239,7 @@ function renderTablaSimple(items) {
         <td>${escapeHtml(g.tipoPieza)}${g.variante ? ' (' + escapeHtml(g.variante) + ')' : ''}</td>
         <td>${escapeHtml(CALIDAD_LABEL[g.calidad] || g.calidad)}</td>
         <td><strong>${g.cantidad}</strong></td>
+        <td>${fmtMonto(g.monto)}</td>
         <td>${g.facturaIds.size}</td>
       </tr>`
     )
@@ -253,27 +274,50 @@ function renderComparativa(items) {
     }
     const fila = filas.get(piezaKey);
     const clienteId = it.facturas.cliente_id;
-    fila.porCliente.set(clienteId, (fila.porCliente.get(clienteId) || 0) + it.cantidad);
+    const actual = fila.porCliente.get(clienteId) || { cantidad: 0, monto: 0 };
+    actual.cantidad += it.cantidad;
+    actual.monto += montoDe(it);
+    fila.porCliente.set(clienteId, actual);
   }
 
   const filasOrdenadas = [...filas.values()].sort((a, b) => {
-    const totalA = [...a.porCliente.values()].reduce((s, v) => s + v, 0);
-    const totalB = [...b.porCliente.values()].reduce((s, v) => s + v, 0);
+    const totalA = [...a.porCliente.values()].reduce((s, v) => s + v.monto, 0);
+    const totalB = [...b.porCliente.values()].reduce((s, v) => s + v.monto, 0);
     return totalB - totalA;
   });
 
-  els.tbody.innerHTML = filasOrdenadas
+  const celda = (v) => (v && v.cantidad > 0 ? `<strong>${v.cantidad}</strong><br><span class="sub-value">${fmtMonto(v.monto)}</span>` : '<span class="none">—</span>');
+
+  const filasHtml = filasOrdenadas
     .map((fila) => {
-      const cantidades = clientesCols.map((c) => fila.porCliente.get(c.id) || 0);
-      const total = cantidades.reduce((s, v) => s + v, 0);
+      const valores = clientesCols.map((c) => fila.porCliente.get(c.id));
+      const totalCantidad = valores.reduce((s, v) => s + (v ? v.cantidad : 0), 0);
+      const totalMonto = valores.reduce((s, v) => s + (v ? v.monto : 0), 0);
       const piezaTexto = `${fila.linea} — ${fila.tipoPieza}${fila.variante ? ' (' + fila.variante + ')' : ''} — ${CALIDAD_LABEL[fila.calidad] || fila.calidad}`;
       return `<tr>
         <td>${escapeHtml(piezaTexto)}</td>
-        ${cantidades.map((n) => `<td>${n > 0 ? `<strong>${n}</strong>` : '<span class="none">—</span>'}</td>`).join('')}
-        <td><strong>${total}</strong></td>
+        ${valores.map(celda).join('')}
+        <td><strong>${totalCantidad}</strong><br><span class="sub-value">${fmtMonto(totalMonto)}</span></td>
       </tr>`;
     })
     .join('');
+
+  const montoPorCliente = clientesCols.map((c) => {
+    let total = 0;
+    for (const fila of filas.values()) {
+      const v = fila.porCliente.get(c.id);
+      if (v) total += v.monto;
+    }
+    return total;
+  });
+  const granTotal = montoPorCliente.reduce((s, v) => s + v, 0);
+  const filaTotal = `<tr class="fila-total">
+    <td>Total $</td>
+    ${montoPorCliente.map((m) => `<td>${fmtMonto(m)}</td>`).join('')}
+    <td>${fmtMonto(granTotal)}</td>
+  </tr>`;
+
+  els.tbody.innerHTML = filasHtml + filaTotal;
 }
 
 function escapeHtml(str) {

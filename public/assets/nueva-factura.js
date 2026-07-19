@@ -216,7 +216,8 @@ function recolectarPiezasSeleccionadas() {
     const piezaId = piezaSelect.value ? Number(piezaSelect.value) : null;
     const cantidad = cantidadInput.value ? Number(cantidadInput.value) : null;
     if (piezaId && cantidad && cantidad > 0) {
-      items.push({ pieza_id: piezaId, cantidad });
+      const pieza = state.piezas.find((p) => p.id === piezaId);
+      items.push({ pieza_id: piezaId, cantidad, precio_unitario: pieza ? pieza.precio_ars : null });
     }
   });
   return items;

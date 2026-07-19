@@ -78,7 +78,7 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 
 **Reglas de precio** (lista julio 2026, confirmadas por Víctor): `comercial` = precio de lista sin IVA tal cual; `1era` = precio de lista × 1.21 (+21% IVA); `3era` = precio de lista × 0.50. Administrar: editar `CATALOGO` en `scripts/setup-piezas.cjs` (con el precio base "comercial" por pieza) y correr el script — es un upsert, actualiza precios de las que ya existen y agrega las nuevas, no duplica ni borra.
 
-**`factura_items`**: piezas vendidas en cada factura (`factura_id`, `pieza_id`, `cantidad`). Es lo que permite responder "¿cuántos inodoros cortos comercial le vendimos a tal cliente en tal mes?". Se borra en cascada si se borra la factura.
+**`factura_items`**: piezas vendidas en cada factura (`factura_id`, `pieza_id`, `cantidad`, `precio_unitario`). Es lo que permite responder "¿cuántos inodoros cortos comercial le vendimos a tal cliente en tal mes, y por cuánta plata?". `precio_unitario` es una copia del precio en el momento de la venta (no el precio actual del catálogo) — así el monto histórico no se mueve si más adelante actualizamos la lista de precios. Se borra en cascada si se borra la factura.
 
 ## Carga diaria de facturas (`/nueva-factura.html`)
 
@@ -94,8 +94,8 @@ Pensada para que el empleado de facturación o de ventas la use día a día:
 
 Filtra `factura_items` por cliente(s), línea, pieza+calidad y rango de fechas. Responde directamente preguntas tipo "¿cuántos inodoros cortos comercial compró tal cliente en julio?". Solo tiene datos para facturas cargadas desde `/nueva-factura.html` con piezas completadas — el import histórico de 1.615 facturas no tiene desglose por pieza.
 
-- **0 o 1 cliente elegido**: tabla simple agrupada por cliente/pieza/calidad, con cantidad total y N° de facturas.
-- **2 o 3 clientes elegidos** (el filtro de cliente admite selección múltiple, con chips removibles): cambia a una **tabla comparativa** — una fila por pieza+calidad, una columna por cada cliente elegido, para verlos lado a lado.
+- **0 o 1 cliente elegido**: tabla simple agrupada por cliente/pieza/calidad, con cantidad total, **monto total en pesos** y N° de facturas.
+- **2 o 3 clientes elegidos** (el filtro de cliente admite selección múltiple, con chips removibles): cambia a una **tabla comparativa** — una fila por pieza+calidad, una columna por cada cliente elegido (cantidad + monto en cada celda), fila de totales en pesos al final.
 
 ## Correr en local
 
