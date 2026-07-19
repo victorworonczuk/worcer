@@ -23,11 +23,11 @@
   <main class="piezas-main">
     <div class="panel">
       <div class="filters">
-        <div class="field-inline">
-          <label for="f-cliente">Cliente</label>
+        <div class="field-inline field-cliente">
+          <label for="f-cliente">Cliente <span class="opcional-tag">(elegí 2 o 3 para comparar)</span></label>
           <input type="text" id="f-cliente" autocomplete="off" placeholder="Todos los clientes..." />
           <div id="cliente-suggestions" class="suggestions"></div>
-          <input type="hidden" id="f-cliente-id" />
+          <div id="cliente-chips" class="cliente-chips"></div>
         </div>
         <div class="field-inline">
           <label for="f-linea">Línea</label>
@@ -57,7 +57,7 @@
 
       <div class="table-wrap">
         <table>
-          <thead>
+          <thead id="thead">
             <tr>
               <th>Cliente</th>
               <th>Línea</th>

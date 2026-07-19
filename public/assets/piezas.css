@@ -19,6 +19,31 @@
   gap: 4px;
   position: relative;
 }
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 20;
+  display: none;
+}
+.suggestions.show { display: block; }
+.suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover { background: var(--bg); }
+.suggestion-item .cuit { color: var(--text-muted); font-size: 11px; }
+
 .field-inline label {
   font-size: 12px;
   font-weight: 600;
@@ -55,6 +80,46 @@
   color: var(--text-muted);
 }
 .limpiar-btn:hover { background: var(--bg); }
+
+.field-cliente {
+  min-width: 220px;
+}
+.opcional-tag {
+  font-weight: 400;
+  color: var(--text-muted);
+  text-transform: none;
+  font-size: 11px;
+}
+
+.cliente-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.cliente-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #eef1ff;
+  color: var(--primary);
+  border-radius: 999px;
+  padding: 4px 6px 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.cliente-chip button {
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.cliente-chip button:hover { color: var(--seg-e); }
+
+.none { color: var(--text-muted); }
 
 .resumen {
   display: flex;

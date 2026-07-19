@@ -92,7 +92,10 @@ Pensada para que el empleado de facturación o de ventas la use día a día:
 
 ## Análisis de piezas (`/piezas.html`)
 
-Filtra `factura_items` por cliente, línea, pieza+calidad y rango de fechas, y muestra la cantidad total vendida agrupada por cliente/pieza/calidad (con cantidad de facturas involucradas). Responde directamente preguntas tipo "¿cuántos inodoros cortos comercial compró tal cliente en julio?". Solo tiene datos para facturas cargadas desde `/nueva-factura.html` con piezas completadas — el import histórico de 1.615 facturas no tiene desglose por pieza.
+Filtra `factura_items` por cliente(s), línea, pieza+calidad y rango de fechas. Responde directamente preguntas tipo "¿cuántos inodoros cortos comercial compró tal cliente en julio?". Solo tiene datos para facturas cargadas desde `/nueva-factura.html` con piezas completadas — el import histórico de 1.615 facturas no tiene desglose por pieza.
+
+- **0 o 1 cliente elegido**: tabla simple agrupada por cliente/pieza/calidad, con cantidad total y N° de facturas.
+- **2 o 3 clientes elegidos** (el filtro de cliente admite selección múltiple, con chips removibles): cambia a una **tabla comparativa** — una fila por pieza+calidad, una columna por cada cliente elegido, para verlos lado a lado.
 
 ## Correr en local
 

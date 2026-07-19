@@ -4,18 +4,17 @@ const CALIDAD_LABEL = { '1era': '1ª', comercial: 'Comercial', '3era': '3ª' };
 
 const state = {
   clientes: [],
-  clienteSeleccionado: null,
+  clientesSeleccionados: [],
   piezas: [],
   piezasPorLinea: new Map(),
   lineasDisponibles: [],
-  itemsCrudos: [],
 };
 
 const els = {
   userSubtitle: document.getElementById('user-subtitle'),
   clienteInput: document.getElementById('f-cliente'),
-  clienteId: document.getElementById('f-cliente-id'),
   suggestions: document.getElementById('cliente-suggestions'),
+  clienteChips: document.getElementById('cliente-chips'),
   linea: document.getElementById('f-linea'),
   pieza: document.getElementById('f-pieza'),
   desde: document.getElementById('f-desde'),
@@ -23,6 +22,7 @@ const els = {
   buscarBtn: document.getElementById('buscar-btn'),
   limpiarBtn: document.getElementById('limpiar-btn'),
   resumen: document.getElementById('resumen'),
+  thead: document.getElementById('thead'),
   tbody: document.getElementById('tbody'),
 };
 
@@ -57,17 +57,16 @@ async function init() {
   buscar();
 }
 
-// --- Autocompletar cliente ---
+// --- Autocompletar / selección múltiple de cliente ---
 els.clienteInput.addEventListener('input', () => {
-  state.clienteSeleccionado = null;
-  els.clienteId.value = '';
-
   const q = els.clienteInput.value.trim().toLowerCase();
   if (q.length < 2) {
     els.suggestions.classList.remove('show');
     return;
   }
+  const yaElegidos = new Set(state.clientesSeleccionados.map((c) => c.id));
   const matches = state.clientes
+    .filter((c) => !yaElegidos.has(c.id))
     .filter((c) => (c.nombre || '').toLowerCase().includes(q) || (c.cuit || '').toLowerCase().includes(q))
     .slice(0, 8);
   if (matches.length === 0) {
@@ -82,9 +81,12 @@ els.clienteInput.addEventListener('input', () => {
     item.addEventListener('click', () => {
       const id = Number(item.dataset.id);
       const c = state.clientes.find((x) => x.id === id);
-      state.clienteSeleccionado = c;
-      els.clienteId.value = c.id;
-      els.clienteInput.value = c.nombre;
+      if (c && !state.clientesSeleccionados.some((s) => s.id === id)) {
+        state.clientesSeleccionados.push(c);
+        renderChips();
+        buscar();
+      }
+      els.clienteInput.value = '';
       els.suggestions.classList.remove('show');
     });
   });
@@ -95,6 +97,20 @@ document.addEventListener('click', (e) => {
   }
 });
 
+function renderChips() {
+  els.clienteChips.innerHTML = state.clientesSeleccionados
+    .map((c) => `<span class="cliente-chip">${escapeHtml(c.nombre)}<button type="button" data-id="${c.id}" title="Quitar">✕</button></span>`)
+    .join('');
+  els.clienteChips.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = Number(btn.dataset.id);
+      state.clientesSeleccionados = state.clientesSeleccionados.filter((c) => c.id !== id);
+      renderChips();
+      buscar();
+    });
+  });
+}
+
 // --- Filtro de línea -> pieza ---
 els.linea.addEventListener('change', () => {
   const opciones = state.piezasPorLinea.get(els.linea.value) || state.piezas;
@@ -104,8 +120,8 @@ els.linea.addEventListener('change', () => {
 els.buscarBtn.addEventListener('click', buscar);
 els.limpiarBtn.addEventListener('click', () => {
   els.clienteInput.value = '';
-  els.clienteId.value = '';
-  state.clienteSeleccionado = null;
+  state.clientesSeleccionados = [];
+  renderChips();
   els.linea.value = '';
   els.pieza.innerHTML = '<option value="">Todas</option>';
   els.desde.value = '';
@@ -126,7 +142,7 @@ async function buscar() {
     return;
   }
 
-  const clienteIdFiltro = els.clienteId.value ? Number(els.clienteId.value) : null;
+  const idsSeleccionados = new Set(state.clientesSeleccionados.map((c) => c.id));
   const lineaFiltro = els.linea.value || null;
   const piezaIdFiltro = els.pieza.value ? Number(els.pieza.value) : null;
   const desde = els.desde.value || null;
@@ -134,7 +150,7 @@ async function buscar() {
 
   const filtrados = data.filter((item) => {
     if (!item.facturas || !item.piezas) return false;
-    if (clienteIdFiltro && item.facturas.cliente_id !== clienteIdFiltro) return false;
+    if (idsSeleccionados.size > 0 && !idsSeleccionados.has(item.facturas.cliente_id)) return false;
     if (lineaFiltro && item.piezas.linea !== lineaFiltro) return false;
     if (piezaIdFiltro && item.pieza_id !== piezaIdFiltro) return false;
     if (desde && item.facturas.fecha < desde) return false;
@@ -143,7 +159,12 @@ async function buscar() {
   });
 
   renderResumen(filtrados);
-  renderTabla(filtrados);
+
+  if (state.clientesSeleccionados.length >= 2) {
+    renderComparativa(filtrados);
+  } else {
+    renderTablaSimple(filtrados);
+  }
 }
 
 function renderResumen(items) {
@@ -157,7 +178,11 @@ function renderResumen(items) {
   `;
 }
 
-function renderTabla(items) {
+function renderTablaSimple(items) {
+  els.thead.innerHTML = `<tr>
+    <th>Cliente</th><th>Línea</th><th>Pieza</th><th>Calidad</th><th>Cantidad total</th><th>N° de facturas</th>
+  </tr>`;
+
   if (items.length === 0) {
     els.tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No hay piezas cargadas que coincidan con estos filtros.</td></tr>';
     return;
@@ -197,6 +222,57 @@ function renderTabla(items) {
         <td>${g.facturaIds.size}</td>
       </tr>`
     )
+    .join('');
+}
+
+function renderComparativa(items) {
+  const clientesCols = state.clientesSeleccionados;
+
+  els.thead.innerHTML = `<tr>
+    <th>Pieza</th>
+    ${clientesCols.map((c) => `<th>${escapeHtml(c.nombre)}</th>`).join('')}
+    <th>Total</th>
+  </tr>`;
+
+  if (items.length === 0) {
+    els.tbody.innerHTML = `<tr><td colspan="${clientesCols.length + 2}" class="empty-state">No hay piezas cargadas que coincidan con estos filtros para los clientes elegidos.</td></tr>`;
+    return;
+  }
+
+  const filas = new Map();
+  for (const it of items) {
+    const piezaKey = [it.piezas.linea, it.piezas.tipo_pieza, it.piezas.variante || '', it.piezas.calidad].join('|');
+    if (!filas.has(piezaKey)) {
+      filas.set(piezaKey, {
+        linea: it.piezas.linea,
+        tipoPieza: it.piezas.tipo_pieza,
+        variante: it.piezas.variante,
+        calidad: it.piezas.calidad,
+        porCliente: new Map(),
+      });
+    }
+    const fila = filas.get(piezaKey);
+    const clienteId = it.facturas.cliente_id;
+    fila.porCliente.set(clienteId, (fila.porCliente.get(clienteId) || 0) + it.cantidad);
+  }
+
+  const filasOrdenadas = [...filas.values()].sort((a, b) => {
+    const totalA = [...a.porCliente.values()].reduce((s, v) => s + v, 0);
+    const totalB = [...b.porCliente.values()].reduce((s, v) => s + v, 0);
+    return totalB - totalA;
+  });
+
+  els.tbody.innerHTML = filasOrdenadas
+    .map((fila) => {
+      const cantidades = clientesCols.map((c) => fila.porCliente.get(c.id) || 0);
+      const total = cantidades.reduce((s, v) => s + v, 0);
+      const piezaTexto = `${fila.linea} — ${fila.tipoPieza}${fila.variante ? ' (' + fila.variante + ')' : ''} — ${CALIDAD_LABEL[fila.calidad] || fila.calidad}`;
+      return `<tr>
+        <td>${escapeHtml(piezaTexto)}</td>
+        ${cantidades.map((n) => `<td>${n > 0 ? `<strong>${n}</strong>` : '<span class="none">—</span>'}</td>`).join('')}
+        <td><strong>${total}</strong></td>
+      </tr>`;
+    })
     .join('');
 }
 
