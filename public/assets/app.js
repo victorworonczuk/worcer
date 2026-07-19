@@ -9,6 +9,14 @@ const state = {
   filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '' },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
+  currentUser: null,
+  currentUserRol: null,
+};
+
+const FROM_BY_ROL = {
+  ventas: 'ventas@porcelanasalberti.com.ar',
+  facturacion: 'administracion@porcelanasalberti.com.ar',
+  admin: 'ventas@porcelanasalberti.com.ar',
 };
 
 const els = {
@@ -38,6 +46,80 @@ function buildMessage(r) {
   const letter = (r.segmento || 'F').trim()[0].toUpperCase();
   const fn = MESSAGE_TEMPLATES[letter] || MESSAGE_TEMPLATES.F;
   return fn(r.nombre || 'estimado cliente');
+}
+
+const EMAIL_TEMPLATES = {
+  A: (nombre) => ({
+    subject: 'Gracias por seguir eligiendo Worcer',
+    body: `Hola ${nombre},<br><br>Queríamos agradecerte que sigas confiando en Worcer para tus compras de sanitarios y juegos de baño de loza.<br><br>Cualquier cosa que necesites, estamos para ayudarte.`,
+  }),
+  B: (nombre) => ({
+    subject: '¿Va todo bien? Hace un tiempo no tenemos pedidos tuyos',
+    body: `Hola ${nombre},<br><br>Notamos que hace un par de meses no nos hacés pedidos — ¿va todo bien con el stock?<br><br>Te dejamos la lista de precios actualizada por si necesitás algo. Cualquier consulta, escribinos.`,
+  }),
+  C: (nombre) => ({
+    subject: 'Queremos saber cómo podemos ayudarte',
+    body: `Hola ${nombre},<br><br>Hace unos meses que no pasás pedido y queríamos saber si hay algo que podamos mejorar de nuestro lado — precio, plazos de entrega, algo puntual.<br><br>Contanos y vemos cómo ayudarte.`,
+  }),
+  D: (nombre) => ({
+    subject: 'Volvamos a trabajar juntos — condiciones especiales',
+    body: `Hola ${nombre},<br><br>Hace un tiempo que no trabajamos juntos y queríamos reconectar. Tenemos condiciones especiales para retomar el pedido.<br><br>¿Tenés unos minutos esta semana para charlar?`,
+  }),
+  E: (nombre) => ({
+    subject: 'Actualizamos nuestro catálogo — ¿retomamos?',
+    body: `Hola ${nombre},<br><br>Hace bastante que no tenemos novedades tuyas. Actualizamos precios y catálogo de nuestras dos líneas (económica y media).<br><br>Te dejamos la lista actualizada por si querés retomar pedidos con nosotros.`,
+  }),
+  F: (nombre) => ({
+    subject: 'Worcer — fabricantes de sanitarios, reconectemos',
+    body: `Hola,<br><br>Somos Worcer, fabricamos sanitarios y juegos de baño de loza. Facturamos con ${nombre} hace un tiempo y queríamos reconectar.<br><br>¿Siguen comprando para el rubro? Nos encantaría retomar el contacto.`,
+  }),
+};
+
+function buildEmail(r) {
+  const letter = (r.segmento || 'F').trim()[0].toUpperCase();
+  const fn = EMAIL_TEMPLATES[letter] || EMAIL_TEMPLATES.F;
+  const { subject, body } = fn(r.nombre || 'estimado cliente');
+  const html = `<div style="font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:520px;color:#1c2126;line-height:1.6;">
+    <p style="font-size:20px;font-weight:700;margin:0 0 16px;">Worcer</p>
+    <p>${body}</p>
+    <p style="margin-top:24px;color:#6b7280;font-size:13px;">Equipo Worcer · Sanitarios y juegos de baño de loza</p>
+  </div>`;
+  return { subject, html };
+}
+
+async function onSendEmail(e) {
+  const id = Number(e.target.dataset.id);
+  const rec = state.all.find((r) => r.id === id);
+  if (!rec || !rec.email) return;
+
+  const { subject, html } = buildEmail(rec);
+  const from = FROM_BY_ROL[state.currentUserRol] || FROM_BY_ROL.admin;
+
+  const confirmed = confirm(`¿Enviar email a ${rec.nombre} <${rec.email}>?\n\nAsunto: ${subject}\nDesde: ${from}`);
+  if (!confirmed) return;
+
+  const original = e.target.textContent;
+  e.target.disabled = true;
+  e.target.textContent = 'Enviando...';
+
+  try {
+    const res = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: rec.email, subject, html, from }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error desconocido');
+    e.target.textContent = '✓ Enviado';
+    setTimeout(() => {
+      e.target.textContent = original;
+      e.target.disabled = false;
+    }, 2000);
+  } catch (err) {
+    alert('No se pudo enviar el email: ' + err.message);
+    e.target.textContent = original;
+    e.target.disabled = false;
+  }
 }
 
 function segClass(segmento) {
@@ -191,6 +273,9 @@ function renderTable() {
   els.tbody.querySelectorAll('.copy-message').forEach((btn) => {
     btn.addEventListener('click', onCopyMessage);
   });
+  els.tbody.querySelectorAll('.send-email').forEach((btn) => {
+    btn.addEventListener('click', onSendEmail);
+  });
 }
 
 async function onCopyMessage(e) {
@@ -256,7 +341,10 @@ function contactLinks(r) {
     const text = encodeURIComponent(buildMessage(r));
     links.push(`<a href="https://wa.me/${num}?text=${text}" target="_blank" rel="noopener">WhatsApp</a>`);
   }
-  if (r.email) links.push(`<a href="mailto:${r.email}">${escapeHtml(r.email)}</a>`);
+  if (r.email) {
+    links.push(`<a href="mailto:${r.email}">${escapeHtml(r.email)}</a>`);
+    links.push(`<button type="button" class="send-email" data-id="${r.id}">✉ Enviar email</button>`);
+  }
   if (r.web) links.push(`<a href="${r.web.startsWith('http') ? r.web : 'https://' + r.web}" target="_blank" rel="noopener">Web/redes</a>`);
   links.push(`<button type="button" class="copy-message" data-id="${r.id}">📋 Copiar mensaje</button>`);
   if (links.length > 1) return links.join('<br>');
@@ -385,8 +473,10 @@ async function loadUser() {
     const res = await fetch('/api/me');
     const me = await res.json();
     if (me.user) {
+      state.currentUser = me.user;
+      state.currentUserRol = me.rol;
       const subtitle = document.getElementById('user-subtitle');
-      subtitle.textContent = `Sesión: ${me.user} · Base histórica y activa unificada — 873 registros`;
+      subtitle.textContent = `Sesión: ${me.nombre || me.user} · Base histórica y activa unificada — 873 registros`;
     }
   } catch (err) {
     console.error('No se pudo obtener el usuario', err);

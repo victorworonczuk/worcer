@@ -41,7 +41,7 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 
 - `SESSION_SECRET` — valor aleatorio usado para firmar la cookie de sesión (generar con `openssl rand -hex 24`).
 - `DATABASE_URL` — connection string de Postgres. **Ahora es obligatoria en producción** (antes era opcional): la usan los scripts de import y, sobre todo, `/api/login` para validar usuarios contra la tabla `usuarios`.
-- `RESEND_API_KEY` — para cuando se implemente el envío de emails de la campaña de recupero (todavía no hay ninguna ruta que la use).
+- `RESEND_API_KEY` — usada por `/api/send-email`. **El dominio `porcelanasalberti.com.ar` todavía no está verificado en Resend** ([resend.com/domains](https://resend.com/domains)) — hasta que se verifique, Resend rechaza cualquier envío desde ese dominio con `403 domain not verified`.
 
 ## Estructura
 
@@ -53,6 +53,7 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 - `public/assets/style.css` / `nueva-factura.css` — estilos.
 - `app/page.js` — redirige `/` a `/index.html`.
 - `app/login/page.js`, `app/api/login`, `app/api/logout`, `app/api/me` — autenticación (ver más arriba).
+- `app/api/send-email/route.js` — envía un email vía Resend. Requiere sesión válida, y el `from` tiene que ser `ventas@porcelanasalberti.com.ar` o `administracion@porcelanasalberti.com.ar` (whitelist server-side, no se puede mandar desde cualquier dirección).
 - `proxy.js` — protege todo el sitio salvo `/login` y `/api/login`.
 - `schema.sql` / `schema_facturas.sql` / `schema_usuarios.sql` — definición de las tablas.
 - `scripts/import-data.cjs` — importa `clientes_export.json` (base unificada) a Supabase.
@@ -95,8 +96,22 @@ node scripts/import-facturas.cjs   # BORRA y reinserta toda la tabla facturas (i
 node scripts/setup-usuarios.cjs    # crea/actualiza usuarios, no borra nada
 ```
 
+## Envío de emails (Resend)
+
+Cada cliente con email cargado tiene un botón **"✉ Enviar email"** en el dashboard (`public/index.html`). Al hacer clic:
+
+1. Arma el asunto + cuerpo según el segmento del cliente (`EMAIL_TEMPLATES` en `app.js`, mismo criterio que los mensajes de WhatsApp).
+2. Elige el remitente según el rol del usuario logueado (`ventas` → `ventas@...`, `facturacion`/`admin` → `administracion@...`).
+3. Pide confirmación (`confirm()` del navegador) mostrando destinatario, asunto y remitente antes de mandar nada.
+4. Llama a `/api/send-email`, que valida la sesión, valida que el remitente esté en la whitelist, y llama a la API de Resend server-side (la `RESEND_API_KEY` nunca se expone al navegador).
+
+**Bloqueante actual**: el dominio `porcelanasalberti.com.ar` no está verificado en Resend, así que ningún envío real funciona todavía (se confirmó con un test real — Resend devuelve `403 domain not verified`). Falta: entrar a [resend.com/domains](https://resend.com/domains), agregar el dominio, y cargar los registros DNS que da Resend en el proveedor donde está contratado el dominio.
+
+No hay envío masivo/bulk todavía — es un botón por cliente, a propósito, para no arriesgar mandar de más antes de tener el dominio verificado y probado con casos reales.
+
 ## Pendiente
 
+- Verificar `porcelanasalberti.com.ar` en Resend (ver arriba) — sin esto, el botón de email no manda nada a clientes reales.
 - Los segmentos A-E (312 clientes activos 2025-2026) tienen los campos de contacto vacíos a propósito — Worcer los tiene que exportar de su sistema de facturación y cargarlos acá.
-- Endpoint de envío de emails (Resend) — todavía no implementado.
 - RLS real (con Supabase Auth) en `clientes` y `facturas` si se quiere cerrar el acceso directo a esas tablas también.
+- Envío masivo/bulk por segmento, si hace falta una vez que el envío individual esté probado con el dominio verificado.
