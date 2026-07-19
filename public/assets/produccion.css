@@ -36,6 +36,8 @@ table.pivot td.zero { color: var(--text-muted); }
 table.pivot .col-total { border-left: 2px solid var(--border); font-weight: 600; }
 table.pivot .fila-total td.col-grupo { background: var(--bg); }
 
+table.pivot td.stock-neg { color: var(--seg-e, #c0392b); font-weight: 600; }
+
 .nota-pie {
   padding: 10px 16px 16px;
   margin: 0;

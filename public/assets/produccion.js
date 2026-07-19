@@ -41,7 +41,7 @@ async function init() {
   for (let from = 0; ; from += PAGE) {
     const { data: page, error } = await client
       .from('produccion')
-      .select('fecha, tipo, cantidad, piezas(linea, tipo_pieza, variante, calidad)')
+      .select('fecha, tipo, cantidad, piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
       .order('fecha', { ascending: true })
       .range(from, from + PAGE - 1);
     if (error) {
@@ -58,6 +58,7 @@ async function init() {
       fecha: r.fecha, tipo: r.tipo, cantidad: r.cantidad,
       linea: r.piezas.linea, tipo_pieza: r.piezas.tipo_pieza,
       variante: r.piezas.variante, calidad: r.piezas.calidad,
+      precio: r.piezas.precio_ars != null ? Number(r.piezas.precio_ars) : null,
     }));
 
   state.lineas = [...new Set(state.rows.map((r) => r.linea))].sort();
@@ -97,7 +98,8 @@ function grupoDe(r) {
 function render() {
   const items = filtrar();
   renderResumen(items);
-  renderPivot(items);
+  if (state.tipo === 'stock') renderStock(items);
+  else renderPivot(items);
 }
 
 function renderResumen(items) {
@@ -170,6 +172,70 @@ function renderPivot(items) {
   } else {
     els.notaPie.textContent = '';
   }
+}
+
+function fmtPesos(n) { return '$' + Math.round(n).toLocaleString('es-AR'); }
+
+function renderStock(items) {
+  // Agrupa TODOS los tipos (prod/venta/rotura) por grupo, y calcula derivados.
+  const grupos = new Map();
+  let faltaPrecio = false;
+  for (const r of items) {
+    const g = grupoDe(r);
+    if (!grupos.has(g.key)) grupos.set(g.key, { label: g.label, produccion: 0, venta: 0, rotura: 0, valorProd: 0, valorRoto: 0 });
+    const it = grupos.get(g.key);
+    it[r.tipo] += r.cantidad;
+    if (r.precio == null) { if (r.tipo !== 'venta') faltaPrecio = true; }
+    else {
+      if (r.tipo === 'produccion') it.valorProd += r.precio * r.cantidad;
+      if (r.tipo === 'rotura') it.valorRoto += r.precio * r.cantidad;
+    }
+  }
+
+  const filas = [...grupos.values()].map((g) => ({
+    ...g,
+    stock: g.produccion - g.venta - g.rotura,
+    pctRotura: g.produccion > 0 ? (g.rotura / g.produccion) * 100 : 0,
+  })).sort((a, b) => b.produccion - a.produccion);
+
+  els.thead.innerHTML = `<tr>
+    <th class="col-grupo">${els.agrupar.value === 'linea' ? 'Línea' : 'Pieza'}</th>
+    <th>Producción</th><th>Venta</th><th>Rotura</th>
+    <th>Stock estim.</th><th>% Rotura</th>
+    <th>Valor producido</th><th>Pérdida rotura</th>
+  </tr>`;
+
+  if (filas.length === 0) {
+    els.tbody.innerHTML = '<tr><td class="empty-state" colspan="8">No hay datos con estos filtros.</td></tr>';
+    els.notaPie.textContent = '';
+    return;
+  }
+
+  const t = filas.reduce((a, f) => ({
+    produccion: a.produccion + f.produccion, venta: a.venta + f.venta, rotura: a.rotura + f.rotura,
+    stock: a.stock + f.stock, valorProd: a.valorProd + f.valorProd, valorRoto: a.valorRoto + f.valorRoto,
+  }), { produccion: 0, venta: 0, rotura: 0, stock: 0, valorProd: 0, valorRoto: 0 });
+  const pctRoturaTotal = t.produccion > 0 ? (t.rotura / t.produccion) * 100 : 0;
+
+  els.tbody.innerHTML = filas.map((f) => `<tr>
+    <td class="col-grupo">${escapeHtml(f.label)}</td>
+    <td>${fmt(f.produccion)}</td>
+    <td>${fmt(f.venta)}</td>
+    <td>${fmt(f.rotura)}</td>
+    <td class="${f.stock < 0 ? 'stock-neg' : ''}"><strong>${fmt(f.stock)}</strong></td>
+    <td>${f.pctRotura.toFixed(1)}%</td>
+    <td>${f.valorProd ? fmtPesos(f.valorProd) : '·'}</td>
+    <td class="${f.valorRoto ? 'stock-neg' : ''}">${f.valorRoto ? fmtPesos(f.valorRoto) : '·'}</td>
+  </tr>`).join('') + `<tr class="fila-total">
+    <td class="col-grupo">TOTAL</td>
+    <td>${fmt(t.produccion)}</td><td>${fmt(t.venta)}</td><td>${fmt(t.rotura)}</td>
+    <td>${fmt(t.stock)}</td><td>${pctRoturaTotal.toFixed(1)}%</td>
+    <td>${fmtPesos(t.valorProd)}</td><td>${fmtPesos(t.valorRoto)}</td>
+  </tr>`;
+
+  const notas = ['Stock estimado = Producción − Venta − Rotura (acumulado del período filtrado). La "venta" es la de la planilla de producción, no la facturación.'];
+  if (faltaPrecio) notas.push('Algunas piezas de 3ª calidad no tienen precio cargado — su valorización queda sin contar.');
+  els.notaPie.textContent = notas.join(' ');
 }
 
 // --- Eventos ---
