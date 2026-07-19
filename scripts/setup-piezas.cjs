@@ -24,8 +24,9 @@ const CATALOGO = [
   { linea: 'Lyon', tipo_pieza: 'Bidet', variante: '3 agujeros', calidades: ['1era', 'comercial'] },
   { linea: 'Lyon', tipo_pieza: 'Bidet', variante: 'Monocomando', calidades: ['1era', 'comercial'] },
 
-  { linea: 'Lira', tipo_pieza: 'Combo (inodoro largo + depósito)', variante: null, calidades: ['1era', 'comercial', '3era'] },
-  { linea: 'Belmond', tipo_pieza: 'Combo (inodoro largo + depósito)', variante: null, calidades: ['1era', 'comercial', '3era'] },
+  // Lira y Belmond NO tienen 3era calidad (confirmado por Víctor) — solo 1era y comercial.
+  { linea: 'Lira', tipo_pieza: 'Combo (inodoro largo + depósito)', variante: null, calidades: ['1era', 'comercial'] },
+  { linea: 'Belmond', tipo_pieza: 'Combo (inodoro largo + depósito)', variante: null, calidades: ['1era', 'comercial'] },
 ];
 
 async function main() {

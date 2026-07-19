@@ -74,7 +74,7 @@ Ver `.env.example`. En local van en `.env.local` (gitignoreado). En producción 
 
 **`usuarios`**: login de cada persona (`username`, `password_hash` + `salt` con scrypt, `nombre`, `rol`). No accesible vía API pública de Supabase (ver nota de seguridad).
 
-**`piezas`**: catálogo de producto — combinaciones válidas de `linea` (Napoles, Lyon, Lira, Belmond) × `tipo_pieza` × `variante` (los bidet tienen "3 agujeros" / "Monocomando") × `calidad` (`1era` / `comercial` / `3era`, esta última solo en piezas que incluyen un inodoro). Napoles y Lyon venden cada pieza por separado; Lira y Belmond son un combo único (inodoro largo + depósito) que no se abre en piezas sueltas. Administrar: editar `CATALOGO` en `scripts/setup-piezas.cjs` y correr el script (no borra lo existente, solo agrega combinaciones nuevas).
+**`piezas`**: catálogo de producto — combinaciones válidas de `linea` (Napoles, Lyon, Lira, Belmond) × `tipo_pieza` × `variante` (los bidet tienen "3 agujeros" / "Monocomando") × `calidad` (`1era` / `comercial` / `3era`). La `3era` solo existe en los inodoros sueltos (Inodoro corto de Napoles, Inodoro largo de Lyon) — los combos Lira y Belmond nunca salen en 3ª, aunque llevan un inodoro adentro. Napoles y Lyon venden cada pieza por separado; Lira y Belmond son un combo único (inodoro largo + depósito) que no se abre en piezas sueltas. Administrar: editar `CATALOGO` en `scripts/setup-piezas.cjs` y correr el script (no borra lo existente, solo agrega combinaciones nuevas).
 
 **`factura_items`**: piezas vendidas en cada factura (`factura_id`, `pieza_id`, `cantidad`). Es lo que permite responder "¿cuántos inodoros cortos comercial le vendimos a tal cliente en tal mes?". Se borra en cascada si se borra la factura.
 
@@ -123,7 +123,6 @@ No hay envío masivo/bulk todavía — es un botón por cliente, a propósito, p
 
 ## Pendiente
 
-- Confirmar con Víctor si los combos Lira/Belmond realmente pueden salir en 3ª calidad (se habilitó por tener un inodoro adentro, pero es un supuesto sin confirmar explícitamente) — corregir en `scripts/setup-piezas.cjs` si no.
 - El análisis de piezas es solo hacia adelante: no hay forma de reconstruir qué piezas específicas componían las 1.615 facturas históricas importadas del Excel (esa planilla no tenía ese nivel de detalle).
 - Verificar `porcelanasalberti.com.ar` en Resend (ver arriba) — sin esto, el botón de email no manda nada a clientes reales.
 - Los segmentos A-E (312 clientes activos 2025-2026) tienen los campos de contacto vacíos a propósito — Worcer los tiene que exportar de su sistema de facturación y cargarlos acá.
