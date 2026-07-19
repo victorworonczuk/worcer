@@ -221,6 +221,18 @@ tbody tr:hover {
   color: var(--text-muted);
   font-size: 12px;
 }
+.nombre-cell .delete-cliente {
+  display: block;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.nombre-cell .delete-cliente:hover { color: var(--seg-e); text-decoration: underline; }
+.nombre-cell .delete-cliente:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .badge {
   display: inline-block;

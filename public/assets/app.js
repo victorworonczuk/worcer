@@ -327,6 +327,9 @@ function renderTable() {
   els.tbody.querySelectorAll('.send-email').forEach((btn) => {
     btn.addEventListener('click', onSendEmail);
   });
+  els.tbody.querySelectorAll('.delete-cliente').forEach((btn) => {
+    btn.addEventListener('click', onDeleteCliente);
+  });
 }
 
 async function onCopyMessage(e) {
@@ -538,6 +541,36 @@ async function onSubmitNuevoCliente(e) {
   closeNuevoClienteModal();
 }
 
+async function onDeleteCliente(e) {
+  const id = Number(e.target.dataset.id);
+  const rec = state.all.find((r) => r.id === id);
+  if (!rec) return;
+
+  const confirmed = confirm(`¿Eliminar a "${rec.nombre}" de la base? Esta acción no se puede deshacer.`);
+  if (!confirmed) return;
+
+  e.target.disabled = true;
+
+  const { error } = await client.from('clientes').delete().eq('id', id);
+
+  if (error) {
+    e.target.disabled = false;
+    if (error.code === '23503') {
+      alert(`No se puede eliminar a "${rec.nombre}" porque tiene facturas cargadas. Primero habría que borrar esas facturas.`);
+    } else {
+      alert('No se pudo eliminar: ' + error.message);
+    }
+    return;
+  }
+
+  state.all = state.all.filter((r) => r.id !== id);
+  state.facturasByCliente.delete(id);
+  state.interaccionesByCliente.delete(id);
+  populateFilterOptions();
+  renderStats();
+  applyFilters();
+}
+
 function contactLinks(r) {
   const links = [];
   if (r.telefono) links.push(`<a href="tel:${r.telefono.replace(/[^0-9+]/g, '')}">☎ ${escapeHtml(r.telefono)}</a>`);
@@ -577,6 +610,7 @@ function rowHtml(r) {
       <td class="nombre-cell">
         <strong>${escapeHtml(r.nombre)}</strong>
         <span class="cuit">${escapeHtml(r.cuit || '')}</span>
+        <button type="button" class="delete-cliente" data-id="${r.id}" title="Eliminar cliente">🗑 Eliminar</button>
       </td>
       <td>${escapeHtml(r.provincia || '')}${r.localidad ? '<br><span class="cuit">' + escapeHtml(r.localidad) + '</span>' : ''}</td>
       <td><span class="badge ${segClass(r.segmento)}">${segLabel}</span></td>
