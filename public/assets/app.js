@@ -43,8 +43,20 @@ const els = {
   ncError: document.getElementById('nc-error'),
 };
 
+const LEGAL_SUFFIX_RE = /\s+(s\.?\s*a\.?(\s*u\.?)?|s\.?\s*r\.?\s*l\.?|s\.?\s*c\.?\s*a\.?|s\.?\s*a\.?\s*s\.?|s\.?\s*h\.?|sociedad\s+an[oó]nima|sociedad\s+de\s+responsabilidad\s+limitada|sociedad\s+de\s+hecho|sociedad\s+simple)\s*$/i;
+
+function tituloCase(str) {
+  return str.toLowerCase().replace(/(^|[^a-zà-ÿ])([a-zà-ÿ])/g, (m, sep, chr) => sep + chr.toUpperCase());
+}
+
+function cleanNombre(nombre) {
+  if (!nombre) return 'estimado cliente';
+  const sinSufijo = nombre.trim().replace(LEGAL_SUFFIX_RE, '');
+  return tituloCase(sinSufijo || nombre).trim() || 'estimado cliente';
+}
+
 const MESSAGE_TEMPLATES = {
-  A: (nombre) => `Hola ${nombre}, te escribo de Worcer para agradecerte que sigas confiando en nosotros. Cualquier cosa que necesites, estamos para ayudarte.`,
+  A: (nombre) => `Hola ${nombre}, te escribimos de Worcer. Actualizamos la lista de precios y quería avisarte por si la necesitás para tu próximo pedido. Gracias por seguir eligiéndonos, cualquier cosa que necesites contános.`,
   B: (nombre) => `Hola ${nombre}, soy de Worcer. Vi que hace un par de meses no nos hacés pedidos — ¿va todo bien con el stock? Te paso la lista actualizada por las dudas necesites algo.`,
   C: (nombre) => `Hola ${nombre}, te escribo de Worcer porque hace unos meses que no pasás pedido y quería saber si hay algo que podamos mejorar de nuestro lado — precio, plazos de entrega, algo puntual. Contame.`,
   D: (nombre) => `Hola ${nombre}, te contacto de Worcer — hace un tiempo que no trabajamos juntos y quería reconectar. Tenemos condiciones especiales para retomar el pedido. ¿Tenés 5 minutos esta semana?`,
@@ -55,13 +67,13 @@ const MESSAGE_TEMPLATES = {
 function buildMessage(r) {
   const letter = (r.segmento || 'F').trim()[0].toUpperCase();
   const fn = MESSAGE_TEMPLATES[letter] || MESSAGE_TEMPLATES.F;
-  return fn(r.nombre || 'estimado cliente');
+  return fn(cleanNombre(r.nombre));
 }
 
 const EMAIL_TEMPLATES = {
   A: (nombre) => ({
-    subject: 'Gracias por seguir eligiendo Worcer',
-    body: `Hola ${nombre},<br><br>Queríamos agradecerte que sigas confiando en Worcer para tus compras de sanitarios y juegos de baño de loza.<br><br>Cualquier cosa que necesites, estamos para ayudarte.`,
+    subject: 'Lista de precios actualizada — gracias por seguir eligiendo Worcer',
+    body: `Hola ${nombre},<br><br>Queríamos avisarte que actualizamos la lista de precios de nuestras líneas — te la dejamos disponible por si la necesitás para tu próximo pedido.<br><br>Gracias por seguir confiando en Worcer. Cualquier cosa que necesites, estamos para ayudarte.`,
   }),
   B: (nombre) => ({
     subject: '¿Va todo bien? Hace un tiempo no tenemos pedidos tuyos',
@@ -88,7 +100,7 @@ const EMAIL_TEMPLATES = {
 function buildEmail(r) {
   const letter = (r.segmento || 'F').trim()[0].toUpperCase();
   const fn = EMAIL_TEMPLATES[letter] || EMAIL_TEMPLATES.F;
-  const { subject, body } = fn(r.nombre || 'estimado cliente');
+  const { subject, body } = fn(cleanNombre(r.nombre));
   const html = `<div style="font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:520px;color:#1c2126;line-height:1.6;">
     <p style="font-size:20px;font-weight:700;margin:0 0 16px;">Worcer</p>
     <p>${body}</p>
