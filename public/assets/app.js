@@ -6,7 +6,7 @@ const state = {
   all: [],
   filtered: [],
   page: 1,
-  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '', soloVencidos: false },
+  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '', rubro: '', soloVencidos: false },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
   interaccionesByCliente: new Map(),
@@ -40,6 +40,7 @@ const els = {
   provincia: document.getElementById('f-provincia'),
   confianza: document.getElementById('f-confianza'),
   estado: document.getElementById('f-estado'),
+  rubro: document.getElementById('f-rubro'),
   resultCount: document.getElementById('result-count'),
   pageInfo: document.getElementById('page-info'),
   prevBtn: document.getElementById('prev-page'),
@@ -283,7 +284,7 @@ function renderStats() {
 }
 
 function applyFilters() {
-  const { q, segmento, provincia, confianza, estado, soloVencidos } = state.filters;
+  const { q, segmento, provincia, confianza, estado, rubro, soloVencidos } = state.filters;
   const qLower = q.trim().toLowerCase();
 
   state.filtered = state.all.filter((r) => {
@@ -291,6 +292,7 @@ function applyFilters() {
     if (provincia && r.provincia !== provincia) return false;
     if (confianza && r.confianza_dato !== confianza) return false;
     if (estado && (r.estado_contacto || 'pendiente') !== estado) return false;
+    if (rubro && !rubrosDe(r).includes(rubro)) return false;
     if (soloVencidos && !esVencido(proximoSeguimientoDe(r.id))) return false;
     if (qLower) {
       const hay = `${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`.toLowerCase();
@@ -332,8 +334,11 @@ function renderTable() {
   els.tbody.querySelectorAll('.estado-select').forEach((sel) => {
     sel.addEventListener('change', onEstadoChange);
   });
-  els.tbody.querySelectorAll('.ubicacion-select, .rubro-select').forEach((sel) => {
+  els.tbody.querySelectorAll('.ubicacion-select').forEach((sel) => {
     sel.addEventListener('change', onEditableFieldChange);
+  });
+  els.tbody.querySelectorAll('.rubro-checkbox').forEach((cb) => {
+    cb.addEventListener('change', onRubroChange);
   });
   els.tbody.querySelectorAll('.ubicacion-input, .contacto-input:not(.telefono-input)').forEach((input) => {
     input.addEventListener('blur', onEditableFieldChange);
@@ -591,6 +596,23 @@ function telefonosDe(r) {
   return (r.telefono || '').split(',').map((s) => s.trim()).filter(Boolean);
 }
 
+function rubrosDe(r) {
+  return (r.rubro || '').split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+function rubroCellHtml(r) {
+  const actuales = rubrosDe(r);
+  const legado = actuales.filter((v) => !RUBROS.includes(v));
+  const opciones = [...legado, ...RUBROS];
+  const checks = opciones.map((op) => `
+    <label class="rubro-check">
+      <input type="checkbox" class="rubro-checkbox" value="${escapeHtml(op)}" ${actuales.includes(op) ? 'checked' : ''} />
+      ${escapeHtml(op)}
+    </label>
+  `).join('');
+  return `<div class="rubro-group">${checks}<span class="save-indicator">✓</span></div>`;
+}
+
 function telefonoRowHtml(valor) {
   const action = valor
     ? `<a class="contacto-action" href="tel:${valor.replace(/[^0-9+]/g, '')}" title="Llamar">☎</a>` : '';
@@ -663,14 +685,7 @@ function rowHtml(r) {
       <td><span class="badge ${segClass(r.segmento)}">${segLabel}</span></td>
       <td><span class="badge ${confClass(r.confianza_dato)}">${escapeHtml(r.confianza_dato || 'sin_datos')}</span></td>
       <td class="contact-links">${contactLinks(r)}</td>
-      <td class="rubro-cell">
-        <select class="rubro-select" data-field="rubro">
-          <option value="">Sin rubro</option>
-          ${r.rubro && !RUBROS.includes(r.rubro) ? `<option value="${escapeHtml(r.rubro)}" selected>${escapeHtml(r.rubro)}</option>` : ''}
-          ${RUBROS.map((o) => `<option value="${o}" ${r.rubro === o ? 'selected' : ''}>${o}</option>`).join('')}
-        </select>
-        <span class="save-indicator">✓</span>
-      </td>
+      <td class="rubro-cell">${rubroCellHtml(r)}</td>
       <td class="desc-cell">
         <textarea class="descripcion-input" data-field="descripcion" rows="2" placeholder="Sin descripción">${escapeHtml(r.descripcion || '')}</textarea>
         <span class="save-indicator">✓</span>
@@ -749,6 +764,17 @@ async function onEditableFieldChange(e) {
   if (CAMPOS_CONTACTO.includes(field)) renderTable();
 }
 
+async function onRubroChange(e) {
+  const tr = e.target.closest('tr');
+  const id = tr.dataset.id;
+  const group = e.target.closest('.rubro-group');
+  const seleccionados = [...group.querySelectorAll('.rubro-checkbox:checked')].map((cb) => cb.value);
+  const value = seleccionados.length ? seleccionados.join(', ') : null;
+  await saveField(id, 'rubro', value, e.target);
+  const rec = state.all.find((r) => String(r.id) === String(id));
+  if (rec) rec.rubro = value;
+}
+
 async function onTelefonoChange(e) {
   const tr = e.target.closest('tr');
   const id = tr.dataset.id;
@@ -805,6 +831,10 @@ els.confianza.addEventListener('change', (e) => {
 });
 els.estado.addEventListener('change', (e) => {
   state.filters.estado = e.target.value;
+  applyFilters();
+});
+els.rubro.addEventListener('change', (e) => {
+  state.filters.rubro = e.target.value;
   applyFilters();
 });
 els.prevBtn.addEventListener('click', () => {
