@@ -266,6 +266,29 @@ tbody tr:hover {
 .contact-links a:hover { text-decoration: underline; }
 .contact-links .none { color: var(--text-muted); font-size: 12px; }
 
+.contacto-editable {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.contacto-input {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 3px 4px;
+  font-size: 12px;
+  color: var(--text);
+  background: transparent;
+  width: 100%;
+  font-family: inherit;
+}
+.contacto-input:hover, .contacto-input:focus {
+  border-color: var(--border);
+  background: var(--bg);
+}
+
 .factura-cell {
   min-width: 140px;
   font-size: 12px;
@@ -350,7 +373,7 @@ select.estado-select option { color: #000; background: #fff; }
 .badge.estado-descartado { background: var(--estado-descartado); }
 
 .ubicacion-cell { min-width: 140px; }
-.ubicacion-select, .ubicacion-input, .rubro-input, .descripcion-input {
+.ubicacion-select, .ubicacion-input, .rubro-select, .descripcion-input {
   display: block;
   width: 100%;
   border: 1px solid transparent;
@@ -362,8 +385,8 @@ select.estado-select option { color: #000; background: #fff; }
   font-family: inherit;
 }
 .ubicacion-input { margin-top: 2px; }
-.ubicacion-select:hover, .ubicacion-input:hover, .rubro-input:hover, .descripcion-input:hover,
-.ubicacion-select:focus, .ubicacion-input:focus, .rubro-input:focus, .descripcion-input:focus {
+.ubicacion-select:hover, .ubicacion-input:hover, .rubro-select:hover, .descripcion-input:hover,
+.ubicacion-select:focus, .ubicacion-input:focus, .rubro-select:focus, .descripcion-input:focus {
   border-color: var(--border);
   background: var(--bg);
 }

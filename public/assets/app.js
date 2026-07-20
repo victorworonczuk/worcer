@@ -24,6 +24,8 @@ const PROVINCIAS = [
   'San Luis', 'Santa Cruz', 'Santa Fe', 'Sgo Estero', 'T.Fuego', 'Tucumán',
 ];
 
+const RUBROS = ['Distribuidor', 'Venta online', 'Sanitario', 'Corralón', 'Ferretería', 'Otros'];
+
 const FROM_BY_ROL = {
   ventas: 'ventas@porcelanasalberti.com.ar',
   facturacion: 'administracion@porcelanasalberti.com.ar',
@@ -330,10 +332,10 @@ function renderTable() {
   els.tbody.querySelectorAll('.estado-select').forEach((sel) => {
     sel.addEventListener('change', onEstadoChange);
   });
-  els.tbody.querySelectorAll('.ubicacion-select').forEach((sel) => {
+  els.tbody.querySelectorAll('.ubicacion-select, .rubro-select').forEach((sel) => {
     sel.addEventListener('change', onEditableFieldChange);
   });
-  els.tbody.querySelectorAll('.ubicacion-input, .rubro-input').forEach((input) => {
+  els.tbody.querySelectorAll('.ubicacion-input, .contacto-input').forEach((input) => {
     input.addEventListener('blur', onEditableFieldChange);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
   });
@@ -613,12 +615,28 @@ function contactLinks(r) {
   }
   if (r.web) links.push(`<a href="${r.web.startsWith('http') ? r.web : 'https://' + r.web}" target="_blank" rel="noopener">Web/redes</a>`);
   links.push(`<button type="button" class="copy-message" data-id="${r.id}">📋 Copiar mensaje</button>`);
-  if (links.length > 1) return links.join('<br>');
-  const esDormido = (r.segmento || '').trim().startsWith('F');
-  const sinDatos = esDormido
-    ? '<span class="none">Sin datos</span>'
-    : '<span class="none">Pendiente: exportar de tu sistema de facturación</span>';
-  return `${sinDatos}<br>${links[0]}`;
+  let html;
+  if (links.length > 1) {
+    html = links.join('<br>');
+  } else {
+    const esDormido = (r.segmento || '').trim().startsWith('F');
+    const sinDatos = esDormido
+      ? '<span class="none">Sin datos</span>'
+      : '<span class="none">Pendiente: exportar de tu sistema de facturación</span>';
+    html = `${sinDatos}<br>${links[0]}`;
+  }
+  return html + contactoEditableHtml(r);
+}
+
+function contactoEditableHtml(r) {
+  return `
+    <div class="contacto-editable">
+      <input type="text" class="contacto-input" data-field="telefono" value="${escapeHtml(r.telefono || '')}" placeholder="Teléfono" />
+      <input type="text" class="contacto-input" data-field="whatsapp" value="${escapeHtml(r.whatsapp || '')}" placeholder="WhatsApp (549...)" />
+      <input type="email" class="contacto-input" data-field="email" value="${escapeHtml(r.email || '')}" placeholder="Email" />
+      <span class="save-indicator">✓</span>
+    </div>
+  `;
 }
 
 function facturacionCell(r) {
@@ -653,7 +671,11 @@ function rowHtml(r) {
       <td><span class="badge ${confClass(r.confianza_dato)}">${escapeHtml(r.confianza_dato || 'sin_datos')}</span></td>
       <td class="contact-links">${contactLinks(r)}</td>
       <td class="rubro-cell">
-        <input type="text" class="rubro-input" data-field="rubro" value="${escapeHtml(r.rubro || '')}" placeholder="Sin rubro" />
+        <select class="rubro-select" data-field="rubro">
+          <option value="">Sin rubro</option>
+          ${r.rubro && !RUBROS.includes(r.rubro) ? `<option value="${escapeHtml(r.rubro)}" selected>${escapeHtml(r.rubro)}</option>` : ''}
+          ${RUBROS.map((o) => `<option value="${o}" ${r.rubro === o ? 'selected' : ''}>${o}</option>`).join('')}
+        </select>
         <span class="save-indicator">✓</span>
       </td>
       <td class="desc-cell">
@@ -720,6 +742,8 @@ async function onEstadoChange(e) {
   renderStats();
 }
 
+const CAMPOS_CONTACTO = ['telefono', 'whatsapp', 'email'];
+
 async function onEditableFieldChange(e) {
   const tr = e.target.closest('tr');
   const id = tr.dataset.id;
@@ -729,6 +753,7 @@ async function onEditableFieldChange(e) {
   const rec = state.all.find((r) => String(r.id) === String(id));
   if (rec) rec[field] = value;
   if (field === 'provincia') populateFilterOptions();
+  if (CAMPOS_CONTACTO.includes(field)) renderTable();
 }
 
 async function saveField(id, field, value, targetEl) {
