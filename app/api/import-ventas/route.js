@@ -67,6 +67,38 @@ export async function POST(request) {
         and regexp_replace(c.cuit, '[^0-9]', '', 'g') = f.cuit_normalizado
     `);
 
+    // Alta automática: solo para CUITs reales con un único nombre asociado.
+    // CUITs de un solo dígito repetido (00000000000, 11111111111, ...) son
+    // los que el sistema de facturación usa para "consumidor final"/ventas sin
+    // identificación real — bajo ese mismo CUIT aparecen decenas de personas
+    // distintas, así que crear un cliente ahí mezclaría gente que no tiene
+    // nada que ver. También se exige un único nombre_facturado en toda la
+    // tabla como resguardo extra, no solo el patrón de dígito repetido.
+    const { rows: candidatos } = await client.query(`
+      select cuit_normalizado, min(cuit_original) as cuit_original, min(nombre_facturado) as nombre_facturado
+      from public.facturas
+      where cliente_id is null
+        and cuit_normalizado is not null
+        and cuit_normalizado !~ '^(\\d)\\1*$'
+      group by cuit_normalizado
+      having count(distinct nombre_facturado) = 1
+    `);
+
+    let altasAutomaticas = 0;
+    for (const c of candidatos) {
+      const { rows: nuevoCliente } = await client.query(
+        `insert into public.clientes (nombre, cuit, origen, confianza_dato, estado_contacto)
+         values ($1, $2, 'Alta automática (import ventas)', 'alta', 'pendiente')
+         returning id`,
+        [c.nombre_facturado, c.cuit_original]
+      );
+      await client.query(
+        `update public.facturas set cliente_id = $1 where cuit_normalizado = $2 and cliente_id is null`,
+        [nuevoCliente[0].id, c.cuit_normalizado]
+      );
+      altasAutomaticas += 1;
+    }
+
     const { rows: sinVincular } = await client.query(`
       select nombre_facturado, cuit_original, empresa, importe_ars
       from public.facturas
@@ -80,6 +112,7 @@ export async function POST(request) {
       nuevos,
       existentes,
       vinculadas,
+      altas_automaticas: altasAutomaticas,
       sin_vincular: sinVincular,
     });
   } finally {

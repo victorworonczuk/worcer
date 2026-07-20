@@ -82,7 +82,8 @@ els.btnImportar.addEventListener('click', async () => {
         <li>Comprobantes leídos: ${data.leidos}</li>
         <li>Nuevos cargados: ${data.nuevos}</li>
         <li>Ya existían (se saltearon): ${data.existentes}</li>
-        <li>Vinculados a un cliente recién ahora: ${data.vinculadas}</li>
+        <li>Vinculados a un cliente existente: ${data.vinculadas}</li>
+        <li>Clientes nuevos dados de alta automáticamente: ${data.altas_automaticas}</li>
       </ul>
       ${sinVincularHtml}
     `;
