@@ -397,6 +397,9 @@ function renderTable() {
   els.tbody.querySelectorAll('.estado-select').forEach((sel) => {
     sel.addEventListener('change', onEstadoChange);
   });
+  els.tbody.querySelectorAll('.confianza-select').forEach((sel) => {
+    sel.addEventListener('change', onConfianzaChange);
+  });
   els.tbody.querySelectorAll('.ubicacion-select').forEach((sel) => {
     sel.addEventListener('change', onEditableFieldChange);
   });
@@ -434,9 +437,6 @@ function renderTable() {
   });
   els.tbody.querySelectorAll('.eliminar-interaccion').forEach((btn) => {
     btn.addEventListener('click', onDeleteInteraccion);
-  });
-  els.tbody.querySelectorAll('.send-email').forEach((btn) => {
-    btn.addEventListener('click', onSendEmail);
   });
   els.tbody.querySelectorAll('.delete-cliente').forEach((btn) => {
     btn.addEventListener('click', onDeleteCliente);
@@ -730,9 +730,7 @@ function rubrosDe(r) {
 
 function rubroCellHtml(r) {
   const actuales = rubrosDe(r);
-  const legado = actuales.filter((v) => !RUBROS.includes(v));
-  const opciones = [...legado, ...RUBROS];
-  const checks = opciones.map((op) => `
+  const checks = RUBROS.map((op) => `
     <label class="rubro-check">
       <input type="checkbox" class="rubro-checkbox" value="${escapeHtml(op)}" ${actuales.includes(op) ? 'checked' : ''} />
       ${escapeHtml(op)}
@@ -759,11 +757,8 @@ function vendedorCellHtml(r) {
 }
 
 function telefonoRowHtml(valor) {
-  const action = valor
-    ? `<a class="contacto-action" href="tel:${valor.replace(/[^0-9+]/g, '')}" title="Llamar">☎</a>` : '';
   return `<div class="contacto-row telefono-row">
     <input type="text" class="contacto-input telefono-input" value="${escapeHtml(valor)}" placeholder="Teléfono" />
-    ${action}
   </div>`;
 }
 
@@ -777,10 +772,6 @@ function contactLinks(r) {
     const text = encodeURIComponent(buildMessage(r));
     waAction = `<a class="contacto-action" href="https://wa.me/${num}?text=${text}" target="_blank" rel="noopener" title="Abrir WhatsApp">💬</a>`;
   }
-  const emailAction = r.email
-    ? `<button type="button" class="contacto-action send-email" data-id="${r.id}" title="Enviar email">✉</button>` : '';
-  const webLink = r.web
-    ? `<a href="${r.web.startsWith('http') ? r.web : 'https://' + r.web}" target="_blank" rel="noopener" class="contacto-web-link">Web/redes</a>` : '';
 
   return `
     <div class="contacto-block">
@@ -791,10 +782,11 @@ function contactLinks(r) {
       </div>
       <div class="contacto-row">
         <input type="email" class="contacto-input" data-field="email" value="${escapeHtml(r.email || '')}" placeholder="Email" />
-        ${emailAction}
+      </div>
+      <div class="contacto-row">
+        <input type="text" class="contacto-input" data-field="web" value="${escapeHtml(r.web || '')}" placeholder="Web / redes" />
       </div>
       <span class="save-indicator">✓</span>
-      ${webLink}
     </div>
   `;
 }
@@ -836,7 +828,15 @@ function rowHtml(r) {
         <span class="save-indicator">✓</span>
       </td>
       <td><span class="badge ${segClass(r.segmento)}">${segLabel}</span></td>
-      <td><span class="badge ${confClass(r.confianza_dato)}">${escapeHtml(r.confianza_dato || 'sin_datos')}</span></td>
+      <td>
+        <select class="confianza-select ${confClass(r.confianza_dato)}" data-field="confianza_dato">
+          <option value="alta" ${r.confianza_dato === 'alta' ? 'selected' : ''}>Alta</option>
+          <option value="media" ${r.confianza_dato === 'media' ? 'selected' : ''}>Media</option>
+          <option value="baja" ${r.confianza_dato === 'baja' ? 'selected' : ''}>Baja</option>
+          <option value="sin_datos" ${!r.confianza_dato || r.confianza_dato === 'sin_datos' ? 'selected' : ''}>Sin datos</option>
+        </select>
+        <span class="save-indicator">✓</span>
+      </td>
       <td class="contact-links">${contactLinks(r)}</td>
       <td class="rubro-cell">${rubroCellHtml(r)}</td>
       <td class="vendedor-cell">${vendedorCellHtml(r)}</td>
@@ -898,6 +898,16 @@ async function onEstadoChange(e) {
   const rec = state.all.find((r) => String(r.id) === String(id));
   if (rec) rec.estado_contacto = value;
   renderStats();
+}
+
+async function onConfianzaChange(e) {
+  const tr = e.target.closest('tr');
+  const id = tr.dataset.id;
+  const value = e.target.value;
+  e.target.className = `confianza-select ${confClass(value)}`;
+  await saveField(id, 'confianza_dato', value, e.target);
+  const rec = state.all.find((r) => String(r.id) === String(id));
+  if (rec) rec.confianza_dato = value;
 }
 
 const CAMPOS_CONTACTO = ['whatsapp', 'email'];

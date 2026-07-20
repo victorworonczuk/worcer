@@ -355,13 +355,6 @@ tbody tr:hover {
 }
 .add-telefono:hover { text-decoration: underline; }
 
-.contacto-web-link {
-  color: var(--primary);
-  text-decoration: none;
-  font-size: 12px;
-}
-.contacto-web-link:hover { text-decoration: underline; }
-
 .factura-cell {
   min-width: 140px;
   font-size: 12px;
@@ -377,8 +370,6 @@ button.toggle-facturas {
   color: var(--primary);
 }
 button.toggle-facturas:hover { background: #eef1ff; }
-
-.contacto-action.send-email:disabled { opacity: 0.6; cursor: not-allowed; }
 
 tr.factura-detail-row td {
   background: #fafbfc;
@@ -420,6 +411,20 @@ select.estado-select option { color: #000; background: #fff; }
 .badge.estado-contactado { background: var(--estado-contactado); }
 .badge.estado-recuperado { background: var(--estado-recuperado); }
 .badge.estado-descartado { background: var(--estado-descartado); }
+
+select.confianza-select {
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+select.badge-conf-alta { background: var(--conf-alta); }
+select.badge-conf-media { background: var(--conf-media); }
+select.badge-conf-baja { background: var(--conf-baja); }
+select.badge-conf-sin_datos, select.badge-conf-sin { background: var(--conf-sin); }
+select.confianza-select option { color: #000; background: #fff; }
 
 .ubicacion-cell { min-width: 150px; }
 .ubicacion-select, .ubicacion-input, .rubro-select, .descripcion-input, .vendedor-select, .vendedor-otro-input {
