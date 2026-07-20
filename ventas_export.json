@@ -1,0 +1,1052 @@
+[
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-01",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001281",
+    "cuit_original": "20-34999301-6",
+    "cuit_normalizado": "20349993016",
+    "nombre_facturado": "MORINICO LEONEL EMILIANO",
+    "importe_ars": 2253049.52
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-03",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001282",
+    "cuit_original": "33-70881408-9",
+    "cuit_normalizado": "33708814089",
+    "nombre_facturado": "JOFRE WALTER N. Y JOFRE ALEJAN",
+    "importe_ars": 702700.84
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-10",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001283",
+    "cuit_original": "30-70848687-2",
+    "cuit_normalizado": "30708486872",
+    "nombre_facturado": "CAÑOSUR DE FERNANDEZ O. Y MAST",
+    "importe_ars": 1340336.96
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-10",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001284",
+    "cuit_original": "30-71551250-1",
+    "cuit_normalizado": "30715512501",
+    "nombre_facturado": "SANITARIOS CAÑOSUR SRL",
+    "importe_ars": 1340336.96
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-10",
+    "tipo_comprobante": "NC A",
+    "numero_comprobante": "00011-00000086",
+    "cuit_original": "30-70848687-2",
+    "cuit_normalizado": "30708486872",
+    "nombre_facturado": "CAÑOSUR DE FERNANDEZ O. Y MAST",
+    "importe_ars": -1340336.97
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-10",
+    "tipo_comprobante": "NC A",
+    "numero_comprobante": "00011-00000087",
+    "cuit_original": "30-71627797-2",
+    "cuit_normalizado": "30716277972",
+    "nombre_facturado": "PLASTICOS BAHIA SOCIEDAD SIMPLE",
+    "importe_ars": -1924282.36
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-12",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001285",
+    "cuit_original": "20-35231576-2",
+    "cuit_normalizado": "20352315762",
+    "nombre_facturado": "PEREZ JULIO RODOLFO OSCAR",
+    "importe_ars": 2071974.96
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-12",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001286",
+    "cuit_original": "27-35988446-5",
+    "cuit_normalizado": "27359884465",
+    "nombre_facturado": "MOLINARI ANA ELIZABETH",
+    "importe_ars": 2225262.6
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-12",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001287",
+    "cuit_original": "30-71757598-5",
+    "cuit_normalizado": "30717575985",
+    "nombre_facturado": "DISTRIBUIDORA SANITARIA FENIX S. CAP I",
+    "importe_ars": 2124058.2
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-16",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001288",
+    "cuit_original": "23-38040889-9",
+    "cuit_normalizado": "23380408899",
+    "nombre_facturado": "DE FREITA BRAIAN OMAR",
+    "importe_ars": 1235171.02
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-19",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001289",
+    "cuit_original": "20-38906900-1",
+    "cuit_normalizado": "20389069001",
+    "nombre_facturado": "SAAVEDRA MARTIN ROBERTO",
+    "importe_ars": 2237609.44
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-26",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001290",
+    "cuit_original": "30-71460958-7",
+    "cuit_normalizado": "30714609587",
+    "nombre_facturado": "CONSTRUCITY S.R.L",
+    "importe_ars": 2409908.6
+  },
+  {
+    "empresa": "Ceramica",
+    "fecha": "2026-06-30",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00001291",
+    "cuit_original": "30-70806733-0",
+    "cuit_normalizado": "30708067330",
+    "nombre_facturado": "FUTURO SA",
+    "importe_ars": 17260301.52
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-01",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002429",
+    "cuit_original": "23-18022767-9",
+    "cuit_normalizado": "23180227679",
+    "nombre_facturado": "CABALLERO ROBERTO",
+    "importe_ars": 1908501.06
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-01",
+    "tipo_comprobante": "NC A",
+    "numero_comprobante": "00011-00000050",
+    "cuit_original": "20-12136808-1",
+    "cuit_normalizado": "20121368081",
+    "nombre_facturado": "PEREZ JORGE ALBERTO",
+    "importe_ars": -199788.01
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-02",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002430",
+    "cuit_original": "20-33954144-3",
+    "cuit_normalizado": "20339541443",
+    "nombre_facturado": "OLIVIERI ALAN EMMANUEL",
+    "importe_ars": 6330023.04
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-02",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002431",
+    "cuit_original": "30-70921949-5",
+    "cuit_normalizado": "30709219495",
+    "nombre_facturado": "FABRI HORMIG S.R.L",
+    "importe_ars": 1781197.44
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-03",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002432",
+    "cuit_original": "33-71861013-9",
+    "cuit_normalizado": "33718610139",
+    "nombre_facturado": "HIERRO SUR CONSTRUCCIONES S. A. S.",
+    "importe_ars": 1688385.6
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-04",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002433",
+    "cuit_original": "20-22319051-1",
+    "cuit_normalizado": "20223190511",
+    "nombre_facturado": "FERREYRA FLORENCIO ELEUTERIO",
+    "importe_ars": 1958292.8
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-04",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002434",
+    "cuit_original": "30-71942845-9",
+    "cuit_normalizado": "30719428459",
+    "nombre_facturado": "DISTRIBUCION 369 E/F S. A. S. EN FORMACION",
+    "importe_ars": 4844627.04
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-09",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002435",
+    "cuit_original": "30-71328450-1",
+    "cuit_normalizado": "30713284501",
+    "nombre_facturado": "SINCAR SRL",
+    "importe_ars": 5480472.36
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-10",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002436",
+    "cuit_original": "30-71159947-5",
+    "cuit_normalizado": "30711599475",
+    "nombre_facturado": "SUAR SRL",
+    "importe_ars": 3562394.88
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-10",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002437",
+    "cuit_original": "30-71916324-2",
+    "cuit_normalizado": "30719163242",
+    "nombre_facturado": "COMERCIAL LAVALLE GROUP S. A. S.",
+    "importe_ars": 5292633.65
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-10",
+    "tipo_comprobante": "NC A",
+    "numero_comprobante": "00011-00000051",
+    "cuit_original": "20-14667903-0",
+    "cuit_normalizado": "20146679030",
+    "nombre_facturado": "CUTRI DANTE OSCAR",
+    "importe_ars": -4603769.28
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-12",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002438",
+    "cuit_original": "30-70921949-5",
+    "cuit_normalizado": "30709219495",
+    "nombre_facturado": "FABRI HORMIG S.R.L",
+    "importe_ars": 2495716.96
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-12",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002439",
+    "cuit_original": "20-34736830-0",
+    "cuit_normalizado": "20347368300",
+    "nombre_facturado": "VIER GINO EMANUEL",
+    "importe_ars": 1932345.8
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-16",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002440",
+    "cuit_original": "20-38096310-9",
+    "cuit_normalizado": "20380963109",
+    "nombre_facturado": "DELGADO MOSMANN EDUARDO MANUEL",
+    "importe_ars": 1781197.44
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-16",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002441",
+    "cuit_original": "20-25369538-3",
+    "cuit_normalizado": "20253695383",
+    "nombre_facturado": "CHIABRERA JAVIER OCTAVIO",
+    "importe_ars": 2270516.6
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002442",
+    "cuit_original": "20-34736830-0",
+    "cuit_normalizado": "20347368300",
+    "nombre_facturado": "VIER GINO EMANUEL",
+    "importe_ars": 2003760.0
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002443",
+    "cuit_original": "23-45339728-9",
+    "cuit_normalizado": "23453397289",
+    "nombre_facturado": "VIER RONALD NAHUEL",
+    "importe_ars": 2003760.0
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "NC A",
+    "numero_comprobante": "00011-00000052",
+    "cuit_original": "20-34736830-0",
+    "cuit_normalizado": "20347368300",
+    "nombre_facturado": "VIER GINO EMANUEL",
+    "importe_ars": -96617.29
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "NC A",
+    "numero_comprobante": "00011-00000053",
+    "cuit_original": "20-34736830-0",
+    "cuit_normalizado": "20347368300",
+    "nombre_facturado": "VIER GINO EMANUEL",
+    "importe_ars": -2003760.0
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-18",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002444",
+    "cuit_original": "20-11043800-2",
+    "cuit_normalizado": "20110438002",
+    "nombre_facturado": "ALEMANI CARLOS DANIEL",
+    "importe_ars": 1854179.8
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-18",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002445",
+    "cuit_original": "30-71764017-5",
+    "cuit_normalizado": "30717640175",
+    "nombre_facturado": "GRUPO DE REPUESTOS EL MELLIZO",
+    "importe_ars": 2153103.04
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-18",
+    "tipo_comprobante": "NC A",
+    "numero_comprobante": "00011-00000054",
+    "cuit_original": "20-11043800-2",
+    "cuit_normalizado": "20110438002",
+    "nombre_facturado": "ALEMANI CARLOS DANIEL",
+    "importe_ars": -92708.99
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-22",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002446",
+    "cuit_original": "33-71861013-9",
+    "cuit_normalizado": "33718610139",
+    "nombre_facturado": "HIERRO SUR CONSTRUCCIONES S. A. S.",
+    "importe_ars": 2003760.0
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-23",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002447",
+    "cuit_original": "20-28545782-4",
+    "cuit_normalizado": "20285457824",
+    "nombre_facturado": "VALENZUELA DIEGO OSCAR",
+    "importe_ars": 4078825.3
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-23",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002448",
+    "cuit_original": "23-18022767-9",
+    "cuit_normalizado": "23180227679",
+    "nombre_facturado": "CABALLERO ROBERTO",
+    "importe_ars": 3220439.2
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-23",
+    "tipo_comprobante": "NC A",
+    "numero_comprobante": "00011-00000055",
+    "cuit_original": "20-38096310-9",
+    "cuit_normalizado": "20380963109",
+    "nombre_facturado": "DELGADO MOSMANN EDUARDO MANUEL",
+    "importe_ars": -89059.87
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-24",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002449",
+    "cuit_original": "30-70941320-8",
+    "cuit_normalizado": "30709413208",
+    "nombre_facturado": "CERAMICA SANITARIA 8 DE JULIO SRL",
+    "importe_ars": 24379708.72
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-24",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002450",
+    "cuit_original": "20-27816920-1",
+    "cuit_normalizado": "20278169201",
+    "nombre_facturado": "OTELLO WALTER JAVIER",
+    "importe_ars": 1216137.66
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-24",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002451",
+    "cuit_original": "20-18387634-2",
+    "cuit_normalizado": "20183876342",
+    "nombre_facturado": "TRABICHET MARIO RAUL",
+    "importe_ars": 2917590.72
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-24",
+    "tipo_comprobante": "NC A",
+    "numero_comprobante": "00011-00000056",
+    "cuit_original": "30-71942845-9",
+    "cuit_normalizado": "30719428459",
+    "nombre_facturado": "DISTRIBUCION 369 E/F S. A. S. EN FORMACION",
+    "importe_ars": -4844627.04
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-26",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002452",
+    "cuit_original": "30-71773363-7",
+    "cuit_normalizado": "30717733637",
+    "nombre_facturado": "HIDRAULICA DEL PLATA S.A.",
+    "importe_ars": 72600.0
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-26",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002453",
+    "cuit_original": "20-43334555-0",
+    "cuit_normalizado": "20433345550",
+    "nombre_facturado": "SAMARDICH DANTE BRANCO",
+    "importe_ars": 2302235.54
+  },
+  {
+    "empresa": "Porcelanas",
+    "fecha": "2026-06-30",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00011-00002454",
+    "cuit_original": "23-18022767-9",
+    "cuit_normalizado": "23180227679",
+    "nombre_facturado": "CABALLERO ROBERTO",
+    "importe_ars": 1972597.18
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-01",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003856",
+    "cuit_original": "30-00000020-1",
+    "cuit_normalizado": "30000000201",
+    "nombre_facturado": "DIAZ DE GUERNICA",
+    "importe_ars": 564876.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-02",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003857",
+    "cuit_original": "20-29006472-5",
+    "cuit_normalizado": "20290064725",
+    "nombre_facturado": "SPYRAKIS JAVIER ALFREDO",
+    "importe_ars": 757179.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-02",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003858",
+    "cuit_original": "23-07775095-9",
+    "cuit_normalizado": "23077750959",
+    "nombre_facturado": "ANDORRA PEDRO FERNANDO",
+    "importe_ars": 149175.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-02",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003859",
+    "cuit_original": "30-00000030-1",
+    "cuit_normalizado": "30000000301",
+    "nombre_facturado": "CARMELO DIEGO",
+    "importe_ars": 74546.06
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-03",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003860",
+    "cuit_original": "10-00000000-1",
+    "cuit_normalizado": "10000000001",
+    "nombre_facturado": "SANTIAGO DELIA",
+    "importe_ars": 984876.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-03",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003861",
+    "cuit_original": "20-12467038-2",
+    "cuit_normalizado": "20124670382",
+    "nombre_facturado": "ALVAREZ ENRIQUE JUAN",
+    "importe_ars": 900412.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-04",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003862",
+    "cuit_original": "30-71729914-7",
+    "cuit_normalizado": "30717299147",
+    "nombre_facturado": "GRUPO DEAL SHOP SA",
+    "importe_ars": 679967.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-04",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003863",
+    "cuit_original": "11-11111111-1",
+    "cuit_normalizado": "11111111111",
+    "nombre_facturado": "DIEGO MONTE GRANDE",
+    "importe_ars": 960000.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-04",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003864",
+    "cuit_original": "20-29006472-5",
+    "cuit_normalizado": "20290064725",
+    "nombre_facturado": "SPYRAKIS JAVIER ALFREDO",
+    "importe_ars": 163650.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-05",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003865",
+    "cuit_original": "21-41000000-0",
+    "cuit_normalizado": "21410000000",
+    "nombre_facturado": "RODRIGO MARCELO IRRAZABAL",
+    "importe_ars": 528559.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-05",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003866",
+    "cuit_original": "30-00000020-1",
+    "cuit_normalizado": "30000000201",
+    "nombre_facturado": "DIAZ DE GUERNICA",
+    "importe_ars": 706095.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-08",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003867",
+    "cuit_original": "20-93770184-6",
+    "cuit_normalizado": "20937701846",
+    "nombre_facturado": "DE FINA MARIO",
+    "importe_ars": 51714.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-08",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003869",
+    "cuit_original": "00-00000000-0",
+    "cuit_normalizado": "00000000000",
+    "nombre_facturado": "MIGUEL CABRERA",
+    "importe_ars": 145114.13
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-08",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003870",
+    "cuit_original": "30-00000000-7",
+    "cuit_normalizado": "30000000007",
+    "nombre_facturado": "SILVA HERNAN",
+    "importe_ars": 2017922.27
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-09",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003871",
+    "cuit_original": "20-42299040-3",
+    "cuit_normalizado": "20422990403",
+    "nombre_facturado": "FAIJA MIGUEL ANGEL NICOLAS",
+    "importe_ars": 3844962.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-09",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003872",
+    "cuit_original": "30-71729914-7",
+    "cuit_normalizado": "30717299147",
+    "nombre_facturado": "GRUPO DEAL SHOP SA",
+    "importe_ars": 853029.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-09",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003873",
+    "cuit_original": "00-00000003-7",
+    "cuit_normalizado": "00000000037",
+    "nombre_facturado": "PARTICULAR",
+    "importe_ars": 260000.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-10",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003874",
+    "cuit_original": "33-71669073-9",
+    "cuit_normalizado": "33716690739",
+    "nombre_facturado": "EL GRIFO SRL",
+    "importe_ars": 1653380.56
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-10",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003875",
+    "cuit_original": "30-71455424-3",
+    "cuit_normalizado": "30714554243",
+    "nombre_facturado": "MARIA DE LOS ANGELES LUONGO Y DANIELA FE",
+    "importe_ars": 910800.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-11",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003876",
+    "cuit_original": "00-00000003-7",
+    "cuit_normalizado": "00000000037",
+    "nombre_facturado": "PARTICULAR",
+    "importe_ars": 276300.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-11",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003877",
+    "cuit_original": "23-33304703-9",
+    "cuit_normalizado": "23333047039",
+    "nombre_facturado": "LUCE NICOLAS JUAN DOMINGO",
+    "importe_ars": 822129.95
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-12",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003878",
+    "cuit_original": "30-71729914-7",
+    "cuit_normalizado": "30717299147",
+    "nombre_facturado": "GRUPO DEAL SHOP SA",
+    "importe_ars": 661258.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-12",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003879",
+    "cuit_original": "30-71233623-0",
+    "cuit_normalizado": "30712336230",
+    "nombre_facturado": "CORRALON ALBERTO LOPEZ DE LAS FLORES S.A.",
+    "importe_ars": 5026722.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-16",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003880",
+    "cuit_original": "30-00000000-2",
+    "cuit_normalizado": "30000000002",
+    "nombre_facturado": "CUESTA BLANCA",
+    "importe_ars": 270225.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-16",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003881",
+    "cuit_original": "23-07775095-9",
+    "cuit_normalizado": "23077750959",
+    "nombre_facturado": "ANDORRA PEDRO FERNANDO",
+    "importe_ars": 149299.31
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003882",
+    "cuit_original": "27-42933870-6",
+    "cuit_normalizado": "27429338706",
+    "nombre_facturado": "ORTIZ LUCIANA DANIELA",
+    "importe_ars": 1889693.46
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003883",
+    "cuit_original": "27-42933870-6",
+    "cuit_normalizado": "27429338706",
+    "nombre_facturado": "ORTIZ LUCIANA DANIELA",
+    "importe_ars": 1518000.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003884",
+    "cuit_original": "20-36842915-6",
+    "cuit_normalizado": "20368429156",
+    "nombre_facturado": "DAGOSTINO GABRIEL JESUS",
+    "importe_ars": 452899.31
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003885",
+    "cuit_original": "27-35322066-2",
+    "cuit_normalizado": "27353220662",
+    "nombre_facturado": "ALBARIÑO LUCIA BELEN",
+    "importe_ars": 1279065.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003886",
+    "cuit_original": "11-11111111-1",
+    "cuit_normalizado": "11111111111",
+    "nombre_facturado": "DIEGO MONTE GRANDE",
+    "importe_ars": 506869.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003887",
+    "cuit_original": "99-99999999-9",
+    "cuit_normalizado": "99999999999",
+    "nombre_facturado": "VILLALBA SERGIO",
+    "importe_ars": 223803.94
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-17",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003888",
+    "cuit_original": "11-11111111-1",
+    "cuit_normalizado": "11111111111",
+    "nombre_facturado": "FERNANDO MORILLA",
+    "importe_ars": 960630.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-19",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003889",
+    "cuit_original": "11-11111111-1",
+    "cuit_normalizado": "11111111111",
+    "nombre_facturado": "DIEGO MONTE GRANDE",
+    "importe_ars": 1116256.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-19",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003890",
+    "cuit_original": "30-71729914-7",
+    "cuit_normalizado": "30717299147",
+    "nombre_facturado": "GRUPO DEAL SHOP SA",
+    "importe_ars": 683233.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-19",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003891",
+    "cuit_original": "10-00000000-1",
+    "cuit_normalizado": "10000000001",
+    "nombre_facturado": "SANTIAGO DELIA",
+    "importe_ars": 1585300.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-22",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003892",
+    "cuit_original": "33-71841179-9",
+    "cuit_normalizado": "33718411799",
+    "nombre_facturado": "SAJA SERVICIOS SRL",
+    "importe_ars": 3505692.75
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-22",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003893",
+    "cuit_original": "11-11111111-1",
+    "cuit_normalizado": "11111111111",
+    "nombre_facturado": "WALTER VALINOTY",
+    "importe_ars": 1351914.97
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-23",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003894",
+    "cuit_original": "30-00000000-7",
+    "cuit_normalizado": "30000000007",
+    "nombre_facturado": "SILVA HERNAN",
+    "importe_ars": 1563926.39
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-23",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003895",
+    "cuit_original": "23-34998128-9",
+    "cuit_normalizado": "23349981289",
+    "nombre_facturado": "PABLO DANIEL ALVAREZ",
+    "importe_ars": 607200.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-23",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003896",
+    "cuit_original": "10-00000000-1",
+    "cuit_normalizado": "10000000001",
+    "nombre_facturado": "SANTIAGO DELIA",
+    "importe_ars": 725000.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-23",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003897",
+    "cuit_original": "30-00000030-1",
+    "cuit_normalizado": "30000000301",
+    "nombre_facturado": "CARMELO DIEGO",
+    "importe_ars": 174700.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-24",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003898",
+    "cuit_original": "30-00000020-1",
+    "cuit_normalizado": "30000000201",
+    "nombre_facturado": "DIAZ DE GUERNICA",
+    "importe_ars": 833587.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-25",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003899",
+    "cuit_original": "10-00000000-1",
+    "cuit_normalizado": "10000000001",
+    "nombre_facturado": "SANTIAGO DELIA",
+    "importe_ars": 1595000.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-25",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003900",
+    "cuit_original": "30-00000000-2",
+    "cuit_normalizado": "30000000002",
+    "nombre_facturado": "CUESTA BLANCA",
+    "importe_ars": 134925.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-25",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003901",
+    "cuit_original": "30-71049802-0",
+    "cuit_normalizado": "30710498020",
+    "nombre_facturado": "VERA MARTIN JAVIER Y VERA DANI",
+    "importe_ars": 541339.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-25",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003902",
+    "cuit_original": "20-29006472-5",
+    "cuit_normalizado": "20290064725",
+    "nombre_facturado": "SPYRAKIS JAVIER ALFREDO",
+    "importe_ars": 185196.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-25",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003903",
+    "cuit_original": "20-27316343-4",
+    "cuit_normalizado": "20273163434",
+    "nombre_facturado": "RIOS LUCIO",
+    "importe_ars": 455400.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-25",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003904",
+    "cuit_original": "20-93770184-6",
+    "cuit_normalizado": "20937701846",
+    "nombre_facturado": "DE FINA MARIO",
+    "importe_ars": 174700.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-25",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003905",
+    "cuit_original": "00-00000003-7",
+    "cuit_normalizado": "00000000037",
+    "nombre_facturado": "PARTICULAR",
+    "importe_ars": 70000.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-25",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003906",
+    "cuit_original": "00-00000003-7",
+    "cuit_normalizado": "00000000037",
+    "nombre_facturado": "PARTICULAR",
+    "importe_ars": 306736.25
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-26",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003907",
+    "cuit_original": "20-27749218-1",
+    "cuit_normalizado": "20277492181",
+    "nombre_facturado": "CHUMILLA FERNANDO ARIEL",
+    "importe_ars": 3608770.2
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-26",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003908",
+    "cuit_original": "23-34998128-9",
+    "cuit_normalizado": "23349981289",
+    "nombre_facturado": "PABLO DANIEL ALVAREZ",
+    "importe_ars": 202387.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-29",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003910",
+    "cuit_original": "23-07775095-9",
+    "cuit_normalizado": "23077750959",
+    "nombre_facturado": "ANDORRA PEDRO FERNANDO",
+    "importe_ars": 334939.31
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-29",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003911",
+    "cuit_original": "30-71729914-7",
+    "cuit_normalizado": "30717299147",
+    "nombre_facturado": "GRUPO DEAL SHOP SA",
+    "importe_ars": 746884.5
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-29",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003912",
+    "cuit_original": "23-34998128-9",
+    "cuit_normalizado": "23349981289",
+    "nombre_facturado": "PABLO DANIEL ALVAREZ",
+    "importe_ars": 759000.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-29",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003913",
+    "cuit_original": "30-00000000-7",
+    "cuit_normalizado": "30000000007",
+    "nombre_facturado": "SILVA HERNAN",
+    "importe_ars": 1518000.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-30",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003914",
+    "cuit_original": "20-26565777-0",
+    "cuit_normalizado": "20265657770",
+    "nombre_facturado": "D AMATO FERNANDO DIEGO",
+    "importe_ars": 3966652.8
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-30",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003915",
+    "cuit_original": "00-00000003-7",
+    "cuit_normalizado": "00000000037",
+    "nombre_facturado": "PARTICULAR",
+    "importe_ars": 314000.0
+  },
+  {
+    "empresa": "Presupuesto",
+    "fecha": "2026-06-30",
+    "tipo_comprobante": "F A",
+    "numero_comprobante": "00001-00003916",
+    "cuit_original": "30-71179490-1",
+    "cuit_normalizado": "30711794901",
+    "nombre_facturado": "HIMPA SRL",
+    "importe_ars": 5973805.2
+  }
+]

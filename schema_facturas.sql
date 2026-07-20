@@ -12,12 +12,23 @@ create table if not exists public.facturas (
   tipo_cambio numeric,
   importe_usd numeric,
   cliente_id bigint references public.clientes(id),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Quién la cargó: username si la cargó un empleado a mano, 'import-ventas' si
+  -- vino del importador automático del sistema de facturación, null si vino del
+  -- import histórico inicial (ver import-facturas.cjs).
+  cargado_por text
 );
 
 create index if not exists idx_facturas_cuit on public.facturas(cuit_normalizado);
 create index if not exists idx_facturas_cliente on public.facturas(cliente_id);
 create index if not exists idx_facturas_fecha on public.facturas(fecha);
+
+-- Evita duplicar un comprobante si se re-sube el mismo reporte o uno con
+-- fechas superpuestas: el número de comprobante es único dentro de cada
+-- empresa + tipo (F A, NC A, etc). Los NULL (cargas manuales sin número real,
+-- como remitos) no chocan entre sí — comportamiento estándar de Postgres.
+create unique index if not exists idx_facturas_comprobante_unico
+  on public.facturas(empresa, tipo_comprobante, numero_comprobante);
 
 alter table public.facturas disable row level security;
 grant usage on schema public to anon, authenticated;

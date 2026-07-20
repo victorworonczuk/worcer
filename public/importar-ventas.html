@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Importar ventas</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="stylesheet" href="assets/importar-ventas.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Worcer · Importar ventas</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    <div class="topbar-actions">
+      <a href="/index.html" class="nav-link">← Ver dashboard</a>
+      <a href="/api/logout" class="logout-link">Cerrar sesión</a>
+    </div>
+  </header>
+
+  <main class="importar-main">
+    <div class="panel importar-panel">
+      <p class="importar-intro">
+        Subí acá los reportes de ventas del sistema de facturación (Cerámica, Porcelanas y/o
+        Presupuesto — podés subir los que tengas, no hace falta que sean los tres juntos).
+        Se pueden volver a subir sin miedo: los comprobantes que ya estaban cargados se saltean
+        automáticamente, solo se agregan los nuevos.
+      </p>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="file-input" accept=".xml" multiple hidden />
+        <div class="dropzone-text">
+          <strong>Arrastrá los archivos acá</strong> o hacé clic para elegirlos
+        </div>
+        <ul id="file-list" class="file-list"></ul>
+      </div>
+
+      <button type="button" id="btn-importar" class="btn-primary" disabled>Importar</button>
+
+      <div id="resultado" class="resultado"></div>
+    </div>
+  </main>
+
+  <script src="assets/importar-ventas.js"></script>
+</body>
+</html>
