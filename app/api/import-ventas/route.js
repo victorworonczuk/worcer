@@ -3,6 +3,13 @@ import { Client } from 'pg';
 import crypto from 'crypto';
 import { parseVentasXml, mesDe } from '../../../lib/ventasXml.js';
 
+// CUITs de las propias sociedades de Worcer (Cerámica Sanitaria 8 de Julio SRL,
+// Porcelanas Alberti SRL) — a veces se facturan cosas entre ellas mismas
+// (operación intercompañía), y esas facturas no son ventas a un cliente real.
+// Sin esta lista, el alta automática las tomaría como un cliente nuevo (pasó:
+// ver commit "Dar de alta clientes automáticamente al importar ventas").
+const CUITS_PROPIOS = new Set(['30709413208', '30714033189']);
+
 function getSessionUser(request) {
   const cookie = request.cookies.get('worcer_auth');
   if (!cookie) return null;
@@ -86,6 +93,7 @@ export async function POST(request) {
 
     let altasAutomaticas = 0;
     for (const c of candidatos) {
+      if (CUITS_PROPIOS.has(c.cuit_normalizado)) continue;
       const { rows: nuevoCliente } = await client.query(
         `insert into public.clientes (nombre, cuit, origen, confianza_dato, estado_contacto)
          values ($1, $2, 'Alta automática (import ventas)', 'alta', 'pendiente')

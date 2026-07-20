@@ -22,6 +22,11 @@ function mesDe(fechaIso) {
   return MESES[Number(fechaIso.slice(5, 7)) - 1];
 }
 
+// CUITs de las propias sociedades de Worcer (Cerámica Sanitaria 8 de Julio SRL,
+// Porcelanas Alberti SRL) — a veces se facturan cosas entre ellas mismas
+// (operación intercompañía), y esas facturas no son ventas a un cliente real.
+const CUITS_PROPIOS = new Set(['30709413208', '30714033189']);
+
 async function main() {
   const jsonPath = path.join(__dirname, '..', 'ventas_export.json');
   if (!fs.existsSync(jsonPath)) {
@@ -62,6 +67,35 @@ async function main() {
       and regexp_replace(c.cuit, '[^0-9]', '', 'g') = f.cuit_normalizado
   `);
   console.log(`Facturas recién vinculadas a un cliente existente: ${vinculadas}`);
+
+  // Alta automática: solo para CUITs reales con un único nombre asociado (ver
+  // nota en README sobre por qué se excluyen los de dígito repetido y los
+  // propios de Worcer).
+  const { rows: candidatos } = await client.query(`
+    select cuit_normalizado, min(cuit_original) as cuit_original, min(nombre_facturado) as nombre_facturado
+    from public.facturas
+    where cliente_id is null
+      and cuit_normalizado is not null
+      and cuit_normalizado !~ '^(\\d)\\1*$'
+    group by cuit_normalizado
+    having count(distinct nombre_facturado) = 1
+  `);
+  let altasAutomaticas = 0;
+  for (const c of candidatos) {
+    if (CUITS_PROPIOS.has(c.cuit_normalizado)) continue;
+    const { rows: nuevoCliente } = await client.query(
+      `insert into public.clientes (nombre, cuit, origen, confianza_dato, estado_contacto)
+       values ($1, $2, 'Alta automática (import ventas)', 'alta', 'pendiente')
+       returning id`,
+      [c.nombre_facturado, c.cuit_original]
+    );
+    await client.query(
+      `update public.facturas set cliente_id = $1 where cuit_normalizado = $2 and cliente_id is null`,
+      [nuevoCliente[0].id, c.cuit_normalizado]
+    );
+    altasAutomaticas += 1;
+  }
+  console.log(`Clientes nuevos dados de alta automáticamente: ${altasAutomaticas}`);
 
   const { rows: sinVincular } = await client.query(`
     select count(*) from public.facturas
