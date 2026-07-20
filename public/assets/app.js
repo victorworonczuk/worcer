@@ -581,28 +581,35 @@ async function onDeleteCliente(e) {
 }
 
 function contactLinks(r) {
-  const links = [];
-  if (r.telefono) links.push(`<a href="tel:${r.telefono.replace(/[^0-9+]/g, '')}">☎ ${escapeHtml(r.telefono)}</a>`);
+  const telAction = r.telefono
+    ? `<a class="contacto-action" href="tel:${r.telefono.replace(/[^0-9+]/g, '')}" title="Llamar">☎</a>` : '';
+  let waAction = '';
   if (r.whatsapp) {
     const num = r.whatsapp.replace(/[^0-9]/g, '');
     const text = encodeURIComponent(buildMessage(r));
-    links.push(`<a href="https://wa.me/${num}?text=${text}" target="_blank" rel="noopener">WhatsApp</a>`);
+    waAction = `<a class="contacto-action" href="https://wa.me/${num}?text=${text}" target="_blank" rel="noopener" title="Abrir WhatsApp">💬</a>`;
   }
-  if (r.email) {
-    links.push(`<a href="mailto:${r.email}">${escapeHtml(r.email)}</a>`);
-    links.push(`<button type="button" class="send-email" data-id="${r.id}">✉ Enviar email</button>`);
-  }
-  if (r.web) links.push(`<a href="${r.web.startsWith('http') ? r.web : 'https://' + r.web}" target="_blank" rel="noopener">Web/redes</a>`);
-  return links.join('<br>') + contactoEditableHtml(r);
-}
+  const emailAction = r.email
+    ? `<button type="button" class="contacto-action send-email" data-id="${r.id}" title="Enviar email">✉</button>` : '';
+  const webLink = r.web
+    ? `<a href="${r.web.startsWith('http') ? r.web : 'https://' + r.web}" target="_blank" rel="noopener" class="contacto-web-link">Web/redes</a>` : '';
 
-function contactoEditableHtml(r) {
   return `
-    <div class="contacto-editable">
-      <input type="text" class="contacto-input" data-field="telefono" value="${escapeHtml(r.telefono || '')}" placeholder="Teléfono" />
-      <input type="text" class="contacto-input" data-field="whatsapp" value="${escapeHtml(r.whatsapp || '')}" placeholder="WhatsApp (549...)" />
-      <input type="email" class="contacto-input" data-field="email" value="${escapeHtml(r.email || '')}" placeholder="Email" />
+    <div class="contacto-block">
+      <div class="contacto-row">
+        <input type="text" class="contacto-input" data-field="telefono" value="${escapeHtml(r.telefono || '')}" placeholder="Teléfono" />
+        ${telAction}
+      </div>
+      <div class="contacto-row">
+        <input type="text" class="contacto-input" data-field="whatsapp" value="${escapeHtml(r.whatsapp || '')}" placeholder="WhatsApp (549...)" />
+        ${waAction}
+      </div>
+      <div class="contacto-row">
+        <input type="email" class="contacto-input" data-field="email" value="${escapeHtml(r.email || '')}" placeholder="Email" />
+        ${emailAction}
+      </div>
       <span class="save-indicator">✓</span>
+      ${webLink}
     </div>
   `;
 }

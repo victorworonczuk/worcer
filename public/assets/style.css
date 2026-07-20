@@ -256,24 +256,18 @@ tbody tr:hover {
 .badge-conf-baja { background: var(--conf-baja); }
 .badge-conf-sin_datos, .badge-conf-sin { background: var(--conf-sin); }
 
-.contact-links a {
-  display: inline-block;
-  margin-right: 6px;
-  color: var(--primary);
-  text-decoration: none;
-  font-size: 12px;
-}
-.contact-links a:hover { text-decoration: underline; }
 .contact-links .none { color: var(--text-muted); font-size: 12px; }
 
-.contacto-editable {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--border);
+.contacto-block {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 160px;
+  min-width: 170px;
+}
+.contacto-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .contacto-input {
   border: 1px solid var(--border);
@@ -284,6 +278,8 @@ tbody tr:hover {
   background: var(--surface);
   width: 100%;
   font-family: inherit;
+  flex: 1;
+  min-width: 0;
 }
 .contacto-input::placeholder { color: var(--text-muted); }
 .contacto-input:hover { border-color: #c7ccd4; }
@@ -291,6 +287,30 @@ tbody tr:hover {
   border-color: var(--primary);
   background: #fff;
 }
+.contacto-action {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.contacto-action:hover { background: #eef1ff; }
+.contacto-web-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 12px;
+}
+.contacto-web-link:hover { text-decoration: underline; }
 
 .factura-cell {
   min-width: 140px;
@@ -308,19 +328,7 @@ button.toggle-facturas {
 }
 button.toggle-facturas:hover { background: #eef1ff; }
 
-button.send-email {
-  border: 1px solid var(--border);
-  background: var(--bg);
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 11px;
-  cursor: pointer;
-  color: var(--primary);
-  margin-top: 4px;
-  display: block;
-}
-button.send-email:hover { background: #eef1ff; }
-button.send-email:disabled { opacity: 0.6; cursor: not-allowed; }
+.contacto-action.send-email:disabled { opacity: 0.6; cursor: not-allowed; }
 
 tr.factura-detail-row td {
   background: #fafbfc;
