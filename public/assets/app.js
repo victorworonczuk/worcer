@@ -6,11 +6,12 @@ const state = {
   all: [],
   filtered: [],
   page: 1,
-  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '', rubro: '', soloVencidos: false },
+  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '', rubro: '', vendedor: '', soloVencidos: false },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
   interaccionesByCliente: new Map(),
   openHistorial: new Set(),
+  openDescripcion: new Set(),
   currentUser: null,
   currentUserRol: null,
 };
@@ -41,6 +42,7 @@ const els = {
   confianza: document.getElementById('f-confianza'),
   estado: document.getElementById('f-estado'),
   rubro: document.getElementById('f-rubro'),
+  vendedor: document.getElementById('f-vendedor'),
   resultCount: document.getElementById('result-count'),
   pageInfo: document.getElementById('page-info'),
   prevBtn: document.getElementById('prev-page'),
@@ -234,6 +236,13 @@ function populateFilterOptions() {
   els.provincia.innerHTML =
     '<option value="">Todas las provincias</option>' +
     provincias.map((p) => `<option value="${p}">${p}</option>`).join('');
+
+  const vendedores = [...new Set(state.all.map((r) => r.vendedor).filter(Boolean))].sort();
+  const vendedorActual = els.vendedor.value;
+  els.vendedor.innerHTML =
+    '<option value="">Todos los vendedores</option>' +
+    vendedores.map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  els.vendedor.value = vendedorActual;
 }
 
 function renderStats() {
@@ -284,7 +293,7 @@ function renderStats() {
 }
 
 function applyFilters() {
-  const { q, segmento, provincia, confianza, estado, rubro, soloVencidos } = state.filters;
+  const { q, segmento, provincia, confianza, estado, rubro, vendedor, soloVencidos } = state.filters;
   const qLower = q.trim().toLowerCase();
 
   state.filtered = state.all.filter((r) => {
@@ -293,6 +302,7 @@ function applyFilters() {
     if (confianza && r.confianza_dato !== confianza) return false;
     if (estado && (r.estado_contacto || 'pendiente') !== estado) return false;
     if (rubro && !rubrosDe(r).includes(rubro)) return false;
+    if (vendedor && r.vendedor !== vendedor) return false;
     if (soloVencidos && !esVencido(proximoSeguimientoDe(r.id))) return false;
     if (qLower) {
       const hay = `${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`.toLowerCase();
@@ -340,12 +350,15 @@ function renderTable() {
   els.tbody.querySelectorAll('.rubro-checkbox').forEach((cb) => {
     cb.addEventListener('change', onRubroChange);
   });
-  els.tbody.querySelectorAll('.ubicacion-input, .contacto-input:not(.telefono-input)').forEach((input) => {
+  els.tbody.querySelectorAll('.ubicacion-input, .contacto-input:not(.telefono-input), .vendedor-input').forEach((input) => {
     input.addEventListener('blur', onEditableFieldChange);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
   });
   els.tbody.querySelectorAll('.descripcion-input').forEach((textarea) => {
     textarea.addEventListener('blur', onEditableFieldChange);
+  });
+  els.tbody.querySelectorAll('.toggle-descripcion').forEach((btn) => {
+    btn.addEventListener('click', onToggleDescripcion);
   });
   els.tbody.querySelectorAll('.telefono-input').forEach((input) => {
     input.addEventListener('blur', onTelefonoChange);
@@ -467,6 +480,16 @@ function onToggleHistorial(e) {
     state.openHistorial.delete(id);
   } else {
     state.openHistorial.add(id);
+  }
+  renderTable();
+}
+
+function onToggleDescripcion(e) {
+  const id = Number(e.target.dataset.id);
+  if (state.openDescripcion.has(id)) {
+    state.openDescripcion.delete(id);
+  } else {
+    state.openDescripcion.add(id);
   }
   renderTable();
 }
@@ -669,8 +692,16 @@ function rowHtml(r) {
   return `
     <tr data-id="${r.id}">
       <td class="nombre-cell">
-        <strong>${escapeHtml(r.nombre)}</strong>
+        <div class="nombre-row">
+          <strong>${escapeHtml(r.nombre)}</strong>
+          <button type="button" class="toggle-descripcion ${r.descripcion ? 'has-desc' : ''}" data-id="${r.id}" title="Ver/editar descripción">📝</button>
+        </div>
         <span class="cuit">${escapeHtml(r.cuit || '')}</span>
+        ${state.openDescripcion.has(r.id) ? `
+        <div class="descripcion-panel">
+          <textarea class="descripcion-input" data-field="descripcion" rows="2" placeholder="Sin descripción">${escapeHtml(r.descripcion || '')}</textarea>
+          <span class="save-indicator">✓</span>
+        </div>` : ''}
         <button type="button" class="delete-cliente" data-id="${r.id}" title="Eliminar cliente">🗑 Eliminar</button>
       </td>
       <td class="ubicacion-cell">
@@ -686,8 +717,8 @@ function rowHtml(r) {
       <td><span class="badge ${confClass(r.confianza_dato)}">${escapeHtml(r.confianza_dato || 'sin_datos')}</span></td>
       <td class="contact-links">${contactLinks(r)}</td>
       <td class="rubro-cell">${rubroCellHtml(r)}</td>
-      <td class="desc-cell">
-        <textarea class="descripcion-input" data-field="descripcion" rows="2" placeholder="Sin descripción">${escapeHtml(r.descripcion || '')}</textarea>
+      <td class="vendedor-cell">
+        <input type="text" class="vendedor-input" data-field="vendedor" value="${escapeHtml(r.vendedor || '')}" placeholder="Sin vendedor" />
         <span class="save-indicator">✓</span>
       </td>
       <td class="factura-cell">${facturacionCell(r)}</td>
@@ -835,6 +866,10 @@ els.estado.addEventListener('change', (e) => {
 });
 els.rubro.addEventListener('change', (e) => {
   state.filters.rubro = e.target.value;
+  applyFilters();
+});
+els.vendedor.addEventListener('change', (e) => {
+  state.filters.vendedor = e.target.value;
   applyFilters();
 });
 els.prevBtn.addEventListener('click', () => {

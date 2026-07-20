@@ -214,8 +214,30 @@ tbody tr:hover {
   background: #fafbfc;
 }
 
+.nombre-cell .nombre-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .nombre-cell strong {
   display: block;
+}
+.toggle-descripcion {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.35;
+  flex-shrink: 0;
+}
+.toggle-descripcion:hover { opacity: 0.8; }
+.toggle-descripcion.has-desc { opacity: 1; }
+.descripcion-panel {
+  margin-top: 6px;
+  min-width: 200px;
+  max-width: 260px;
 }
 .nombre-cell .cuit {
   color: var(--text-muted);
@@ -385,7 +407,7 @@ select.estado-select option { color: #000; background: #fff; }
 .badge.estado-descartado { background: var(--estado-descartado); }
 
 .ubicacion-cell { min-width: 150px; }
-.ubicacion-select, .ubicacion-input, .rubro-select, .descripcion-input {
+.ubicacion-select, .ubicacion-input, .rubro-select, .descripcion-input, .vendedor-input {
   display: block;
   width: 100%;
   border: 1px solid var(--border);
@@ -397,10 +419,10 @@ select.estado-select option { color: #000; background: #fff; }
   font-family: inherit;
 }
 .ubicacion-input { margin-top: 5px; }
-.ubicacion-select:hover, .ubicacion-input:hover, .rubro-select:hover, .descripcion-input:hover {
+.ubicacion-select:hover, .ubicacion-input:hover, .rubro-select:hover, .descripcion-input:hover, .vendedor-input:hover {
   border-color: #c7ccd4;
 }
-.ubicacion-select:focus, .ubicacion-input:focus, .rubro-select:focus, .descripcion-input:focus {
+.ubicacion-select:focus, .ubicacion-input:focus, .rubro-select:focus, .descripcion-input:focus, .vendedor-input:focus {
   border-color: var(--primary);
   background: #fff;
 }
@@ -421,10 +443,8 @@ select.estado-select option { color: #000; background: #fff; }
 }
 .rubro-check input { cursor: pointer; }
 
-.desc-cell {
-  min-width: 210px;
-  max-width: 290px;
-}
+.vendedor-cell { min-width: 130px; }
+
 .descripcion-input {
   color: var(--text);
   resize: vertical;
@@ -432,7 +452,8 @@ select.estado-select option { color: #000; background: #fff; }
   line-height: 1.4;
 }
 .descripcion-input::placeholder,
-.ubicacion-input::placeholder {
+.ubicacion-input::placeholder,
+.vendedor-input::placeholder {
   color: var(--text-muted);
 }
 
