@@ -134,6 +134,11 @@ main {
   background: #fff4ec;
 }
 
+.stat-card-success {
+  border-color: var(--seg-a);
+}
+.stat-card-success .value { color: var(--seg-a); }
+
 .seguimiento-tag {
   font-size: 11px;
   color: var(--text-muted);

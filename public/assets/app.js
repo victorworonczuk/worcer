@@ -28,6 +28,8 @@ const PROVINCIAS = [
 
 const RUBROS = ['Distribuidor', 'Venta online', 'Sanitario', 'Corralón', 'Ferretería', 'Otros'];
 
+const META_CONTACTOS_SEMANAL = 35;
+
 const VENDEDORES = [
   'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
   'Javier Viglino', 'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
@@ -252,6 +254,26 @@ function populateFilterOptions() {
   els.vendedor.value = vendedorActual;
 }
 
+function inicioSemana() {
+  const hoy = new Date();
+  const dia = hoy.getDay(); // 0 = domingo, 1 = lunes, ...
+  const diff = dia === 0 ? 6 : dia - 1; // días desde el lunes
+  const lunes = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - diff);
+  lunes.setHours(0, 0, 0, 0);
+  return lunes;
+}
+
+function contactosEstaSemana() {
+  const desde = inicioSemana();
+  let count = 0;
+  for (const lista of state.interaccionesByCliente.values()) {
+    for (const i of lista) {
+      if (new Date(i.created_at) >= desde) count += 1;
+    }
+  }
+  return count;
+}
+
 function renderStats() {
   const total = state.all.length;
   const segCounts = {};
@@ -267,10 +289,17 @@ function renderStats() {
     if (esVencido(proximoSeguimientoDe(r.id))) vencidos += 1;
   }
 
+  const contactosSemana = contactosEstaSemana();
+  const faltan = Math.max(0, META_CONTACTOS_SEMANAL - contactosSemana);
+  const metaLabel = faltan === 0
+    ? `🎯 Contactos esta semana · ¡Meta cumplida!`
+    : `🎯 Contactos esta semana · Faltan ${faltan}`;
+
   const cards = [
     { label: 'Total clientes', value: total },
     { label: 'Con dato de contacto', value: conContacto },
     { label: '📅 Seguimientos vencidos', value: vencidos, id: 'card-vencidos', special: true },
+    { label: metaLabel, value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, metaCumplida: faltan === 0 },
     { label: 'Recuperados', value: estadoCounts.recuperado || 0 },
     { label: 'Contactados', value: estadoCounts.contactado || 0 },
     { label: 'Descartados', value: estadoCounts.descartado || 0 },
@@ -285,7 +314,7 @@ function renderStats() {
   els.stats.innerHTML = cards
     .map(
       (c) =>
-        `<div class="stat-card${c.special ? ' stat-card-clickable' : ''}${state.filters.soloVencidos && c.id === 'card-vencidos' ? ' active' : ''}" ${c.id ? `id="${c.id}"` : ''}><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
+        `<div class="stat-card${c.special ? ' stat-card-clickable' : ''}${c.metaCumplida ? ' stat-card-success' : ''}${state.filters.soloVencidos && c.id === 'card-vencidos' ? ' active' : ''}" ${c.id ? `id="${c.id}"` : ''}><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
     )
     .join('');
 
