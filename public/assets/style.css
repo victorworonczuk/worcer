@@ -349,6 +349,24 @@ select.estado-select option { color: #000; background: #fff; }
 .badge.estado-recuperado { background: var(--estado-recuperado); }
 .badge.estado-descartado { background: var(--estado-descartado); }
 
+.ubicacion-cell { min-width: 130px; }
+.ubicacion-select, .ubicacion-input {
+  display: block;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 3px 4px;
+  font-size: 12px;
+  color: var(--text);
+  background: transparent;
+}
+.ubicacion-input { margin-top: 2px; }
+.ubicacion-select:hover, .ubicacion-input:hover,
+.ubicacion-select:focus, .ubicacion-input:focus {
+  border-color: var(--border);
+  background: var(--bg);
+}
+
 .historial-cell { min-width: 140px; }
 button.toggle-historial {
   border: 1px solid var(--border);

@@ -18,6 +18,12 @@ const state = {
 const CANAL_LABEL = { llamado: '☎ Llamado', whatsapp: 'WhatsApp', email: 'Email', otro: 'Otro' };
 const RESULTADO_LABEL = { contactado: 'Contactado', recuperado: 'Recuperado', descartado: 'Descartado' };
 
+const PROVINCIAS = [
+  'Bs As', 'Capital', 'Catamarca', 'Chaco', 'Corrientes', 'Córdoba', 'Entre Ríos', 'Formosa',
+  'Jujuy', 'La Pampa', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan',
+  'San Luis', 'Santa Cruz', 'Santa Fe', 'Sgo Estero', 'T.Fuego', 'Tucumán',
+];
+
 const FROM_BY_ROL = {
   ventas: 'ventas@porcelanasalberti.com.ar',
   facturacion: 'administracion@porcelanasalberti.com.ar',
@@ -324,6 +330,13 @@ function renderTable() {
   els.tbody.querySelectorAll('.estado-select').forEach((sel) => {
     sel.addEventListener('change', onEstadoChange);
   });
+  els.tbody.querySelectorAll('.ubicacion-select').forEach((sel) => {
+    sel.addEventListener('change', onUbicacionChange);
+  });
+  els.tbody.querySelectorAll('.ubicacion-input').forEach((input) => {
+    input.addEventListener('blur', onUbicacionChange);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+  });
   els.tbody.querySelectorAll('.toggle-facturas').forEach((btn) => {
     btn.addEventListener('click', onToggleFacturas);
   });
@@ -624,7 +637,14 @@ function rowHtml(r) {
         <span class="cuit">${escapeHtml(r.cuit || '')}</span>
         <button type="button" class="delete-cliente" data-id="${r.id}" title="Eliminar cliente">🗑 Eliminar</button>
       </td>
-      <td>${escapeHtml(r.provincia || '')}${r.localidad ? '<br><span class="cuit">' + escapeHtml(r.localidad) + '</span>' : ''}</td>
+      <td class="ubicacion-cell">
+        <select class="ubicacion-select" data-field="provincia">
+          <option value="">Sin provincia</option>
+          ${PROVINCIAS.map((p) => `<option value="${p}" ${r.provincia === p ? 'selected' : ''}>${p}</option>`).join('')}
+        </select>
+        <input type="text" class="ubicacion-input" data-field="localidad" value="${escapeHtml(r.localidad || '')}" placeholder="Localidad" />
+        <span class="save-indicator">✓</span>
+      </td>
       <td><span class="badge ${segClass(r.segmento)}">${segLabel}</span></td>
       <td><span class="badge ${confClass(r.confianza_dato)}">${escapeHtml(r.confianza_dato || 'sin_datos')}</span></td>
       <td class="contact-links">${contactLinks(r)}</td>
@@ -688,6 +708,17 @@ async function onEstadoChange(e) {
   const rec = state.all.find((r) => String(r.id) === String(id));
   if (rec) rec.estado_contacto = value;
   renderStats();
+}
+
+async function onUbicacionChange(e) {
+  const tr = e.target.closest('tr');
+  const id = tr.dataset.id;
+  const field = e.target.dataset.field;
+  const value = e.target.value.trim() || null;
+  await saveField(id, field, value, e.target);
+  const rec = state.all.find((r) => String(r.id) === String(id));
+  if (rec) rec[field] = value;
+  if (field === 'provincia') populateFilterOptions();
 }
 
 async function saveField(id, field, value, targetEl) {
