@@ -123,6 +123,8 @@ El sitio tiene `manifest.json` + íconos (`public/icons/`, generados con `sips` 
 - **Importante**: `proxy.js` protege todo el sitio con login — sin la excepción explícita para `/manifest.json` y `/icons/*` (ver `esPublico()` ahí), el navegador nunca puede leerlos sin sesión y el ícono/manifest no funcionan nunca, ni siquiera en la pantalla de login.
 - Si se cambia el logo, regenerar los 3 archivos de `public/icons/` desde el original con `sips -Z <ancho> logo.png --out resized.png` + `sips -p <alto> <ancho> --padColor 2453FF resized.png --out icon.png` (192x192, 512x512, 180x180 apple-touch-icon).
 
+**Responsive (celular)**: todo el CSS se diseñó pensando en escritorio, sin ningún `@media query` — al instalarse como ícono de pantalla de inicio el sitio se usa mucho más desde el celular, así que se agregó un bloque `@media (max-width: 640px)` al final de `style.css` (compartido por todas las páginas: topbar que pasa a columna con los botones de nav en un scroll horizontal en vez de cortarse, grid de stats a 2 columnas, modal que no excede el ancho de la pantalla) y otro en `nueva-factura.css` (las filas de dos campos como Fecha/N° comprobante pasan a apilarse). Las tablas anchas (dashboard, análisis de piezas, producción) se dejaron con scroll horizontal dentro de `.table-wrap` en vez de rediseñarlas a tarjetas — es el mismo trade-off que usan la mayoría de los CRM en mobile para tablas densas.
+
 ## Correr en local
 
 ```bash

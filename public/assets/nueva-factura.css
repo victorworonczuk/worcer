@@ -216,3 +216,23 @@
 }
 .recientes-item .nombre { font-weight: 600; }
 .recientes-item .meta { color: var(--text-muted); font-size: 12px; }
+
+@media (max-width: 640px) {
+  .factura-main {
+    padding: 12px;
+  }
+  .factura-form {
+    padding: 16px;
+  }
+  .field-row {
+    flex-direction: column;
+    gap: 18px;
+  }
+  .pieza-row {
+    flex-wrap: wrap;
+  }
+  .pieza-row .pieza-linea-select,
+  .pieza-row .pieza-select {
+    flex: 1 1 100%;
+  }
+}
