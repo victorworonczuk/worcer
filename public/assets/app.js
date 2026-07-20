@@ -331,11 +331,14 @@ function renderTable() {
     sel.addEventListener('change', onEstadoChange);
   });
   els.tbody.querySelectorAll('.ubicacion-select').forEach((sel) => {
-    sel.addEventListener('change', onUbicacionChange);
+    sel.addEventListener('change', onEditableFieldChange);
   });
-  els.tbody.querySelectorAll('.ubicacion-input').forEach((input) => {
-    input.addEventListener('blur', onUbicacionChange);
+  els.tbody.querySelectorAll('.ubicacion-input, .rubro-input').forEach((input) => {
+    input.addEventListener('blur', onEditableFieldChange);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+  });
+  els.tbody.querySelectorAll('.descripcion-input').forEach((textarea) => {
+    textarea.addEventListener('blur', onEditableFieldChange);
   });
   els.tbody.querySelectorAll('.toggle-facturas').forEach((btn) => {
     btn.addEventListener('click', onToggleFacturas);
@@ -643,13 +646,20 @@ function rowHtml(r) {
           ${PROVINCIAS.map((p) => `<option value="${p}" ${r.provincia === p ? 'selected' : ''}>${p}</option>`).join('')}
         </select>
         <input type="text" class="ubicacion-input" data-field="localidad" value="${escapeHtml(r.localidad || '')}" placeholder="Localidad" />
+        <input type="text" class="ubicacion-input" data-field="domicilio" value="${escapeHtml(r.domicilio || '')}" placeholder="Domicilio" />
         <span class="save-indicator">✓</span>
       </td>
       <td><span class="badge ${segClass(r.segmento)}">${segLabel}</span></td>
       <td><span class="badge ${confClass(r.confianza_dato)}">${escapeHtml(r.confianza_dato || 'sin_datos')}</span></td>
       <td class="contact-links">${contactLinks(r)}</td>
-      <td>${escapeHtml(r.rubro || '')}</td>
-      <td class="desc-cell">${escapeHtml(r.descripcion || '')}</td>
+      <td class="rubro-cell">
+        <input type="text" class="rubro-input" data-field="rubro" value="${escapeHtml(r.rubro || '')}" placeholder="Sin rubro" />
+        <span class="save-indicator">✓</span>
+      </td>
+      <td class="desc-cell">
+        <textarea class="descripcion-input" data-field="descripcion" rows="2" placeholder="Sin descripción">${escapeHtml(r.descripcion || '')}</textarea>
+        <span class="save-indicator">✓</span>
+      </td>
       <td class="factura-cell">${facturacionCell(r)}</td>
       <td>
         <select class="estado-select ${estadoClass(r.estado_contacto)}" data-field="estado_contacto">
@@ -710,7 +720,7 @@ async function onEstadoChange(e) {
   renderStats();
 }
 
-async function onUbicacionChange(e) {
+async function onEditableFieldChange(e) {
   const tr = e.target.closest('tr');
   const id = tr.dataset.id;
   const field = e.target.dataset.field;
