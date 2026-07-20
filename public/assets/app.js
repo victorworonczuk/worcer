@@ -351,33 +351,12 @@ function renderTable() {
   els.tbody.querySelectorAll('.guardar-interaccion').forEach((btn) => {
     btn.addEventListener('click', onGuardarInteraccion);
   });
-  els.tbody.querySelectorAll('.copy-message').forEach((btn) => {
-    btn.addEventListener('click', onCopyMessage);
-  });
   els.tbody.querySelectorAll('.send-email').forEach((btn) => {
     btn.addEventListener('click', onSendEmail);
   });
   els.tbody.querySelectorAll('.delete-cliente').forEach((btn) => {
     btn.addEventListener('click', onDeleteCliente);
   });
-}
-
-async function onCopyMessage(e) {
-  const id = Number(e.target.dataset.id);
-  const rec = state.all.find((r) => r.id === id);
-  if (!rec) return;
-  const text = buildMessage(rec);
-  try {
-    await navigator.clipboard.writeText(text);
-    const original = e.target.textContent;
-    e.target.textContent = '✓ Copiado';
-    setTimeout(() => {
-      e.target.textContent = original;
-    }, 1500);
-  } catch (err) {
-    console.error('No se pudo copiar', err);
-    alert(text);
-  }
 }
 
 function facturasDetailHtml(r) {
@@ -614,18 +593,7 @@ function contactLinks(r) {
     links.push(`<button type="button" class="send-email" data-id="${r.id}">✉ Enviar email</button>`);
   }
   if (r.web) links.push(`<a href="${r.web.startsWith('http') ? r.web : 'https://' + r.web}" target="_blank" rel="noopener">Web/redes</a>`);
-  links.push(`<button type="button" class="copy-message" data-id="${r.id}">📋 Copiar mensaje</button>`);
-  let html;
-  if (links.length > 1) {
-    html = links.join('<br>');
-  } else {
-    const esDormido = (r.segmento || '').trim().startsWith('F');
-    const sinDatos = esDormido
-      ? '<span class="none">Sin datos</span>'
-      : '<span class="none">Pendiente: exportar de tu sistema de facturación</span>';
-    html = `${sinDatos}<br>${links[0]}`;
-  }
-  return html + contactoEditableHtml(r);
+  return links.join('<br>') + contactoEditableHtml(r);
 }
 
 function contactoEditableHtml(r) {
