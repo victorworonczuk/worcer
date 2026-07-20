@@ -62,6 +62,25 @@ const CATALOGO = [
   { linea: 'Bachas', tipo_pieza: 'Cancún', variante: null, calidades: ['1era', 'comercial'], precioListaComercial: 68392 },
 ];
 
+// Repuestos/accesorios y piezas sueltas fuera de catálogo, detectados en los
+// reportes de "Salidas de Stocks" del sistema de facturación (códigos 04xx y
+// 999) — no están en LISTA DE PRECIOS, así que no tienen la distinción
+// 1era/comercial/3era con IVA: se cargan con una única calidad ('comercial')
+// y el precio de venta observado en esos mismos reportes (no se les aplica
+// el +21% IVA de precioParaCalidad, sería inventar un precio que no vimos).
+const CATALOGO_REPUESTOS = [
+  { linea: 'Repuestos', tipo_pieza: 'Elemento de mochila', variante: '', precio_ars: 21000 },
+  { linea: 'Repuestos', tipo_pieza: 'Tapa de mochila', variante: '', precio_ars: 25400 },
+  { linea: 'Repuestos', tipo_pieza: 'Tapa de inodoro', variante: 'Napoles', precio_ars: 35600 },
+  { linea: 'Repuestos', tipo_pieza: 'Tapa de inodoro', variante: 'Lyon', precio_ars: 38300 },
+  { linea: 'Repuestos', tipo_pieza: 'Elemento de mochila', variante: 'Lira/Belmond', precio_ars: 30000 },
+  { linea: 'Repuestos', tipo_pieza: 'Tapa de inodoro', variante: 'Belmond', precio_ars: 79000 },
+  // Código genérico "999" del sistema de facturación (pedidos especiales, muy poco frecuentes).
+  { linea: 'Otros', tipo_pieza: 'Bacha bowl monocomando', variante: '', precio_ars: 66000 },
+  { linea: 'Otros', tipo_pieza: 'Mueble de vanitory', variante: 'Blanco', precio_ars: 76000 },
+  { linea: 'Otros', tipo_pieza: 'Mueble de vanitory', variante: 'Wengue', precio_ars: 70000 },
+];
+
 async function main() {
   const client = new Client({ connectionString: CONNECTION_STRING });
   await client.connect();
@@ -86,6 +105,18 @@ async function main() {
       if (rows[0].es_nueva) insertadas += 1;
       else actualizadas += 1;
     }
+  }
+  for (const item of CATALOGO_REPUESTOS) {
+    const { rows } = await client.query(
+      `insert into public.piezas (linea, tipo_pieza, variante, calidad, precio_ars, precio_actualizado)
+       values ($1, $2, $3, 'comercial', $4, now())
+       on conflict (linea, tipo_pieza, variante, calidad)
+       do update set precio_ars = excluded.precio_ars, precio_actualizado = now()
+       returning (xmax = 0) as es_nueva`,
+      [item.linea, item.tipo_pieza, item.variante || '', item.precio_ars]
+    );
+    if (rows[0].es_nueva) insertadas += 1;
+    else actualizadas += 1;
   }
   console.log(`Piezas nuevas: ${insertadas} | precios actualizados en existentes: ${actualizadas}`);
 
