@@ -444,7 +444,13 @@ select.estado-select option { color: #000; background: #fff; }
 }
 .rubro-check input { cursor: pointer; }
 
-.vendedor-cell { min-width: 130px; }
+.vendedor-cell { min-width: 170px; }
+.vendedor-select {
+  padding-right: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
 .descripcion-input {
   color: var(--text);
