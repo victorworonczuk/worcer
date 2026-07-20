@@ -335,12 +335,19 @@ function renderTable() {
   els.tbody.querySelectorAll('.ubicacion-select, .rubro-select').forEach((sel) => {
     sel.addEventListener('change', onEditableFieldChange);
   });
-  els.tbody.querySelectorAll('.ubicacion-input, .contacto-input').forEach((input) => {
+  els.tbody.querySelectorAll('.ubicacion-input, .contacto-input:not(.telefono-input)').forEach((input) => {
     input.addEventListener('blur', onEditableFieldChange);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
   });
   els.tbody.querySelectorAll('.descripcion-input').forEach((textarea) => {
     textarea.addEventListener('blur', onEditableFieldChange);
+  });
+  els.tbody.querySelectorAll('.telefono-input').forEach((input) => {
+    input.addEventListener('blur', onTelefonoChange);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+  });
+  els.tbody.querySelectorAll('.add-telefono').forEach((btn) => {
+    btn.addEventListener('click', onAddTelefono);
   });
   els.tbody.querySelectorAll('.toggle-facturas').forEach((btn) => {
     btn.addEventListener('click', onToggleFacturas);
@@ -580,9 +587,23 @@ async function onDeleteCliente(e) {
   applyFilters();
 }
 
+function telefonosDe(r) {
+  return (r.telefono || '').split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+function telefonoRowHtml(valor) {
+  const action = valor
+    ? `<a class="contacto-action" href="tel:${valor.replace(/[^0-9+]/g, '')}" title="Llamar">☎</a>` : '';
+  return `<div class="contacto-row telefono-row">
+    <input type="text" class="contacto-input telefono-input" value="${escapeHtml(valor)}" placeholder="Teléfono" />
+    ${action}
+  </div>`;
+}
+
 function contactLinks(r) {
-  const telAction = r.telefono
-    ? `<a class="contacto-action" href="tel:${r.telefono.replace(/[^0-9+]/g, '')}" title="Llamar">☎</a>` : '';
+  const telefonos = telefonosDe(r);
+  const telefonosHtml = (telefonos.length ? telefonos : ['']).map(telefonoRowHtml).join('')
+    + `<button type="button" class="add-telefono" data-id="${r.id}">+ Agregar otro teléfono</button>`;
   let waAction = '';
   if (r.whatsapp) {
     const num = r.whatsapp.replace(/[^0-9]/g, '');
@@ -596,10 +617,7 @@ function contactLinks(r) {
 
   return `
     <div class="contacto-block">
-      <div class="contacto-row">
-        <input type="text" class="contacto-input" data-field="telefono" value="${escapeHtml(r.telefono || '')}" placeholder="Teléfono" />
-        ${telAction}
-      </div>
+      <div class="telefono-group" data-id="${r.id}">${telefonosHtml}</div>
       <div class="contacto-row">
         <input type="text" class="contacto-input" data-field="whatsapp" value="${escapeHtml(r.whatsapp || '')}" placeholder="WhatsApp (549...)" />
         ${waAction}
@@ -717,7 +735,7 @@ async function onEstadoChange(e) {
   renderStats();
 }
 
-const CAMPOS_CONTACTO = ['telefono', 'whatsapp', 'email'];
+const CAMPOS_CONTACTO = ['whatsapp', 'email'];
 
 async function onEditableFieldChange(e) {
   const tr = e.target.closest('tr');
@@ -729,6 +747,30 @@ async function onEditableFieldChange(e) {
   if (rec) rec[field] = value;
   if (field === 'provincia') populateFilterOptions();
   if (CAMPOS_CONTACTO.includes(field)) renderTable();
+}
+
+async function onTelefonoChange(e) {
+  const tr = e.target.closest('tr');
+  const id = tr.dataset.id;
+  const group = e.target.closest('.telefono-group');
+  const valores = [...group.querySelectorAll('.telefono-input')].map((i) => i.value.trim()).filter(Boolean);
+  const value = valores.length ? valores.join(', ') : null;
+  await saveField(id, 'telefono', value, e.target);
+  const rec = state.all.find((r) => String(r.id) === String(id));
+  if (rec) rec.telefono = value;
+  renderTable();
+}
+
+function onAddTelefono(e) {
+  const btn = e.target;
+  const row = document.createElement('div');
+  row.className = 'contacto-row telefono-row';
+  row.innerHTML = '<input type="text" class="contacto-input telefono-input" value="" placeholder="Teléfono" />';
+  btn.parentElement.insertBefore(row, btn);
+  const input = row.querySelector('.telefono-input');
+  input.addEventListener('blur', onTelefonoChange);
+  input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') ev.target.blur(); });
+  input.focus();
 }
 
 async function saveField(id, field, value, targetEl) {
