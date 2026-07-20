@@ -407,7 +407,7 @@ select.estado-select option { color: #000; background: #fff; }
 .badge.estado-descartado { background: var(--estado-descartado); }
 
 .ubicacion-cell { min-width: 150px; }
-.ubicacion-select, .ubicacion-input, .rubro-select, .descripcion-input, .vendedor-input {
+.ubicacion-select, .ubicacion-input, .rubro-select, .descripcion-input, .vendedor-select, .vendedor-otro-input {
   display: block;
   width: 100%;
   border: 1px solid var(--border);
@@ -419,10 +419,11 @@ select.estado-select option { color: #000; background: #fff; }
   font-family: inherit;
 }
 .ubicacion-input { margin-top: 5px; }
-.ubicacion-select:hover, .ubicacion-input:hover, .rubro-select:hover, .descripcion-input:hover, .vendedor-input:hover {
+.vendedor-otro-input { margin-top: 5px; }
+.ubicacion-select:hover, .ubicacion-input:hover, .rubro-select:hover, .descripcion-input:hover, .vendedor-select:hover, .vendedor-otro-input:hover {
   border-color: #c7ccd4;
 }
-.ubicacion-select:focus, .ubicacion-input:focus, .rubro-select:focus, .descripcion-input:focus, .vendedor-input:focus {
+.ubicacion-select:focus, .ubicacion-input:focus, .rubro-select:focus, .descripcion-input:focus, .vendedor-select:focus, .vendedor-otro-input:focus {
   border-color: var(--primary);
   background: #fff;
 }
@@ -453,7 +454,7 @@ select.estado-select option { color: #000; background: #fff; }
 }
 .descripcion-input::placeholder,
 .ubicacion-input::placeholder,
-.vendedor-input::placeholder {
+.vendedor-otro-input::placeholder {
   color: var(--text-muted);
 }
 

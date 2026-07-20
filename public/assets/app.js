@@ -12,6 +12,7 @@ const state = {
   interaccionesByCliente: new Map(),
   openHistorial: new Set(),
   openDescripcion: new Set(),
+  vendedorOtro: new Set(),
   currentUser: null,
   currentUserRol: null,
 };
@@ -26,6 +27,12 @@ const PROVINCIAS = [
 ];
 
 const RUBROS = ['Distribuidor', 'Venta online', 'Sanitario', 'Corralón', 'Ferretería', 'Otros'];
+
+const VENDEDORES = [
+  'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
+  'Javier Viglino', 'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
+  'Mariano Cabarrus', 'Sebastián Guerra', 'Horacio Vostrosky', 'Víctor W.',
+];
 
 const FROM_BY_ROL = {
   ventas: 'ventas@porcelanasalberti.com.ar',
@@ -350,7 +357,10 @@ function renderTable() {
   els.tbody.querySelectorAll('.rubro-checkbox').forEach((cb) => {
     cb.addEventListener('change', onRubroChange);
   });
-  els.tbody.querySelectorAll('.ubicacion-input, .contacto-input:not(.telefono-input), .vendedor-input').forEach((input) => {
+  els.tbody.querySelectorAll('.vendedor-select').forEach((sel) => {
+    sel.addEventListener('change', onVendedorSelectChange);
+  });
+  els.tbody.querySelectorAll('.ubicacion-input, .contacto-input:not(.telefono-input), .vendedor-otro-input').forEach((input) => {
     input.addEventListener('blur', onEditableFieldChange);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
   });
@@ -636,6 +646,23 @@ function rubroCellHtml(r) {
   return `<div class="rubro-group">${checks}<span class="save-indicator">✓</span></div>`;
 }
 
+function vendedorCellHtml(r) {
+  const esOtro = r.vendedor && !VENDEDORES.includes(r.vendedor);
+  const mostrarOtro = esOtro || state.vendedorOtro.has(r.id);
+  const otroInput = mostrarOtro
+    ? `<input type="text" class="vendedor-otro-input" data-field="vendedor" value="${escapeHtml(esOtro ? r.vendedor : '')}" placeholder="Nombre del vendedor" />`
+    : '';
+  return `
+    <select class="vendedor-select" data-field="vendedor">
+      <option value="">Sin vendedor</option>
+      ${VENDEDORES.map((v) => `<option value="${escapeHtml(v)}" ${r.vendedor === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}
+      <option value="__otro__" ${mostrarOtro ? 'selected' : ''}>Otro</option>
+    </select>
+    ${otroInput}
+    <span class="save-indicator">✓</span>
+  `;
+}
+
 function telefonoRowHtml(valor) {
   const action = valor
     ? `<a class="contacto-action" href="tel:${valor.replace(/[^0-9+]/g, '')}" title="Llamar">☎</a>` : '';
@@ -717,10 +744,7 @@ function rowHtml(r) {
       <td><span class="badge ${confClass(r.confianza_dato)}">${escapeHtml(r.confianza_dato || 'sin_datos')}</span></td>
       <td class="contact-links">${contactLinks(r)}</td>
       <td class="rubro-cell">${rubroCellHtml(r)}</td>
-      <td class="vendedor-cell">
-        <input type="text" class="vendedor-input" data-field="vendedor" value="${escapeHtml(r.vendedor || '')}" placeholder="Sin vendedor" />
-        <span class="save-indicator">✓</span>
-      </td>
+      <td class="vendedor-cell">${vendedorCellHtml(r)}</td>
       <td class="factura-cell">${facturacionCell(r)}</td>
       <td>
         <select class="estado-select ${estadoClass(r.estado_contacto)}" data-field="estado_contacto">
@@ -804,6 +828,22 @@ async function onRubroChange(e) {
   await saveField(id, 'rubro', value, e.target);
   const rec = state.all.find((r) => String(r.id) === String(id));
   if (rec) rec.rubro = value;
+}
+
+async function onVendedorSelectChange(e) {
+  const tr = e.target.closest('tr');
+  const id = tr.dataset.id;
+  const value = e.target.value;
+  if (value === '__otro__') {
+    state.vendedorOtro.add(Number(id));
+    renderTable();
+    return;
+  }
+  state.vendedorOtro.delete(Number(id));
+  await saveField(id, 'vendedor', value || null, e.target);
+  const rec = state.all.find((r) => String(r.id) === String(id));
+  if (rec) rec.vendedor = value || null;
+  populateFilterOptions();
 }
 
 async function onTelefonoChange(e) {
