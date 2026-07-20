@@ -432,6 +432,9 @@ function renderTable() {
   els.tbody.querySelectorAll('.guardar-interaccion').forEach((btn) => {
     btn.addEventListener('click', onGuardarInteraccion);
   });
+  els.tbody.querySelectorAll('.eliminar-interaccion').forEach((btn) => {
+    btn.addEventListener('click', onDeleteInteraccion);
+  });
   els.tbody.querySelectorAll('.send-email').forEach((btn) => {
     btn.addEventListener('click', onSendEmail);
   });
@@ -481,6 +484,18 @@ function fmtFecha(dateStr) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-AR');
 }
 
+function esMismoDiaLocal(fechaA, fechaB) {
+  return fechaA.getFullYear() === fechaB.getFullYear()
+    && fechaA.getMonth() === fechaB.getMonth()
+    && fechaA.getDate() === fechaB.getDate();
+}
+
+function clienteContactadoHoy(clienteId) {
+  const hoy = new Date();
+  const lista = state.interaccionesByCliente.get(clienteId) || [];
+  return lista.find((i) => esMismoDiaLocal(new Date(i.created_at), hoy)) || null;
+}
+
 function historialDetailHtml(r) {
   const interacciones = state.interaccionesByCliente.get(r.id) || [];
   const filas = interacciones
@@ -492,14 +507,15 @@ function historialDetailHtml(r) {
         <td><span class="badge estado-${i.resultado}">${RESULTADO_LABEL[i.resultado] || escapeHtml(i.resultado)}</span></td>
         <td>${escapeHtml(i.nota || '')}</td>
         <td>${i.proximo_seguimiento ? fmtFecha(i.proximo_seguimiento) : ''}</td>
+        <td><button type="button" class="eliminar-interaccion" data-id="${r.id}" data-interaccion-id="${i.id}" title="Eliminar interacción">🗑</button></td>
       </tr>`
     )
     .join('');
 
-  return `
-    <tr class="historial-detail-row">
-      <td colspan="10">
-        <div class="historial-form">
+  const contactoHoy = clienteContactadoHoy(r.id);
+  const formHtml = contactoHoy
+    ? `<div class="historial-bloqueado">Ya se registró un contacto hoy con este cliente (${CANAL_LABEL[contactoHoy.canal] || contactoHoy.canal} · ${escapeHtml(contactoHoy.usuario)}). Si fue un error, eliminalo abajo para poder cargar uno nuevo.</div>`
+    : `<div class="historial-form">
           <select class="int-canal">
             <option value="llamado">☎ Llamado</option>
             <option value="whatsapp">WhatsApp</option>
@@ -516,11 +532,16 @@ function historialDetailHtml(r) {
             <input type="date" class="int-fecha" />
           </label>
           <button type="button" class="guardar-interaccion" data-id="${r.id}">Guardar</button>
-        </div>
+        </div>`;
+
+  return `
+    <tr class="historial-detail-row">
+      <td colspan="10">
+        ${formHtml}
         ${
           filas
             ? `<table class="historial-table">
-                <thead><tr><th>Fecha</th><th>Usuario</th><th>Canal</th><th>Resultado</th><th>Nota</th><th>Próximo seguimiento</th></tr></thead>
+                <thead><tr><th>Fecha</th><th>Usuario</th><th>Canal</th><th>Resultado</th><th>Nota</th><th>Próximo seguimiento</th><th></th></tr></thead>
                 <tbody>${filas}</tbody>
               </table>`
             : '<div class="none">Todavía no hay interacciones registradas con este cliente.</div>'
@@ -552,6 +573,11 @@ function onToggleDescripcion(e) {
 
 async function onGuardarInteraccion(e) {
   const id = Number(e.target.dataset.id);
+  if (clienteContactadoHoy(id)) {
+    alert('Ya se registró un contacto hoy con este cliente.');
+    renderTable();
+    return;
+  }
   const row = e.target.closest('.historial-detail-row');
   const canal = row.querySelector('.int-canal').value;
   const resultado = row.querySelector('.int-resultado').value;
@@ -581,6 +607,29 @@ async function onGuardarInteraccion(e) {
   await client.from('clientes').update({ estado_contacto: resultado }).eq('id', id);
   const rec = state.all.find((r) => r.id === id);
   if (rec) rec.estado_contacto = resultado;
+
+  renderStats();
+  renderTable();
+}
+
+async function onDeleteInteraccion(e) {
+  const clienteId = Number(e.target.dataset.id);
+  const interaccionId = Number(e.target.dataset.interaccionId);
+  if (!confirm('¿Eliminar esta interacción?')) return;
+
+  const { error } = await client.from('interacciones').delete().eq('id', interaccionId);
+  if (error) {
+    alert('No se pudo eliminar la interacción: ' + error.message);
+    return;
+  }
+
+  const lista = (state.interaccionesByCliente.get(clienteId) || []).filter((i) => i.id !== interaccionId);
+  state.interaccionesByCliente.set(clienteId, lista);
+
+  const nuevoResultado = lista[0]?.resultado || null;
+  await client.from('clientes').update({ estado_contacto: nuevoResultado }).eq('id', clienteId);
+  const rec = state.all.find((r) => r.id === clienteId);
+  if (rec) rec.estado_contacto = nuevoResultado;
 
   renderStats();
   renderTable();

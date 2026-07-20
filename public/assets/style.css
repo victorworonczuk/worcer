@@ -531,6 +531,26 @@ tr.historial-detail-row td {
 .historial-form button:hover { background: var(--primary-dark); }
 .historial-form button:disabled { opacity: 0.6; cursor: not-allowed; }
 
+.historial-bloqueado {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: #fff8ec;
+  border: 1px solid #f0dfb8;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+
+.eliminar-interaccion {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.eliminar-interaccion:hover { color: var(--seg-e); }
+
 table.historial-table {
   width: auto;
   min-width: 480px;
