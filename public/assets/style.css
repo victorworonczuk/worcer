@@ -139,6 +139,16 @@ main {
 }
 .stat-card-success .value { color: var(--seg-a); }
 
+.stat-card-clickable-meta {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.stat-card-clickable-meta:hover { border-color: var(--primary); }
+.stat-card-clickable-meta.active {
+  border-color: var(--primary);
+  background: #eef1ff;
+}
+
 .seguimiento-tag {
   font-size: 11px;
   color: var(--text-muted);

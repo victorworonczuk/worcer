@@ -6,7 +6,7 @@ const state = {
   all: [],
   filtered: [],
   page: 1,
-  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '', rubro: '', vendedor: '', soloVencidos: false },
+  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '', rubro: '', vendedor: '', soloVencidos: false, soloContactadosSemana: false },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
   interaccionesByCliente: new Map(),
@@ -274,6 +274,13 @@ function contactosEstaSemana() {
   return count;
 }
 
+function clienteContactadoEstaSemana(clienteId) {
+  const desde = inicioSemana();
+  const lista = state.interaccionesByCliente.get(clienteId);
+  if (!lista) return false;
+  return lista.some((i) => new Date(i.created_at) >= desde);
+}
+
 function renderStats() {
   const total = state.all.length;
   const segCounts = {};
@@ -299,7 +306,7 @@ function renderStats() {
     { label: 'Total clientes', value: total },
     { label: 'Con dato de contacto', value: conContacto },
     { label: '📅 Seguimientos vencidos', value: vencidos, id: 'card-vencidos', special: true },
-    { label: metaLabel, value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, metaCumplida: faltan === 0 },
+    { label: metaLabel, value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, id: 'card-contactados-semana', clickMeta: true, metaCumplida: faltan === 0 },
     { label: 'Recuperados', value: estadoCounts.recuperado || 0 },
     { label: 'Contactados', value: estadoCounts.contactado || 0 },
     { label: 'Descartados', value: estadoCounts.descartado || 0 },
@@ -314,7 +321,7 @@ function renderStats() {
   els.stats.innerHTML = cards
     .map(
       (c) =>
-        `<div class="stat-card${c.special ? ' stat-card-clickable' : ''}${c.metaCumplida ? ' stat-card-success' : ''}${state.filters.soloVencidos && c.id === 'card-vencidos' ? ' active' : ''}" ${c.id ? `id="${c.id}"` : ''}><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
+        `<div class="stat-card${c.special ? ' stat-card-clickable' : ''}${c.clickMeta ? ' stat-card-clickable-meta' : ''}${c.metaCumplida ? ' stat-card-success' : ''}${state.filters.soloVencidos && c.id === 'card-vencidos' ? ' active' : ''}${state.filters.soloContactadosSemana && c.id === 'card-contactados-semana' ? ' active' : ''}" ${c.id ? `id="${c.id}"` : ''}><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
     )
     .join('');
 
@@ -326,10 +333,19 @@ function renderStats() {
       renderStats();
     });
   }
+
+  const cardContactadosSemana = document.getElementById('card-contactados-semana');
+  if (cardContactadosSemana) {
+    cardContactadosSemana.addEventListener('click', () => {
+      state.filters.soloContactadosSemana = !state.filters.soloContactadosSemana;
+      applyFilters();
+      renderStats();
+    });
+  }
 }
 
 function applyFilters() {
-  const { q, segmento, provincia, confianza, estado, rubro, vendedor, soloVencidos } = state.filters;
+  const { q, segmento, provincia, confianza, estado, rubro, vendedor, soloVencidos, soloContactadosSemana } = state.filters;
   const qLower = q.trim().toLowerCase();
 
   state.filtered = state.all.filter((r) => {
@@ -340,6 +356,7 @@ function applyFilters() {
     if (rubro && !rubrosDe(r).includes(rubro)) return false;
     if (vendedor && r.vendedor !== vendedor) return false;
     if (soloVencidos && !esVencido(proximoSeguimientoDe(r.id))) return false;
+    if (soloContactadosSemana && !clienteContactadoEstaSemana(r.id)) return false;
     if (qLower) {
       const hay = `${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`.toLowerCase();
       if (!hay.includes(qLower)) return false;
