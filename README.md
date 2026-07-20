@@ -115,6 +115,14 @@ Filtra `factura_items` por cliente(s), línea, pieza+calidad y rango de fechas. 
 - **0 o 1 cliente elegido**: tabla simple agrupada por cliente/pieza/calidad, con cantidad total, **monto total en pesos** y N° de facturas.
 - **2 o 3 clientes elegidos** (el filtro de cliente admite selección múltiple, con chips removibles): cambia a una **tabla comparativa** — una fila por pieza+calidad, una columna por cada cliente elegido (cantidad + monto en cada celda), fila de totales en pesos al final.
 
+## Ícono en el celular (PWA)
+
+El sitio tiene `manifest.json` + íconos (`public/icons/`, generados con `sips` a partir del logo real de Worcer) para que "Agregar a pantalla de inicio" desde el navegador del celular quede con ícono propio y se abra sin la barra del navegador (`display: standalone`). No es una app nativa ni requiere tienda de aplicaciones — sigue siendo el mismo sitio web, solo con metadata de PWA.
+
+- Next.js inyecta los `<link>` de manifest/ícono en `/login` (y cualquier ruta React) vía `export const metadata` en `app/layout.js`. Las páginas estáticas (`public/*.html`) los tienen escritos a mano en el `<head>` de cada una.
+- **Importante**: `proxy.js` protege todo el sitio con login — sin la excepción explícita para `/manifest.json` y `/icons/*` (ver `esPublico()` ahí), el navegador nunca puede leerlos sin sesión y el ícono/manifest no funcionan nunca, ni siquiera en la pantalla de login.
+- Si se cambia el logo, regenerar los 3 archivos de `public/icons/` desde el original con `sips -Z <ancho> logo.png --out resized.png` + `sips -p <alto> <ancho> --padColor 2453FF resized.png --out icon.png` (192x192, 512x512, 180x180 apple-touch-icon).
+
 ## Correr en local
 
 ```bash

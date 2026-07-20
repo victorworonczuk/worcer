@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/api/login'];
+const PUBLIC_PATHS = ['/login', '/api/login', '/manifest.json'];
+
+// El manifest de PWA y los íconos los pide el navegador/SO al mostrar "Agregar
+// a pantalla de inicio" y para el favicon/apple-touch-icon del propio login
+// — tienen que responder sin sesión, si no el middleware los redirige a
+// /login y el navegador nunca consigue mostrar el ícono ni el manifest.
+function esPublico(pathname) {
+  return PUBLIC_PATHS.includes(pathname) || pathname.startsWith('/icons/');
+}
 
 async function verifyToken(token, secret) {
   if (!token) return null;
@@ -26,7 +34,7 @@ async function verifyToken(token, secret) {
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
-  if (PUBLIC_PATHS.includes(pathname)) {
+  if (esPublico(pathname)) {
     return NextResponse.next();
   }
 
