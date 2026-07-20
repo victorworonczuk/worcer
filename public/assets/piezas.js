@@ -286,7 +286,7 @@ function renderComparativa(items) {
     return totalB - totalA;
   });
 
-  const celda = (v) => (v && v.cantidad > 0 ? `<strong>${v.cantidad}</strong><br><span class="sub-value">${fmtMonto(v.monto)}</span>` : '<span class="none">—</span>');
+  const celda = (v) => `<td>${v && v.cantidad > 0 ? `<strong>${v.cantidad}</strong><br><span class="sub-value">${fmtMonto(v.monto)}</span>` : '<span class="none">—</span>'}</td>`;
 
   const filasHtml = filasOrdenadas
     .map((fila) => {
