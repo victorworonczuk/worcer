@@ -267,26 +267,29 @@ tbody tr:hover {
 .contact-links .none { color: var(--text-muted); font-size: 12px; }
 
 .contacto-editable {
-  margin-top: 6px;
-  padding-top: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px dashed var(--border);
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
+  min-width: 160px;
 }
 .contacto-input {
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 3px 4px;
+  padding: 6px 8px;
   font-size: 12px;
   color: var(--text);
-  background: transparent;
+  background: var(--surface);
   width: 100%;
   font-family: inherit;
 }
-.contacto-input:hover, .contacto-input:focus {
-  border-color: var(--border);
-  background: var(--bg);
+.contacto-input::placeholder { color: var(--text-muted); }
+.contacto-input:hover { border-color: #c7ccd4; }
+.contacto-input:focus {
+  border-color: var(--primary);
+  background: #fff;
 }
 
 .factura-cell {
@@ -372,35 +375,42 @@ select.estado-select option { color: #000; background: #fff; }
 .badge.estado-recuperado { background: var(--estado-recuperado); }
 .badge.estado-descartado { background: var(--estado-descartado); }
 
-.ubicacion-cell { min-width: 140px; }
+.ubicacion-cell { min-width: 150px; }
 .ubicacion-select, .ubicacion-input, .rubro-select, .descripcion-input {
   display: block;
   width: 100%;
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 3px 4px;
+  padding: 6px 8px;
   font-size: 12px;
   color: var(--text);
-  background: transparent;
+  background: var(--surface);
   font-family: inherit;
 }
-.ubicacion-input { margin-top: 2px; }
-.ubicacion-select:hover, .ubicacion-input:hover, .rubro-select:hover, .descripcion-input:hover,
+.ubicacion-input { margin-top: 5px; }
+.ubicacion-select:hover, .ubicacion-input:hover, .rubro-select:hover, .descripcion-input:hover {
+  border-color: #c7ccd4;
+}
 .ubicacion-select:focus, .ubicacion-input:focus, .rubro-select:focus, .descripcion-input:focus {
-  border-color: var(--border);
-  background: var(--bg);
+  border-color: var(--primary);
+  background: #fff;
 }
 
-.rubro-cell { min-width: 110px; }
+.rubro-cell { min-width: 130px; }
 
 .desc-cell {
-  min-width: 200px;
-  max-width: 280px;
+  min-width: 210px;
+  max-width: 290px;
 }
 .descripcion-input {
-  color: var(--text-muted);
+  color: var(--text);
   resize: vertical;
-  min-height: 34px;
+  min-height: 40px;
+  line-height: 1.4;
+}
+.descripcion-input::placeholder,
+.ubicacion-input::placeholder {
+  color: var(--text-muted);
 }
 
 .historial-cell { min-width: 140px; }
