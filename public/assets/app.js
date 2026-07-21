@@ -191,14 +191,33 @@ function fmtMoney(n) {
   return '$' + Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 });
 }
 
+// Supabase/PostgREST corta cada respuesta en 1000 filas por más que se pida un
+// .limit() más alto — hay que pedir de a páginas con .range() hasta que la
+// página vuelva incompleta. Sin esto, en cuanto una tabla cruza las 1000 filas
+// (pasó con clientes al cargar los Llamados, y ya le pasaba a facturas hace
+// rato sin que nadie lo notara) el resto queda silenciosamente afuera.
+async function fetchAll(buildQuery, pageSize = 1000) {
+  let desde = 0;
+  let todos = [];
+  while (true) {
+    const { data, error } = await buildQuery().range(desde, desde + pageSize - 1);
+    if (error) return { data: null, error };
+    todos = todos.concat(data);
+    if (data.length < pageSize) break;
+    desde += pageSize;
+  }
+  return { data: todos, error: null };
+}
+
 async function loadData() {
   els.tbody.innerHTML = `<tr><td colspan="11" class="loading">Cargando clientes…</td></tr>`;
-  const { data, error } = await client
-    .from('clientes')
-    .select('*')
-    .order('segmento', { ascending: true })
-    .order('usd_total_2025_2026', { ascending: false, nullsFirst: false })
-    .limit(2000);
+  const { data, error } = await fetchAll(() =>
+    client
+      .from('clientes')
+      .select('*')
+      .order('segmento', { ascending: true })
+      .order('usd_total_2025_2026', { ascending: false, nullsFirst: false })
+  );
 
   if (error) {
     els.tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Error cargando datos: ${error.message}</td></tr>`;
@@ -207,12 +226,13 @@ async function loadData() {
   }
   state.all = data;
 
-  const { data: facturas, error: facturasError } = await client
-    .from('facturas')
-    .select('cliente_id, fecha, empresa, mes, importe_ars, importe_usd')
-    .not('cliente_id', 'is', null)
-    .order('fecha', { ascending: false })
-    .limit(3000);
+  const { data: facturas, error: facturasError } = await fetchAll(() =>
+    client
+      .from('facturas')
+      .select('cliente_id, fecha, empresa, mes, importe_ars, importe_usd')
+      .not('cliente_id', 'is', null)
+      .order('fecha', { ascending: false })
+  );
 
   if (facturasError) {
     console.error('Error cargando facturas', facturasError);
@@ -225,11 +245,12 @@ async function loadData() {
     }
   }
 
-  const { data: interacciones, error: interaccionesError } = await client
-    .from('interacciones')
-    .select('id, cliente_id, usuario, canal, resultado, nota, created_at')
-    .order('created_at', { ascending: false })
-    .limit(3000);
+  const { data: interacciones, error: interaccionesError } = await fetchAll(() =>
+    client
+      .from('interacciones')
+      .select('id, cliente_id, usuario, canal, resultado, nota, created_at')
+      .order('created_at', { ascending: false })
+  );
 
   if (interaccionesError) {
     console.error('Error cargando interacciones', interaccionesError);
