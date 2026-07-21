@@ -6,7 +6,7 @@ const state = {
   all: [],
   filtered: [],
   page: 1,
-  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false },
+  filters: { q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
   interaccionesByCliente: new Map(),
@@ -53,6 +53,7 @@ const els = {
   search: document.getElementById('f-search'),
   segmento: document.getElementById('f-segmento'),
   provincia: document.getElementById('f-provincia'),
+  localidad: document.getElementById('f-localidad'),
   confianza: document.getElementById('f-confianza'),
   estado: document.getElementById('f-estado'),
   rubro: document.getElementById('f-rubro'),
@@ -252,6 +253,13 @@ function populateFilterOptions() {
     '<option value="">Todas las provincias</option>' +
     provincias.map((p) => `<option value="${p}">${p}</option>`).join('');
 
+  const localidades = [...new Set(state.all.map((r) => r.localidad).filter(Boolean))].sort();
+  const localidadActual = els.localidad.value;
+  els.localidad.innerHTML =
+    '<option value="">Todas las localidades</option>' +
+    localidades.map((l) => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
+  els.localidad.value = localidadActual;
+
   const vendedores = [...new Set(state.all.map((r) => r.vendedor).filter(Boolean))].sort();
   const vendedorActual = els.vendedor.value;
   els.vendedor.innerHTML =
@@ -351,12 +359,13 @@ function renderStats() {
 }
 
 function applyFilters() {
-  const { q, segmento, provincia, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana } = state.filters;
+  const { q, segmento, provincia, localidad, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana } = state.filters;
   const qLower = q.trim().toLowerCase();
 
   state.filtered = state.all.filter((r) => {
     if (segmento && !(r.segmento || '').startsWith(segmento)) return false;
     if (provincia && r.provincia !== provincia) return false;
+    if (localidad && r.localidad !== localidad) return false;
     if (confianza && r.confianza_dato !== confianza) return false;
     if (estado && (r.estado_contacto || 'pendiente') !== estado) return false;
     if (rubro && !rubrosDe(r).includes(rubro)) return false;
@@ -1040,6 +1049,10 @@ els.segmento.addEventListener('change', (e) => {
 });
 els.provincia.addEventListener('change', (e) => {
   state.filters.provincia = e.target.value;
+  applyFilters();
+});
+els.localidad.addEventListener('change', (e) => {
+  state.filters.localidad = e.target.value;
   applyFilters();
 });
 els.confianza.addEventListener('change', (e) => {

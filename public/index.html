@@ -30,8 +30,11 @@
     <div id="stats" class="stats-grid"></div>
 
     <div class="panel">
-      <div class="filters">
+      <div class="filters-search">
         <input type="search" id="f-search" placeholder="Buscar por nombre, CUIT, localidad..." />
+        <span id="result-count" class="result-count"></span>
+      </div>
+      <div class="filters">
         <select id="f-segmento">
           <option value="">Todos los segmentos</option>
           <option value="A">A · Activo sano</option>
@@ -43,6 +46,9 @@
         </select>
         <select id="f-provincia">
           <option value="">Todas las provincias</option>
+        </select>
+        <select id="f-localidad">
+          <option value="">Todas las localidades</option>
         </select>
         <select id="f-confianza">
           <option value="">Toda confianza</option>
@@ -80,7 +86,6 @@
           <option>Cliente histórico</option>
           <option>Otro</option>
         </select>
-        <span id="result-count" class="result-count"></span>
       </div>
 
       <div class="table-wrap">
