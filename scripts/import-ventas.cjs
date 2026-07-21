@@ -28,6 +28,8 @@ function mesDe(fechaIso) {
 const CUITS_PROPIOS = new Set(['30709413208', '30714033189']);
 
 async function main() {
+  const { buscarClienteSinCuitPorNombre } = await import('../lib/clienteMatching.js');
+
   const jsonPath = path.join(__dirname, '..', 'ventas_export.json');
   if (!fs.existsSync(jsonPath)) {
     console.error('No existe ventas_export.json — corré primero parse-ventas-xml.py con los archivos del sistema de facturación.');
@@ -80,22 +82,43 @@ async function main() {
     group by cuit_normalizado
     having count(distinct nombre_facturado) = 1
   `);
+  // Antes de dar de alta un cliente nuevo, se intenta primero contra los
+  // clientes sin CUIT cargado (leads del import de Llamados, altas manuales
+  // sin CUIT, etc.) — si el nombre matchea con fuerza razonable, se completa
+  // el CUIT en ese cliente existente en vez de crear un duplicado.
+  const { rows: clientesSinCuit } = await client.query(
+    `select id, nombre from public.clientes where cuit is null`
+  );
+
   let altasAutomaticas = 0;
+  let vinculadasPorNombre = 0;
   for (const c of candidatos) {
     if (CUITS_PROPIOS.has(c.cuit_normalizado)) continue;
-    const { rows: nuevoCliente } = await client.query(
-      `insert into public.clientes (nombre, cuit, origen, confianza_dato, estado_contacto)
-       values ($1, $2, 'Alta automática (import ventas)', 'alta', 'pendiente')
-       returning id`,
-      [c.nombre_facturado, c.cuit_original]
-    );
+
+    const matchPorNombre = buscarClienteSinCuitPorNombre(c.nombre_facturado, clientesSinCuit);
+    let clienteId;
+    if (matchPorNombre) {
+      await client.query(`update public.clientes set cuit = $1 where id = $2`, [c.cuit_original, matchPorNombre.id]);
+      clienteId = matchPorNombre.id;
+      clientesSinCuit.splice(clientesSinCuit.indexOf(matchPorNombre), 1);
+      vinculadasPorNombre += 1;
+    } else {
+      const { rows: nuevoCliente } = await client.query(
+        `insert into public.clientes (nombre, cuit, origen, confianza_dato, estado_contacto)
+         values ($1, $2, 'Alta automática (import ventas)', 'alta', 'pendiente')
+         returning id`,
+        [c.nombre_facturado, c.cuit_original]
+      );
+      clienteId = nuevoCliente[0].id;
+      altasAutomaticas += 1;
+    }
     await client.query(
       `update public.facturas set cliente_id = $1 where cuit_normalizado = $2 and cliente_id is null`,
-      [nuevoCliente[0].id, c.cuit_normalizado]
+      [clienteId, c.cuit_normalizado]
     );
-    altasAutomaticas += 1;
   }
   console.log(`Clientes nuevos dados de alta automáticamente: ${altasAutomaticas}`);
+  console.log(`Completados con CUIT por coincidir con un cliente sin CUIT ya cargado: ${vinculadasPorNombre}`);
 
   const { rows: sinVincular } = await client.query(`
     select count(*) from public.facturas

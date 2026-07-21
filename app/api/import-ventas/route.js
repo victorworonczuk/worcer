@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Client } from 'pg';
 import crypto from 'crypto';
 import { parseVentasXml, mesDe } from '../../../lib/ventasXml.js';
+import { buscarClienteSinCuitPorNombre } from '../../../lib/clienteMatching.js';
 
 // CUITs de las propias sociedades de Worcer (Cerámica Sanitaria 8 de Julio SRL,
 // Porcelanas Alberti SRL) — a veces se facturan cosas entre ellas mismas
@@ -91,20 +92,41 @@ export async function POST(request) {
       having count(distinct nombre_facturado) = 1
     `);
 
+    // Antes de dar de alta un cliente nuevo, se intenta primero contra los
+    // clientes sin CUIT cargado (leads del import de Llamados, altas manuales
+    // sin CUIT, etc.) — si el nombre matchea con fuerza razonable, se completa
+    // el CUIT en ese cliente existente en vez de crear un duplicado. Sin esto,
+    // apenas un lead sin CUIT compra de verdad, quedaba con dos registros.
+    const { rows: clientesSinCuit } = await client.query(
+      `select id, nombre from public.clientes where cuit is null`
+    );
+
     let altasAutomaticas = 0;
+    let vinculadasPorNombre = 0;
     for (const c of candidatos) {
       if (CUITS_PROPIOS.has(c.cuit_normalizado)) continue;
-      const { rows: nuevoCliente } = await client.query(
-        `insert into public.clientes (nombre, cuit, origen, confianza_dato, estado_contacto)
-         values ($1, $2, 'Alta automática (import ventas)', 'alta', 'pendiente')
-         returning id`,
-        [c.nombre_facturado, c.cuit_original]
-      );
+
+      const matchPorNombre = buscarClienteSinCuitPorNombre(c.nombre_facturado, clientesSinCuit);
+      let clienteId;
+      if (matchPorNombre) {
+        await client.query(`update public.clientes set cuit = $1 where id = $2`, [c.cuit_original, matchPorNombre.id]);
+        clienteId = matchPorNombre.id;
+        clientesSinCuit.splice(clientesSinCuit.indexOf(matchPorNombre), 1);
+        vinculadasPorNombre += 1;
+      } else {
+        const { rows: nuevoCliente } = await client.query(
+          `insert into public.clientes (nombre, cuit, origen, confianza_dato, estado_contacto)
+           values ($1, $2, 'Alta automática (import ventas)', 'alta', 'pendiente')
+           returning id`,
+          [c.nombre_facturado, c.cuit_original]
+        );
+        clienteId = nuevoCliente[0].id;
+        altasAutomaticas += 1;
+      }
       await client.query(
         `update public.facturas set cliente_id = $1 where cuit_normalizado = $2 and cliente_id is null`,
-        [nuevoCliente[0].id, c.cuit_normalizado]
+        [clienteId, c.cuit_normalizado]
       );
-      altasAutomaticas += 1;
     }
 
     const { rows: sinVincular } = await client.query(`
@@ -121,6 +143,7 @@ export async function POST(request) {
       existentes,
       vinculadas,
       altas_automaticas: altasAutomaticas,
+      vinculadas_por_nombre: vinculadasPorNombre,
       sin_vincular: sinVincular,
     });
   } finally {
