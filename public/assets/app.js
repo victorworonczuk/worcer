@@ -484,6 +484,25 @@ function fmtFecha(dateStr) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-AR');
 }
 
+const SEGMENTO_CRITERIO = {
+  A: 'compró en el último mes',
+  B: 'compró hace 2 meses',
+  C: 'compró hace 3-4 meses',
+  D: 'compró hace 5-8 meses',
+  E: 'compró hace 9 meses o más',
+  F: 'nunca compró (sin facturas registradas)',
+};
+
+function segmentoTooltip(r) {
+  const letter = (r.segmento || 'F').trim()[0].toUpperCase();
+  const criterio = SEGMENTO_CRITERIO[letter] || SEGMENTO_CRITERIO.F;
+  const meses = r.meses_sin_comprar;
+  const detalle = r.ultima_compra
+    ? `Última compra: ${fmtFecha(r.ultima_compra)} (${meses} ${meses === 1 ? 'mes' : 'meses'} sin comprar)`
+    : 'Sin compras registradas en el sistema';
+  return `Segmento ${letter}: ${criterio}.\n${detalle}`;
+}
+
 function esMismoDiaLocal(fechaA, fechaB) {
   return fechaA.getFullYear() === fechaB.getFullYear()
     && fechaA.getMonth() === fechaB.getMonth()
@@ -827,7 +846,7 @@ function rowHtml(r) {
         <input type="text" class="ubicacion-input" data-field="domicilio" value="${escapeHtml(r.domicilio || '')}" placeholder="Domicilio" />
         <span class="save-indicator">✓</span>
       </td>
-      <td><span class="badge ${segClass(r.segmento)}">${segLabel}</span></td>
+      <td><span class="badge ${segClass(r.segmento)}" title="${escapeHtml(segmentoTooltip(r))}">${segLabel}</span></td>
       <td>
         <select class="confianza-select ${confClass(r.confianza_dato)}" data-field="confianza_dato">
           <option value="alta" ${r.confianza_dato === 'alta' ? 'selected' : ''}>Alta</option>

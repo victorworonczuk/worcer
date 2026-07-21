@@ -219,6 +219,13 @@ thead th {
   white-space: nowrap;
 }
 
+.th-help {
+  cursor: help;
+  font-size: 11px;
+  opacity: 0.7;
+}
+.th-help:hover { opacity: 1; }
+
 tbody td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
@@ -280,6 +287,7 @@ tbody tr:hover {
   color: #fff;
   white-space: nowrap;
 }
+.badge[title] { cursor: help; }
 
 .badge-seg-a { background: var(--seg-a); }
 .badge-seg-b { background: var(--seg-b); }
