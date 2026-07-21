@@ -28,7 +28,7 @@ const PROVINCIAS = [
 
 const RUBROS = ['Distribuidor', 'Venta online', 'Sanitario', 'Corralón', 'Ferretería', 'Otros'];
 
-const META_CONTACTOS_SEMANAL = 35;
+const META_CONTACTOS_SEMANAL = 50;
 
 const VENDEDORES = [
   'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
