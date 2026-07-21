@@ -6,7 +6,7 @@ const state = {
   all: [],
   filtered: [],
   page: 1,
-  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '', rubro: '', vendedor: '', soloVencidos: false, soloContactadosSemana: false },
+  filters: { q: '', segmento: '', provincia: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
   interaccionesByCliente: new Map(),
@@ -36,6 +36,11 @@ const VENDEDORES = [
   'Mariano Cabarrus', 'Sebastián Guerra', 'Horacio Vostrosky', 'Víctor W.',
 ];
 
+const CANALES_CAPTACION = [
+  'Contacto telefónico', 'Visita comercial', 'Referido', 'Feria/evento',
+  'Redes sociales/Web', 'Cliente histórico', 'Otro',
+];
+
 const FROM_BY_ROL = {
   ventas: 'ventas@porcelanasalberti.com.ar',
   facturacion: 'administracion@porcelanasalberti.com.ar',
@@ -52,6 +57,7 @@ const els = {
   estado: document.getElementById('f-estado'),
   rubro: document.getElementById('f-rubro'),
   vendedor: document.getElementById('f-vendedor'),
+  canalCaptacion: document.getElementById('f-canal-captacion'),
   resultCount: document.getElementById('result-count'),
   pageInfo: document.getElementById('page-info'),
   prevBtn: document.getElementById('prev-page'),
@@ -185,7 +191,7 @@ function fmtMoney(n) {
 }
 
 async function loadData() {
-  els.tbody.innerHTML = `<tr><td colspan="10" class="loading">Cargando clientes…</td></tr>`;
+  els.tbody.innerHTML = `<tr><td colspan="11" class="loading">Cargando clientes…</td></tr>`;
   const { data, error } = await client
     .from('clientes')
     .select('*')
@@ -194,7 +200,7 @@ async function loadData() {
     .limit(2000);
 
   if (error) {
-    els.tbody.innerHTML = `<tr><td colspan="10" class="empty-state">Error cargando datos: ${error.message}</td></tr>`;
+    els.tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Error cargando datos: ${error.message}</td></tr>`;
     console.error(error);
     return;
   }
@@ -345,7 +351,7 @@ function renderStats() {
 }
 
 function applyFilters() {
-  const { q, segmento, provincia, confianza, estado, rubro, vendedor, soloVencidos, soloContactadosSemana } = state.filters;
+  const { q, segmento, provincia, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana } = state.filters;
   const qLower = q.trim().toLowerCase();
 
   state.filtered = state.all.filter((r) => {
@@ -355,6 +361,7 @@ function applyFilters() {
     if (estado && (r.estado_contacto || 'pendiente') !== estado) return false;
     if (rubro && !rubrosDe(r).includes(rubro)) return false;
     if (vendedor && r.vendedor !== vendedor) return false;
+    if (canalCaptacion && r.canal_captacion !== canalCaptacion) return false;
     if (soloVencidos && !esVencido(proximoSeguimientoDe(r.id))) return false;
     if (soloContactadosSemana && !clienteContactadoEstaSemana(r.id)) return false;
     if (qLower) {
@@ -381,7 +388,7 @@ function renderTable() {
   els.nextBtn.disabled = state.page >= totalPages;
 
   if (pageRows.length === 0) {
-    els.tbody.innerHTML = `<tr><td colspan="10" class="empty-state">No hay clientes que coincidan con estos filtros.</td></tr>`;
+    els.tbody.innerHTML = `<tr><td colspan="11" class="empty-state">No hay clientes que coincidan con estos filtros.</td></tr>`;
     return;
   }
 
@@ -408,6 +415,9 @@ function renderTable() {
   });
   els.tbody.querySelectorAll('.vendedor-select').forEach((sel) => {
     sel.addEventListener('change', onVendedorSelectChange);
+  });
+  els.tbody.querySelectorAll('.canal-captacion-select').forEach((sel) => {
+    sel.addEventListener('change', onEditableFieldChange);
   });
   els.tbody.querySelectorAll('.ubicacion-input, .contacto-input:not(.telefono-input), .vendedor-otro-input').forEach((input) => {
     input.addEventListener('blur', onEditableFieldChange);
@@ -446,7 +456,7 @@ function renderTable() {
 function facturasDetailHtml(r) {
   const facturas = state.facturasByCliente.get(r.id) || [];
   if (facturas.length === 0) {
-    return `<tr class="factura-detail-row"><td colspan="10">Sin facturas registradas.</td></tr>`;
+    return `<tr class="factura-detail-row"><td colspan="11">Sin facturas registradas.</td></tr>`;
   }
   const rows = facturas
     .map(
@@ -460,7 +470,7 @@ function facturasDetailHtml(r) {
     .join('');
   return `
     <tr class="factura-detail-row">
-      <td colspan="10">
+      <td colspan="11">
         <table class="factura-table">
           <thead><tr><th>Fecha</th><th>Línea</th><th>Importe ARS</th><th>Importe USD</th></tr></thead>
           <tbody>${rows}</tbody>
@@ -555,7 +565,7 @@ function historialDetailHtml(r) {
 
   return `
     <tr class="historial-detail-row">
-      <td colspan="10">
+      <td colspan="11">
         ${formHtml}
         ${
           filas
@@ -683,6 +693,7 @@ async function onSubmitNuevoCliente(e) {
     whatsapp: document.getElementById('nc-whatsapp').value.trim() || null,
     email: document.getElementById('nc-email').value.trim() || null,
     rubro: document.getElementById('nc-rubro').value.trim() || null,
+    canal_captacion: document.getElementById('nc-canal-captacion').value || null,
     confianza_dato: 'alta',
     origen: 'Alta manual',
   };
@@ -775,6 +786,16 @@ function vendedorCellHtml(r) {
   `;
 }
 
+function canalCaptacionCellHtml(r) {
+  return `
+    <select class="canal-captacion-select" data-field="canal_captacion">
+      <option value="">Sin dato</option>
+      ${CANALES_CAPTACION.map((c) => `<option value="${escapeHtml(c)}" ${r.canal_captacion === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
+    </select>
+    <span class="save-indicator">✓</span>
+  `;
+}
+
 function telefonoRowHtml(valor) {
   return `<div class="contacto-row telefono-row">
     <input type="text" class="contacto-input telefono-input" value="${escapeHtml(valor)}" placeholder="Teléfono" />
@@ -859,6 +880,7 @@ function rowHtml(r) {
       <td class="contact-links">${contactLinks(r)}</td>
       <td class="rubro-cell">${rubroCellHtml(r)}</td>
       <td class="vendedor-cell">${vendedorCellHtml(r)}</td>
+      <td class="canal-captacion-cell">${canalCaptacionCellHtml(r)}</td>
       <td class="factura-cell">${facturacionCell(r)}</td>
       <td>
         <select class="estado-select ${estadoClass(r.estado_contacto)}" data-field="estado_contacto">
@@ -1034,6 +1056,10 @@ els.rubro.addEventListener('change', (e) => {
 });
 els.vendedor.addEventListener('change', (e) => {
   state.filters.vendedor = e.target.value;
+  applyFilters();
+});
+els.canalCaptacion.addEventListener('change', (e) => {
+  state.filters.canalCaptacion = e.target.value;
   applyFilters();
 });
 els.prevBtn.addEventListener('click', () => {

@@ -435,7 +435,7 @@ select.badge-conf-sin_datos, select.badge-conf-sin { background: var(--conf-sin)
 select.confianza-select option { color: #000; background: #fff; }
 
 .ubicacion-cell { min-width: 150px; }
-.ubicacion-select, .ubicacion-input, .rubro-select, .descripcion-input, .vendedor-select, .vendedor-otro-input {
+.ubicacion-select, .ubicacion-input, .rubro-select, .descripcion-input, .vendedor-select, .vendedor-otro-input, .canal-captacion-select {
   display: block;
   width: 100%;
   border: 1px solid var(--border);
@@ -448,13 +448,15 @@ select.confianza-select option { color: #000; background: #fff; }
 }
 .ubicacion-input { margin-top: 5px; }
 .vendedor-otro-input { margin-top: 5px; }
-.ubicacion-select:hover, .ubicacion-input:hover, .rubro-select:hover, .descripcion-input:hover, .vendedor-select:hover, .vendedor-otro-input:hover {
+.ubicacion-select:hover, .ubicacion-input:hover, .rubro-select:hover, .descripcion-input:hover, .vendedor-select:hover, .vendedor-otro-input:hover, .canal-captacion-select:hover {
   border-color: #c7ccd4;
 }
-.ubicacion-select:focus, .ubicacion-input:focus, .rubro-select:focus, .descripcion-input:focus, .vendedor-select:focus, .vendedor-otro-input:focus {
+.ubicacion-select:focus, .ubicacion-input:focus, .rubro-select:focus, .descripcion-input:focus, .vendedor-select:focus, .vendedor-otro-input:focus, .canal-captacion-select:focus {
   border-color: var(--primary);
   background: #fff;
 }
+
+.canal-captacion-cell { min-width: 150px; }
 
 .rubro-cell { min-width: 140px; }
 .rubro-group {
