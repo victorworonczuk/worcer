@@ -481,6 +481,15 @@ function renderTable() {
   els.tbody.querySelectorAll('.delete-cliente').forEach((btn) => {
     btn.addEventListener('click', onDeleteCliente);
   });
+
+  if (esSoloLecturaClientes()) {
+    els.tbody.querySelectorAll('select, input, textarea').forEach((el) => {
+      el.disabled = true;
+    });
+    els.tbody.querySelectorAll('.delete-cliente, .add-telefono, .guardar-interaccion, .eliminar-interaccion').forEach((el) => {
+      el.style.display = 'none';
+    });
+  }
 }
 
 function facturasDetailHtml(r) {
@@ -631,6 +640,10 @@ function onToggleDescripcion(e) {
 }
 
 async function onGuardarInteraccion(e) {
+  if (esSoloLecturaClientes()) {
+    alert('Tu usuario no puede modificar datos de clientes.');
+    return;
+  }
   const id = Number(e.target.dataset.id);
   if (clienteContactadoHoy(id)) {
     alert('Ya se registró un contacto hoy con este cliente.');
@@ -672,6 +685,10 @@ async function onGuardarInteraccion(e) {
 }
 
 async function onDeleteInteraccion(e) {
+  if (esSoloLecturaClientes()) {
+    alert('Tu usuario no puede modificar datos de clientes.');
+    return;
+  }
   const clienteId = Number(e.target.dataset.id);
   const interaccionId = Number(e.target.dataset.interaccionId);
   if (!confirm('¿Eliminar esta interacción?')) return;
@@ -751,6 +768,10 @@ async function onSubmitNuevoCliente(e) {
 }
 
 async function onDeleteCliente(e) {
+  if (esSoloLecturaClientes()) {
+    alert('Tu usuario no puede modificar datos de clientes.');
+    return;
+  }
   const id = Number(e.target.dataset.id);
   const rec = state.all.find((r) => r.id === id);
   if (!rec) return;
@@ -1046,7 +1067,22 @@ function onAddTelefono(e) {
   input.focus();
 }
 
+// El rol "facturacion" es para tareas de back-office (cargar facturas,
+// producción, recuento) sin tocar los datos de relación del cliente — a
+// diferencia de "ventas", que sí necesita poder actualizarlos. Esto es un
+// límite del lado del cliente, no hay RLS de por medio (mismo criterio que el
+// resto de la base: protegido por el login del sitio, no por la base) — pero
+// alcanza para el caso de uso real (evitar ediciones accidentales/fuera de
+// tarea, no defenderse de alguien que abre la consola a propósito).
+function esSoloLecturaClientes() {
+  return state.currentUserRol === 'facturacion';
+}
+
 async function saveField(id, field, value, targetEl) {
+  if (esSoloLecturaClientes()) {
+    alert('Tu usuario no puede modificar datos de clientes.');
+    return;
+  }
   const { error } = await client.from('clientes').update({ [field]: value }).eq('id', id);
   if (error) {
     console.error('Error guardando', field, error);
@@ -1126,5 +1162,11 @@ async function loadUser() {
   }
 }
 
-loadUser();
-loadData();
+// Se espera loadUser() antes de loadData() para saber el rol (y así si hay
+// que renderizar en modo solo-lectura) antes del primer renderTable() — si
+// corrieran en paralelo, un usuario restringido podía ver la tabla editable
+// por un instante hasta que se supiera su rol.
+(async () => {
+  await loadUser();
+  loadData();
+})();

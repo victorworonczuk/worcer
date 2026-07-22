@@ -23,6 +23,7 @@ const USUARIOS = [
   { username: 'worcer', nombre: 'Víctor', rol: 'admin' },
   { username: 'facturacion', nombre: 'Facturación', rol: 'facturacion' },
   { username: 'ventas', nombre: 'Ventas', rol: 'ventas' },
+  { username: 'mauricio', nombre: 'Mauricio', rol: 'facturacion' },
 ];
 
 async function main() {
