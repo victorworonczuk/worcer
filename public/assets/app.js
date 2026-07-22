@@ -317,11 +317,12 @@ function clienteContactadoEstaSemana(clienteId) {
 }
 
 function renderStats() {
-  const total = state.all.length;
   const segCounts = {};
   const estadoCounts = {};
   let conContacto = 0;
   let vencidos = 0;
+  let clientesReales = 0;
+  let personas = 0;
   for (const r of state.all) {
     const seg = (r.segmento || '?').trim()[0];
     segCounts[seg] = (segCounts[seg] || 0) + 1;
@@ -329,6 +330,12 @@ function renderStats() {
     estadoCounts[est] = (estadoCounts[est] || 0) + 1;
     if (r.telefono || r.whatsapp || r.email) conContacto += 1;
     if (esVencido(proximoSeguimientoDe(r.id))) vencidos += 1;
+    // "Cliente" = compró al menos una vez (tiene alguna factura vinculada).
+    // Sin ninguna factura todavía es un contacto/lead, no un cliente real —
+    // distinción que se volvió relevante con el import de Llamados (582
+    // contactos nuevos, la mayoría sin ninguna compra todavía).
+    if ((state.facturasByCliente.get(r.id) || []).length > 0) clientesReales += 1;
+    else personas += 1;
   }
 
   const contactosSemana = contactosEstaSemana();
@@ -338,7 +345,8 @@ function renderStats() {
     : `🎯 Contactos esta semana · Faltan ${faltan}`;
 
   const cards = [
-    { label: 'Total clientes', value: total },
+    { label: 'Clientes', value: clientesReales },
+    { label: 'Personas', value: personas },
     { label: 'Con dato de contacto', value: conContacto },
     { label: '📅 Seguimientos vencidos', value: vencidos, id: 'card-vencidos', special: true },
     { label: metaLabel, value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, id: 'card-contactados-semana', clickMeta: true, metaCumplida: faltan === 0 },
