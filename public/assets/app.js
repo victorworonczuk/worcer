@@ -6,7 +6,7 @@ const state = {
   all: [],
   filtered: [],
   page: 1,
-  filters: { q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false },
+  filters: { q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false, soloCandidatosDescarte: false },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
   interaccionesByCliente: new Map(),
@@ -30,6 +30,12 @@ const PROVINCIAS = [
 const RUBROS = ['Distribuidor', 'Venta online', 'Sanitario', 'Corralón', 'Ferretería', 'Otros'];
 
 const META_CONTACTOS_SEMANAL = 50;
+
+// A partir de este número de intentos (interacciones registradas) sin haber
+// llegado a "Recuperado" ni estar ya "Descartado", el cliente aparece como
+// candidato a revisar/descartar en el dashboard. No se marca descartado
+// solo — es un aviso para que alguien lo revise a mano.
+const UMBRAL_INTENTOS_SIN_RESULTADO = 5;
 
 const VENDEDORES = [
   'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
@@ -338,6 +344,7 @@ function renderStats() {
   let vencidos = 0;
   let clientesReales = 0;
   let personas = 0;
+  let candidatosDescarte = 0;
   for (const r of state.all) {
     const seg = (r.segmento || '?').trim()[0];
     segCounts[seg] = (segCounts[seg] || 0) + 1;
@@ -351,6 +358,7 @@ function renderStats() {
     // contactos nuevos, la mayoría sin ninguna compra todavía).
     if ((state.facturasByCliente.get(r.id) || []).length > 0) clientesReales += 1;
     else personas += 1;
+    if (esCandidatoADescarte(r, est)) candidatosDescarte += 1;
   }
 
   const contactosSemana = contactosEstaSemana();
@@ -364,6 +372,7 @@ function renderStats() {
     { label: 'Personas', value: personas },
     { label: 'Con dato de contacto', value: conContacto },
     { label: '📅 Seguimientos vencidos', value: vencidos, id: 'card-vencidos', special: true },
+    { label: `⚠️ ${UMBRAL_INTENTOS_SIN_RESULTADO}+ intentos sin resultado`, value: candidatosDescarte, id: 'card-candidatos-descarte', special: true },
     { label: metaLabel, value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, id: 'card-contactados-semana', clickMeta: true, metaCumplida: faltan === 0 },
     { label: 'Recuperados', value: estadoCounts.recuperado || 0 },
     { label: 'Contactados', value: estadoCounts.contactado || 0 },
@@ -379,7 +388,7 @@ function renderStats() {
   els.stats.innerHTML = cards
     .map(
       (c) =>
-        `<div class="stat-card${c.special ? ' stat-card-clickable' : ''}${c.clickMeta ? ' stat-card-clickable-meta' : ''}${c.metaCumplida ? ' stat-card-success' : ''}${state.filters.soloVencidos && c.id === 'card-vencidos' ? ' active' : ''}${state.filters.soloContactadosSemana && c.id === 'card-contactados-semana' ? ' active' : ''}" ${c.id ? `id="${c.id}"` : ''}><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
+        `<div class="stat-card${c.special ? ' stat-card-clickable' : ''}${c.clickMeta ? ' stat-card-clickable-meta' : ''}${c.metaCumplida ? ' stat-card-success' : ''}${state.filters.soloVencidos && c.id === 'card-vencidos' ? ' active' : ''}${state.filters.soloContactadosSemana && c.id === 'card-contactados-semana' ? ' active' : ''}${state.filters.soloCandidatosDescarte && c.id === 'card-candidatos-descarte' ? ' active' : ''}" ${c.id ? `id="${c.id}"` : ''}><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
     )
     .join('');
 
@@ -400,10 +409,19 @@ function renderStats() {
       renderStats();
     });
   }
+
+  const cardCandidatosDescarte = document.getElementById('card-candidatos-descarte');
+  if (cardCandidatosDescarte) {
+    cardCandidatosDescarte.addEventListener('click', () => {
+      state.filters.soloCandidatosDescarte = !state.filters.soloCandidatosDescarte;
+      applyFilters();
+      renderStats();
+    });
+  }
 }
 
 function applyFilters() {
-  const { q, segmento, provincia, localidad, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana } = state.filters;
+  const { q, segmento, provincia, localidad, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana, soloCandidatosDescarte } = state.filters;
   const qLower = q.trim().toLowerCase();
 
   state.filtered = state.all.filter((r) => {
@@ -417,6 +435,7 @@ function applyFilters() {
     if (canalCaptacion && r.canal_captacion !== canalCaptacion) return false;
     if (soloVencidos && !esVencido(proximoSeguimientoDe(r.id))) return false;
     if (soloContactadosSemana && !clienteContactadoEstaSemana(r.id)) return false;
+    if (soloCandidatosDescarte && !esCandidatoADescarte(r, r.estado_contacto || 'pendiente')) return false;
     if (qLower) {
       const hay = `${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`.toLowerCase();
       if (!hay.includes(qLower)) return false;
@@ -585,6 +604,15 @@ function clienteContactadoHoy(clienteId) {
   const hoy = new Date();
   const lista = state.interaccionesByCliente.get(clienteId) || [];
   return lista.find((i) => esMismoDiaLocal(new Date(i.created_at), hoy)) || null;
+}
+
+// Candidato a revisar/descartar: llegó al umbral de intentos sin haber
+// conseguido recuperarlo, y todavía no está descartado (si ya lo está, no
+// hay nada que revisar de nuevo). `est` se recibe ya calculado porque
+// renderStats() y applyFilters() ya lo necesitan para otra cosa cada uno.
+function esCandidatoADescarte(r, est) {
+  const intentos = (state.interaccionesByCliente.get(r.id) || []).length;
+  return intentos >= UMBRAL_INTENTOS_SIN_RESULTADO && est !== 'recuperado' && est !== 'descartado';
 }
 
 function historialDetailHtml(r) {
