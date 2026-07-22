@@ -11,6 +11,13 @@ import { buscarClienteSinCuitPorNombre } from '../../../lib/clienteMatching.js';
 // ver commit "Dar de alta clientes automáticamente al importar ventas").
 const CUITS_PROPIOS = new Set(['30709413208', '30714033189']);
 
+// Otros CUITs "genéricos" de consumidor final detectados manualmente, que no
+// matchean el patrón de dígito repetido (ver caso "Santiago Delia" mezclado
+// con "Jose Peralta" bajo 10-00000000-1) pero funcionan igual de mal: agrupan
+// compradores distintos bajo un mismo número. Agregar acá cualquier otro caso
+// que aparezca en el futuro.
+const CUITS_GENERICOS = new Set(['10000000001']);
+
 function getSessionUser(request) {
   const cookie = request.cookies.get('worcer_auth');
   if (!cookie) return null;
@@ -66,6 +73,12 @@ export async function POST(request) {
       if (rowCount > 0) nuevos += 1; else existentes += 1;
     }
 
+    // Ningún cliente debería tener un CUIT genérico cargado como si fuera el
+    // propio (pasó con "Santiago Delia" y 10-00000000-1, mezclándolo con
+    // "Jose Peralta") — se excluyen acá también para que ese blind-match por
+    // CUIT no lo vuelva a hacer si el campo cuit de algún cliente queda mal
+    // cargado en el futuro.
+    const cuitsGenericosArr = [...CUITS_GENERICOS];
     const { rowCount: vinculadas } = await client.query(`
       update public.facturas f
       set cliente_id = c.id
@@ -73,7 +86,9 @@ export async function POST(request) {
       where f.cliente_id is null
         and f.cuit_normalizado is not null
         and regexp_replace(c.cuit, '[^0-9]', '', 'g') = f.cuit_normalizado
-    `);
+        and f.cuit_normalizado !~ '^(\\d)\\1*$'
+        and not (f.cuit_normalizado = any($1::text[]))
+    `, [cuitsGenericosArr]);
 
     // Alta automática: solo para CUITs reales con un único nombre asociado.
     // CUITs de un solo dígito repetido (00000000000, 11111111111, ...) son
@@ -82,15 +97,18 @@ export async function POST(request) {
     // distintas, así que crear un cliente ahí mezclaría gente que no tiene
     // nada que ver. También se exige un único nombre_facturado en toda la
     // tabla como resguardo extra, no solo el patrón de dígito repetido.
+    // CUITS_GENERICOS suma casos detectados a mano que no son dígito repetido
+    // pero cumplen la misma función de "consumidor final" (ver comentario arriba).
     const { rows: candidatos } = await client.query(`
       select cuit_normalizado, min(cuit_original) as cuit_original, min(nombre_facturado) as nombre_facturado
       from public.facturas
       where cliente_id is null
         and cuit_normalizado is not null
         and cuit_normalizado !~ '^(\\d)\\1*$'
+        and not (cuit_normalizado = any($1::text[]))
       group by cuit_normalizado
       having count(distinct nombre_facturado) = 1
-    `);
+    `, [cuitsGenericosArr]);
 
     // Antes de dar de alta un cliente nuevo, se intenta primero contra los
     // clientes sin CUIT cargado (leads del import de Llamados, altas manuales
