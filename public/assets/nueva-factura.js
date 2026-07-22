@@ -1,5 +1,21 @@
 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+// Supabase/PostgREST corta cada respuesta a 1000 filas aunque se pida un
+// .limit() más alto — hay que paginar con .range() hasta que la página
+// vuelva incompleta (ver la misma nota en public/assets/app.js).
+async function fetchAll(buildQuery, pageSize = 1000) {
+  let desde = 0;
+  let todos = [];
+  while (true) {
+    const { data, error } = await buildQuery().range(desde, desde + pageSize - 1);
+    if (error) return { data: null, error };
+    todos = todos.concat(data);
+    if (data.length < pageSize) break;
+    desde += pageSize;
+  }
+  return { data: todos, error: null };
+}
+
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 const EMPRESA_CONFIG = {
@@ -50,7 +66,7 @@ async function init() {
 
   els.fecha.value = new Date().toISOString().slice(0, 10);
 
-  const { data: clientesData, error: clientesError } = await client.from('clientes').select('id, cuit, nombre').limit(2000);
+  const { data: clientesData, error: clientesError } = await fetchAll(() => client.from('clientes').select('id, cuit, nombre'));
   if (!clientesError) state.clientes = clientesData;
 
   const { data: piezasData, error: piezasError } = await client

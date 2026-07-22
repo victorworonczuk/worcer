@@ -1,5 +1,21 @@
 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+// Supabase/PostgREST corta cada respuesta a 1000 filas aunque se pida un
+// .limit() más alto — hay que paginar con .range() hasta que la página
+// vuelva incompleta (ver la misma nota en public/assets/app.js).
+async function fetchAll(buildQuery, pageSize = 1000) {
+  let desde = 0;
+  let todos = [];
+  while (true) {
+    const { data, error } = await buildQuery().range(desde, desde + pageSize - 1);
+    if (error) return { data: null, error };
+    todos = todos.concat(data);
+    if (data.length < pageSize) break;
+    desde += pageSize;
+  }
+  return { data: todos, error: null };
+}
+
 const CALIDAD_LABEL = { '1era': '1ª', comercial: 'Comercial', '3era': '3ª' };
 
 const state = { currentUser: null, piezas: [], lineas: [] };
@@ -126,12 +142,13 @@ async function guardar() {
 }
 
 async function loadRecientes() {
-  const { data, error } = await client
-    .from('produccion')
-    .select('fecha, cantidad, cargado_por')
-    .eq('tipo', 'recuento')
-    .order('fecha', { ascending: false })
-    .limit(2000);
+  const { data, error } = await fetchAll(() =>
+    client
+      .from('produccion')
+      .select('fecha, cantidad, cargado_por')
+      .eq('tipo', 'recuento')
+      .order('fecha', { ascending: false })
+  );
   if (error) { els.recientesList.innerHTML = `<div class="loading">Error: ${error.message}</div>`; return; }
   if (!data || !data.length) {
     els.recientesList.innerHTML = '<div class="loading">Todavía no se cargó ningún recuento.</div>';

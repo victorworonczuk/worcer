@@ -1,5 +1,21 @@
 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+// Supabase/PostgREST corta cada respuesta a 1000 filas aunque se pida un
+// .limit() más alto — hay que paginar con .range() hasta que la página
+// vuelva incompleta (ver la misma nota en public/assets/app.js).
+async function fetchAll(buildQuery, pageSize = 1000) {
+  let desde = 0;
+  let todos = [];
+  while (true) {
+    const { data, error } = await buildQuery().range(desde, desde + pageSize - 1);
+    if (error) return { data: null, error };
+    todos = todos.concat(data);
+    if (data.length < pageSize) break;
+    desde += pageSize;
+  }
+  return { data: todos, error: null };
+}
+
 const CALIDAD_LABEL = { '1era': '1ª', comercial: 'Comercial', '3era': '3ª' };
 
 const state = {
@@ -56,7 +72,7 @@ async function init() {
   }
   els.userSubtitle.textContent = `Sesión: ${me.nombre || me.user}`;
 
-  const { data: clientesData } = await client.from('clientes').select('id, cuit, nombre').limit(2000);
+  const { data: clientesData } = await fetchAll(() => client.from('clientes').select('id, cuit, nombre'));
   state.clientes = clientesData || [];
 
   const { data: piezasData } = await client.from('piezas').select('id, linea, tipo_pieza, variante, calidad').eq('activo', true);
@@ -148,10 +164,11 @@ els.limpiarBtn.addEventListener('click', () => {
 async function buscar() {
   els.tbody.innerHTML = '<tr><td colspan="7" class="loading">Buscando…</td></tr>';
 
-  const { data, error } = await client
-    .from('factura_items')
-    .select('cantidad, precio_unitario, factura_id, pieza_id, facturas(fecha, cliente_id, nombre_facturado), piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
-    .limit(5000);
+  const { data, error } = await fetchAll(() =>
+    client
+      .from('factura_items')
+      .select('cantidad, precio_unitario, factura_id, pieza_id, facturas(fecha, cliente_id, nombre_facturado), piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
+  );
 
   if (error) {
     els.tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Error: ${error.message}</td></tr>`;
