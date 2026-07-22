@@ -286,20 +286,20 @@ async function loadData() {
 function populateFilterOptions() {
   const provincias = [...new Set(state.all.map((r) => r.provincia).filter(Boolean))].sort();
   els.provincia.innerHTML =
-    '<option value="">Todas las provincias</option>' +
+    '<option value="">Provincia</option>' +
     provincias.map((p) => `<option value="${p}">${p}</option>`).join('');
 
   const localidades = [...new Set(state.all.map((r) => r.localidad).filter(Boolean))].sort();
   const localidadActual = els.localidad.value;
   els.localidad.innerHTML =
-    '<option value="">Todas las localidades</option>' +
+    '<option value="">Localidad</option>' +
     localidades.map((l) => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
   els.localidad.value = localidadActual;
 
   const vendedores = [...new Set(state.all.map((r) => r.vendedor).filter(Boolean))].sort();
   const vendedorActual = els.vendedor.value;
   els.vendedor.innerHTML =
-    '<option value="">Todos los vendedores</option>' +
+    '<option value="">Vendedor</option>' +
     vendedores.map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
   els.vendedor.value = vendedorActual;
 }
