@@ -98,6 +98,8 @@ La barra de filtros se separó en dos renglones (`.filters-search` para el busca
 
 **"Cliente" vs. "Persona"**: la card que antes decía "Total clientes" se separó en dos — "Clientes" (tiene al menos una factura vinculada en `facturas`, es decir compró alguna vez de verdad) y "Personas" (está cargado en el sistema — contacto, lead — pero todavía no compró nada). Se volvió relevante con el import de Llamados: 582 contactos nuevos, la gran mayoría sin ninguna compra, mezclados con la base de clientes reales bajo el mismo número engañaba sobre cuántos son clientes de verdad. El criterio se calcula en `renderStats()` mirando si `state.facturasByCliente.get(r.id)` tiene alguna fila — no es un campo nuevo en la base, es derivado. Es solo esa card la que cambió; el resto del dashboard (filtros, "X clientes" del contador de resultados, columnas) sigue tratando a todos los registros de `clientes` por igual, sean "cliente" o "persona" en este sentido.
 
+El subtítulo bajo el título ("Sesión: X · Base histórica y activa unificada — N registros") también tenía el número de registros escrito fijo en el texto ("873 registros"), sin actualizarse nunca a medida que la base creció — quedó de cuando arrancó el proyecto. Ahora se arma con `actualizarSubtitulo()`, que usa `state.all.length` (el total real ya cargado) y se llama tanto al saber quién inició sesión como al terminar de cargar los clientes.
+
 ## Carga diaria de facturas (`/nueva-factura.html`)
 
 Pensada para que el empleado de facturación o de ventas la use día a día:

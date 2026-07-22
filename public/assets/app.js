@@ -15,6 +15,7 @@ const state = {
   vendedorOtro: new Set(),
   currentUser: null,
   currentUserRol: null,
+  currentUserNombre: null,
 };
 
 const CANAL_LABEL = { llamado: '☎ Llamado', whatsapp: 'WhatsApp', email: 'Email', otro: 'Otro' };
@@ -209,6 +210,19 @@ async function fetchAll(buildQuery, pageSize = 1000) {
   return { data: todos, error: null };
 }
 
+// El subtítulo mostraba "873 registros" fijo en el texto, aunque la base ya
+// tenía muchos más (quedó de cuando arrancó el proyecto) — ahora se arma con
+// el total real, y se llama tanto al conocer el usuario como al terminar de
+// cargar los clientes (lo que termine último es lo que se termina mostrando).
+function actualizarSubtitulo() {
+  const subtitle = document.getElementById('user-subtitle');
+  if (!subtitle || !state.currentUserNombre) return;
+  const cantidad = state.all.length
+    ? ` — ${state.all.length.toLocaleString('es-AR')} registros`
+    : '';
+  subtitle.textContent = `Sesión: ${state.currentUserNombre} · Base histórica y activa unificada${cantidad}`;
+}
+
 async function loadData() {
   els.tbody.innerHTML = `<tr><td colspan="11" class="loading">Cargando clientes…</td></tr>`;
   const { data, error } = await fetchAll(() =>
@@ -225,6 +239,7 @@ async function loadData() {
     return;
   }
   state.all = data;
+  actualizarSubtitulo();
 
   const { data: facturas, error: facturasError } = await fetchAll(() =>
     client
@@ -1162,8 +1177,8 @@ async function loadUser() {
     if (me.user) {
       state.currentUser = me.user;
       state.currentUserRol = me.rol;
-      const subtitle = document.getElementById('user-subtitle');
-      subtitle.textContent = `Sesión: ${me.nombre || me.user} · Base histórica y activa unificada — 873 registros`;
+      state.currentUserNombre = me.nombre || me.user;
+      actualizarSubtitulo();
     }
   } catch (err) {
     console.error('No se pudo obtener el usuario', err);
