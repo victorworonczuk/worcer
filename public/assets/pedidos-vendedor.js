@@ -39,6 +39,11 @@ function fmt(n) {
 function fmtPesos(n) {
   return '$' + fmt(n);
 }
+// Celda de la tabla pivot: '·' para cero, en rojo si es negativo (corrección/cancelación).
+function celda(val, fmtFn) {
+  if (val === 0) return `<td class="zero">·</td>`;
+  return `<td class="${val < 0 ? 'neg' : ''}">${fmtFn(val)}</td>`;
+}
 
 async function initUser() {
   const res = await fetch('/api/me');
@@ -88,13 +93,13 @@ function renderAnual() {
 
   els.tbodyAnual.innerHTML = vendedores.map((v) => `<tr>
       <td class="col-grupo">${escapeHtml(v.vendedor)}</td>
-      <td>${fmt(v.cantidad)}</td>
-      <td>${fmtPesos(v.monto_ars)}</td>
+      <td class="${v.cantidad < 0 ? 'neg' : ''}">${fmt(v.cantidad)}</td>
+      <td class="${v.monto_ars < 0 ? 'neg' : ''}">${fmtPesos(v.monto_ars)}</td>
     </tr>`).join('') + `
     <tr class="fila-total">
       <td class="col-grupo">Total</td>
-      <td>${fmt(total.cantidad)}</td>
-      <td>${fmtPesos(total.monto_ars)}</td>
+      <td class="${total.cantidad < 0 ? 'neg' : ''}">${fmt(total.cantidad)}</td>
+      <td class="${total.monto_ars < 0 ? 'neg' : ''}">${fmtPesos(total.monto_ars)}</td>
     </tr>`;
 }
 
@@ -156,18 +161,15 @@ function render() {
 
   els.tbody.innerHTML = vendedores.map((v) => `<tr>
       <td class="col-grupo">${escapeHtml(v.vendedor)}</td>
-      ${dias.map((d) => {
-        const val = v.porDia[d] || 0;
-        return `<td class="${val === 0 ? 'zero' : ''}">${val === 0 ? '·' : fmtCelda(val)}</td>`;
-      }).join('')}
-      <td class="col-total">${fmtCelda(v.total)}</td>
-      <td class="col-total">${v.proyectado != null ? fmtCelda(v.proyectado) : '·'}</td>
+      ${dias.map((d) => celda(v.porDia[d] || 0, fmtCelda)).join('')}
+      <td class="col-total ${v.total < 0 ? 'neg' : ''}">${fmtCelda(v.total)}</td>
+      <td class="col-total ${v.proyectado < 0 ? 'neg' : ''}">${v.proyectado != null ? fmtCelda(v.proyectado) : '·'}</td>
     </tr>`).join('') + `
     <tr class="fila-total">
       <td class="col-grupo">Total</td>
-      ${dias.map((d) => `<td>${fmtCelda(totalPorDia[d])}</td>`).join('')}
-      <td class="col-total">${fmtCelda(totalGeneral)}</td>
-      <td class="col-total">${fmtCelda(proyectadoGeneral)}</td>
+      ${dias.map((d) => celda(totalPorDia[d], fmtCelda)).join('')}
+      <td class="col-total ${totalGeneral < 0 ? 'neg' : ''}">${fmtCelda(totalGeneral)}</td>
+      <td class="col-total ${proyectadoGeneral < 0 ? 'neg' : ''}">${fmtCelda(proyectadoGeneral)}</td>
     </tr>`;
 
   els.notaPie.textContent = 'Cargado desde el "Tablero de pedidos de venta" mensual. "Proyectado" es el valor que ya trae el Excel (total acumulado / días hábiles transcurridos × días hábiles del mes), no se recalcula acá. Los valores negativos (si los hay) reflejan correcciones/cancelaciones del propio archivo de origen.';

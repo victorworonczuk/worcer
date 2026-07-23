@@ -37,6 +37,14 @@ table.pivot .col-total { border-left: 2px solid var(--border); font-weight: 600;
 table.pivot .fila-total td.col-grupo { background: var(--bg); }
 
 table.pivot td.stock-neg { color: var(--seg-e, #c0392b); font-weight: 600; }
+table.pivot td.neg { color: var(--seg-e, #c0392b); font-weight: 600; }
+
+/* Resaltar toda la fila al pasar el mouse, para seguir a un vendedor/pieza
+   sin perder la línea en tablas anchas de un día o mes por columna. */
+table.pivot tbody tr:hover td,
+table.pivot tbody tr:hover td.col-grupo {
+  background: var(--bg);
+}
 
 .nota-pie {
   padding: 10px 16px 16px;
