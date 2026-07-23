@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Cotejar vendedores</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#2453ff" />
+  <link rel="stylesheet" href="assets/importar-ventas.css" />
+  <link rel="stylesheet" href="assets/cotejar-vendedores.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Worcer · Cotejar vendedores</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    <div class="topbar-actions">
+      <a href="/pedidos-vendedor.html" class="nav-link">Pedidos por vendedor</a>
+      <a href="/index.html" class="nav-link">← Ver dashboard</a>
+      <a href="/api/logout" class="logout-link">Cerrar sesión</a>
+    </div>
+  </header>
+
+  <main class="importar-main cotejar-main">
+    <div class="panel importar-panel">
+      <p class="importar-intro">
+        Cruza cada factura sin vendedor contra el total de $ por vendedor y día del
+        "Tablero de pedidos de venta": busca qué combinación de facturas de ese día
+        suma exacto el total de cada vendedor. Si hay una única forma posible, se
+        asigna sola. Si hay más de una (ej. dos facturas del mismo importe a
+        clientes distintos el mismo día), queda listada abajo para elegir a mano
+        según a qué cliente corresponde.
+      </p>
+
+      <button type="button" id="btn-cotejar" class="btn-primary">Ejecutar cruce</button>
+
+      <div id="resultado" class="resultado"></div>
+    </div>
+
+    <div id="ambiguos"></div>
+  </main>
+
+  <script src="assets/cotejar-vendedores.js"></script>
+</body>
+</html>

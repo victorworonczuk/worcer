@@ -26,6 +26,15 @@ const EMPRESA_CONFIG = {
 
 const CALIDAD_LABEL = { '1era': '1ª', comercial: 'Comercial', '3era': '3ª' };
 
+// Debe estar sincronizado con VENDEDORES en public/assets/app.js — se
+// duplica acá porque es un <script> suelto sin módulos (mismo criterio que
+// fetchAll() en el resto del proyecto).
+const VENDEDORES = [
+  'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
+  'Javier Viglino', 'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
+  'Mariano Cabarrus', 'Sebastián Guerra', 'Horacio Vostrosky', 'Víctor W.',
+];
+
 const state = {
   currentUser: null,
   clientes: [],
@@ -43,6 +52,7 @@ const els = {
   suggestions: document.getElementById('cliente-suggestions'),
   fecha: document.getElementById('fecha-input'),
   numero: document.getElementById('numero-input'),
+  vendedor: document.getElementById('vendedor-input'),
   ars: document.getElementById('ars-input'),
   arsHint: document.getElementById('ars-hint'),
   usd: document.getElementById('usd-input'),
@@ -65,6 +75,7 @@ async function init() {
   els.userSubtitle.textContent = `Sesión: ${me.user}`;
 
   els.fecha.value = new Date().toISOString().slice(0, 10);
+  els.vendedor.innerHTML = '<option value="">— sin especificar —</option>' + VENDEDORES.map((v) => `<option value="${v}">${v}</option>`).join('');
 
   const { data: clientesData, error: clientesError } = await fetchAll(() => client.from('clientes').select('id, cuit, nombre'));
   if (!clientesError) state.clientes = clientesData;
@@ -289,6 +300,8 @@ els.form.addEventListener('submit', async (e) => {
     tipo_cambio: usd ? Number((ars / usd).toFixed(4)) : null,
     cliente_id: state.clienteSeleccionado ? state.clienteSeleccionado.id : null,
     cargado_por: state.currentUser,
+    vendedor: els.vendedor.value || null,
+    vendedor_fuente: els.vendedor.value ? 'manual' : null,
   };
 
   els.submitBtn.disabled = true;
@@ -331,7 +344,7 @@ els.form.addEventListener('submit', async (e) => {
 async function loadRecientes() {
   const { data, error } = await client
     .from('facturas')
-    .select('nombre_facturado, empresa, importe_ars, fecha, cargado_por, created_at')
+    .select('nombre_facturado, empresa, importe_ars, fecha, cargado_por, vendedor, created_at')
     .not('cargado_por', 'is', null)
     .order('created_at', { ascending: false })
     .limit(15);
@@ -349,7 +362,7 @@ async function loadRecientes() {
       (f) => `<div class="recientes-item">
         <div>
           <div class="nombre">${escapeHtml(f.nombre_facturado || '')}</div>
-          <div class="meta">${escapeHtml(f.empresa || '')} · ${f.fecha ? new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-AR') : ''} · cargado por ${escapeHtml(f.cargado_por || '')}</div>
+          <div class="meta">${escapeHtml(f.empresa || '')} · ${f.fecha ? new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-AR') : ''} · cargado por ${escapeHtml(f.cargado_por || '')}${f.vendedor ? ` · vendedor: ${escapeHtml(f.vendedor)}` : ''}</div>
         </div>
         <div class="meta">$${Number(f.importe_ars || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
       </div>`

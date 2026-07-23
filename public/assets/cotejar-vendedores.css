@@ -1,0 +1,21 @@
+.cotejar-main { max-width: 900px; }
+
+#ambiguos { margin-top: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+.dia-ambiguo {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+.dia-ambiguo h3 { margin: 0 0 4px; font-size: 15px; }
+.dia-ambiguo .targets {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+}
+.dia-ambiguo table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dia-ambiguo th, .dia-ambiguo td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.dia-ambiguo td.importe { text-align: right; font-variant-numeric: tabular-nums; }
+.dia-ambiguo select { padding: 4px 6px; }
+.dia-ambiguo .guardado { color: var(--conf-alta); font-size: 12px; margin-left: 6px; }
