@@ -27,10 +27,10 @@ export async function POST(request) {
     return NextResponse.json({ error: 'No se recibió ningún archivo' }, { status: 400 });
   }
 
-  let filas, sinMapear;
+  let filas, proyecciones, sinMapear;
   try {
     const buffer = Buffer.from(await archivo.arrayBuffer());
-    ({ filas, sinMapear } = await parsePedidosVendedorXlsx(buffer));
+    ({ filas, proyecciones, sinMapear } = await parsePedidosVendedorXlsx(buffer));
   } catch (err) {
     return NextResponse.json({ error: `No se pudo leer el archivo: ${err.message}` }, { status: 400 });
   }
@@ -39,37 +39,53 @@ export async function POST(request) {
     return NextResponse.json({ error: 'No se encontraron hojas con el formato esperado (nombradas AAAA-MM, con las tablas "CANTIDAD DE PEDIDOS" y "PEDIDOS VALORIZADOS").' }, { status: 400 });
   }
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
-  try {
-    // Insert por lotes (una sola query por lote, no una por fila): con ~1700
-    // filas típicas de un año de tablero, uno por fila tardaba minutos por la
-    // latencia de red a la base remota.
+  // Insert por lotes (una sola query por lote, no una por fila): con ~1700
+  // filas típicas de un año de tablero, uno por fila tardaba minutos por la
+  // latencia de red a la base remota.
+  async function upsertPorLotes(client, tabla, columnas, columnasConflicto, filas) {
     const TAMANO_LOTE = 500;
     let cargadas = 0;
+    const setClause = columnas
+      .filter((c) => !columnasConflicto.includes(c) && c !== 'cargado_por')
+      .map((c) => `${c} = excluded.${c}`)
+      .concat(['cargado_por = excluded.cargado_por', 'updated_at = now()'])
+      .join(', ');
     for (let i = 0; i < filas.length; i += TAMANO_LOTE) {
       const lote = filas.slice(i, i + TAMANO_LOTE);
       const valores = [];
       const placeholders = lote.map((f, idx) => {
-        const base = idx * 5;
-        valores.push(f.vendedor, f.fecha, f.cantidad, f.monto_ars, user);
-        return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
+        const base = idx * columnas.length;
+        columnas.forEach((c) => valores.push(f[c]));
+        return `(${columnas.map((_, j) => `$${base + j + 1}`).join(', ')})`;
       });
       await client.query(
-        `insert into public.pedidos_vendedor (vendedor, fecha, cantidad, monto_ars, cargado_por)
+        `insert into public.${tabla} (${columnas.join(', ')})
          values ${placeholders.join(', ')}
-         on conflict (vendedor, fecha) do update
-           set cantidad = excluded.cantidad, monto_ars = excluded.monto_ars,
-               cargado_por = excluded.cargado_por, updated_at = now()`,
+         on conflict (${columnasConflicto.join(', ')}) do update set ${setClause}`,
         valores
       );
       cargadas += lote.length;
     }
+    return cargadas;
+  }
+
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const cargadas = await upsertPorLotes(
+      client, 'pedidos_vendedor', ['vendedor', 'fecha', 'cantidad', 'monto_ars', 'cargado_por'], ['vendedor', 'fecha'],
+      filas.map((f) => ({ ...f, cargado_por: user }))
+    );
+    const proyeccionesCargadas = await upsertPorLotes(
+      client, 'pedidos_vendedor_proyeccion', ['vendedor', 'mes', 'proyectado_cantidad', 'proyectado_monto', 'cargado_por'], ['vendedor', 'mes'],
+      proyecciones.map((p) => ({ ...p, cargado_por: user }))
+    );
 
     return NextResponse.json({
       ok: true,
       filas_leidas: filas.length,
       filas_cargadas: cargadas,
+      proyecciones_cargadas: proyeccionesCargadas,
       sin_mapear: sinMapear,
     });
   } finally {

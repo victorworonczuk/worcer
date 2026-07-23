@@ -79,6 +79,7 @@ els.btnImportar.addEventListener('click', async () => {
       <ul>
         <li>Filas leídas (vendedor × día): ${data.filas_leidas}</li>
         <li>Filas cargadas/actualizadas: ${data.filas_cargadas}</li>
+        <li>Proyecciones de cierre de mes cargadas: ${data.proyecciones_cargadas}</li>
       </ul>
       ${sinMapearHtml}
     `;
