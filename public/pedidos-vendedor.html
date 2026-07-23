@@ -51,6 +51,24 @@
       </div>
       <p class="nota-pie" id="nota-pie"></p>
     </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Total acumulado del año</h2>
+      <div class="table-wrap">
+        <table class="pivot">
+          <thead>
+            <tr>
+              <th class="col-grupo">Vendedor</th>
+              <th>Cantidad de pedidos</th>
+              <th>Pedidos valorizados ($)</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-anual">
+            <tr><td class="loading">Cargando datos…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>

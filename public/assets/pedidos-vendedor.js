@@ -30,6 +30,7 @@ const els = {
   thead: document.getElementById('thead'),
   tbody: document.getElementById('tbody'),
   notaPie: document.getElementById('nota-pie'),
+  tbodyAnual: document.getElementById('tbody-anual'),
 };
 
 function fmt(n) {
@@ -63,6 +64,38 @@ async function cargarDatos() {
   if (meses.length) els.mes.value = meses[meses.length - 1]; // último mes con datos por defecto
 
   render();
+  renderAnual();
+}
+
+// Total acumulado de TODO lo cargado (todos los meses juntos), sin filtro de
+// mes — cantidad y monto en la misma tabla, no depende de la pestaña Cantidad/Monto.
+function renderAnual() {
+  if (state.filas.length === 0) {
+    els.tbodyAnual.innerHTML = '<tr><td class="empty-state">Sin datos cargados todavía.</td></tr>';
+    return;
+  }
+  const porVendedor = new Map();
+  for (const f of state.filas) {
+    if (!porVendedor.has(f.vendedor)) porVendedor.set(f.vendedor, { cantidad: 0, monto_ars: 0 });
+    const g = porVendedor.get(f.vendedor);
+    g.cantidad += f.cantidad;
+    g.monto_ars += f.monto_ars;
+  }
+  const vendedores = [...porVendedor.entries()]
+    .map(([vendedor, g]) => ({ vendedor, ...g }))
+    .sort((a, b) => b.monto_ars - a.monto_ars);
+  const total = vendedores.reduce((a, v) => ({ cantidad: a.cantidad + v.cantidad, monto_ars: a.monto_ars + v.monto_ars }), { cantidad: 0, monto_ars: 0 });
+
+  els.tbodyAnual.innerHTML = vendedores.map((v) => `<tr>
+      <td class="col-grupo">${escapeHtml(v.vendedor)}</td>
+      <td>${fmt(v.cantidad)}</td>
+      <td>${fmtPesos(v.monto_ars)}</td>
+    </tr>`).join('') + `
+    <tr class="fila-total">
+      <td class="col-grupo">Total</td>
+      <td>${fmt(total.cantidad)}</td>
+      <td>${fmtPesos(total.monto_ars)}</td>
+    </tr>`;
 }
 
 function render() {
