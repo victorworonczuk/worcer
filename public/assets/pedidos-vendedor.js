@@ -44,6 +44,11 @@ function celda(val, fmtFn) {
   if (val === 0) return `<td class="zero">·</td>`;
   return `<td class="${val < 0 ? 'neg' : ''}">${fmtFn(val)}</td>`;
 }
+// % de participación de un vendedor sobre el total de todos — 100% = la venta total.
+function fmtPct(val, totalGeneral) {
+  if (!totalGeneral) return '·';
+  return (val / totalGeneral * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%';
+}
 
 async function initUser() {
   const res = await fetch('/api/me');
@@ -95,11 +100,13 @@ function renderAnual() {
       <td class="col-grupo">${escapeHtml(v.vendedor)}</td>
       <td class="${v.cantidad < 0 ? 'neg' : ''}">${fmt(v.cantidad)}</td>
       <td class="${v.monto_ars < 0 ? 'neg' : ''}">${fmtPesos(v.monto_ars)}</td>
+      <td>${fmtPct(v.monto_ars, total.monto_ars)}</td>
     </tr>`).join('') + `
     <tr class="fila-total">
       <td class="col-grupo">Total</td>
       <td class="${total.cantidad < 0 ? 'neg' : ''}">${fmt(total.cantidad)}</td>
       <td class="${total.monto_ars < 0 ? 'neg' : ''}">${fmtPesos(total.monto_ars)}</td>
+      <td>100%</td>
     </tr>`;
 }
 
@@ -157,6 +164,7 @@ function render() {
     ${dias.map((d) => `<th>${d.slice(8, 10)}</th>`).join('')}
     <th class="col-total">Total</th>
     <th class="col-total">Proyectado</th>
+    <th class="col-total">%</th>
   </tr>`;
 
   els.tbody.innerHTML = vendedores.map((v) => `<tr>
@@ -164,12 +172,14 @@ function render() {
       ${dias.map((d) => celda(v.porDia[d] || 0, fmtCelda)).join('')}
       <td class="col-total ${v.total < 0 ? 'neg' : ''}">${fmtCelda(v.total)}</td>
       <td class="col-total ${v.proyectado < 0 ? 'neg' : ''}">${v.proyectado != null ? fmtCelda(v.proyectado) : '·'}</td>
+      <td class="col-total">${fmtPct(v.proyectado || 0, proyectadoGeneral)}</td>
     </tr>`).join('') + `
     <tr class="fila-total">
       <td class="col-grupo">Total</td>
       ${dias.map((d) => celda(totalPorDia[d], fmtCelda)).join('')}
       <td class="col-total ${totalGeneral < 0 ? 'neg' : ''}">${fmtCelda(totalGeneral)}</td>
       <td class="col-total ${proyectadoGeneral < 0 ? 'neg' : ''}">${fmtCelda(proyectadoGeneral)}</td>
+      <td class="col-total">100%</td>
     </tr>`;
 
   els.notaPie.textContent = 'Cargado desde el "Tablero de pedidos de venta" mensual. "Proyectado" es el valor que ya trae el Excel (total acumulado / días hábiles transcurridos × días hábiles del mes), no se recalcula acá. Los valores negativos (si los hay) reflejan correcciones/cancelaciones del propio archivo de origen.';
