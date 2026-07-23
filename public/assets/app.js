@@ -66,6 +66,7 @@ const els = {
   rubro: document.getElementById('f-rubro'),
   vendedor: document.getElementById('f-vendedor'),
   canalCaptacion: document.getElementById('f-canal-captacion'),
+  orden: document.getElementById('f-orden'),
   resultCount: document.getElementById('result-count'),
   pageInfo: document.getElementById('page-info'),
   prevBtn: document.getElementById('prev-page'),
@@ -442,6 +443,15 @@ function applyFilters() {
     }
     return true;
   });
+
+  // Por defecto el orden ya viene de la consulta (segmento, luego facturación
+  // dentro de cada segmento) — .filter() lo preserva. "Ordenar" solo entra a
+  // reordenar cuando se elige explícitamente por facturación total.
+  const orden = els.orden.value;
+  if (orden === 'facturacion_desc' || orden === 'facturacion_asc') {
+    const signo = orden === 'facturacion_desc' ? -1 : 1;
+    state.filtered.sort((a, b) => signo * ((a.usd_total_2025_2026 || 0) - (b.usd_total_2025_2026 || 0)));
+  }
 
   state.page = 1;
   renderTable();
@@ -1183,6 +1193,7 @@ els.canalCaptacion.addEventListener('change', (e) => {
   state.filters.canalCaptacion = e.target.value;
   applyFilters();
 });
+els.orden.addEventListener('change', applyFilters);
 els.prevBtn.addEventListener('click', () => {
   state.page -= 1;
   renderTable();
