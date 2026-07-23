@@ -61,7 +61,12 @@ async function init() {
       precio: r.piezas.precio_ars != null ? Number(r.piezas.precio_ars) : null,
     }));
 
-  state.lineas = [...new Set(state.rows.map((r) => r.linea))].sort();
+  // Las líneas del filtro salen del catálogo completo, no solo de las que ya
+  // tienen algún movimiento cargado — si no, una línea sin producción propia
+  // (ej. Belmond/Lira, que son importadas y solo tienen venta) no aparece en
+  // el filtro hasta que alguien carga la primera venta.
+  const { data: piezasData } = await client.from('piezas').select('linea').eq('activo', true);
+  state.lineas = [...new Set((piezasData || []).map((p) => p.linea))].sort();
   els.linea.innerHTML = '<option value="">Todas</option>' +
     state.lineas.map((l) => `<option value="${l}">${l}</option>`).join('');
 
