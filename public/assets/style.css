@@ -193,6 +193,18 @@ main {
   color: var(--text);
 }
 
+.filters select {
+  /* Lugar extra a la derecha para que el texto de la opción elegida no
+     choque contra la flecha nativa del navegador (pasaba con opciones
+     largas, ej. "Redes sociales/Web" en "Cómo llegó"). El ancho automático
+     del <select> no siempre alcanza a mostrar la opción más larga entera,
+     así que además se fija un mínimo por selector donde hace falta. */
+  padding-right: 26px;
+}
+
+#f-canal-captacion { min-width: 190px; }
+#f-orden { min-width: 250px; }
+
 .filters-search input[type="search"] {
   flex: 1;
 }
