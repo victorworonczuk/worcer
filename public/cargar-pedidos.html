@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Cargar pedidos por vendedor</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#2453ff" />
+  <link rel="stylesheet" href="assets/importar-ventas.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Worcer · Cargar pedidos por vendedor</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    <div class="topbar-actions">
+      <a href="/pedidos-vendedor.html" class="nav-link">Ver reporte</a>
+      <a href="/index.html" class="nav-link">← Ver dashboard</a>
+      <a href="/api/logout" class="logout-link">Cerrar sesión</a>
+    </div>
+  </header>
+
+  <main class="importar-main">
+    <div class="panel importar-panel">
+      <p class="importar-intro">
+        Subí acá el "Tablero de pedidos de venta" (Excel, una hoja por mes nombrada
+        AAAA-MM, con las tablas "Cantidad de pedidos" y "Pedidos valorizados" por
+        vendedor y día). Se puede volver a subir sin miedo: si un vendedor y fecha
+        ya estaban cargados, se actualizan con el valor nuevo del archivo.
+      </p>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="file-input" accept=".xlsx" hidden />
+        <div class="dropzone-text">
+          <strong>Arrastrá el archivo acá</strong> o hacé clic para elegirlo
+        </div>
+        <ul id="file-list" class="file-list"></ul>
+      </div>
+
+      <button type="button" id="btn-importar" class="btn-primary" disabled>Importar</button>
+
+      <div id="resultado" class="resultado"></div>
+    </div>
+  </main>
+
+  <script src="assets/cargar-pedidos.js"></script>
+</body>
+</html>
