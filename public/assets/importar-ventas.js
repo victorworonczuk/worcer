@@ -85,6 +85,7 @@ els.btnImportar.addEventListener('click', async () => {
         <li>Vinculados a un cliente existente: ${data.vinculadas}</li>
         <li>Clientes nuevos dados de alta automáticamente: ${data.altas_automaticas}</li>
         <li>Completados con CUIT por coincidir con un cliente sin CUIT ya cargado: ${data.vinculadas_por_nombre ?? 0}</li>
+        <li>Vendedor asignado (el vendedor fijo del cliente): ${data.vendedor_asignado_por_cliente ?? 0}</li>
       </ul>
       ${sinVincularHtml}
     `;

@@ -78,8 +78,9 @@ els.btnCotejar.addEventListener('click', async () => {
     els.resultado.innerHTML = `
       <p class="resultado-ok">✓ Cruce terminado.</p>
       <ul>
-        <li>Días cotejados: ${data.dias_cotejados}</li>
-        <li>Facturas asignadas automáticamente: ${data.facturas_asignadas}</li>
+        <li>Facturas asignadas por el vendedor fijo del cliente: ${data.facturas_asignadas_por_cliente}</li>
+        <li>Días cotejados por importe (lo que quedaba sin cliente/vendedor asignado): ${data.dias_cotejados}</li>
+        <li>Facturas asignadas por el cruce de importes: ${data.facturas_asignadas}</li>
         <li>Días sin ninguna combinación posible (no se tocó nada): ${data.dias_sin_solucion}</li>
         <li>Días con casos ambiguos para revisar abajo: ${data.dias_ambiguos.length}</li>
       </ul>

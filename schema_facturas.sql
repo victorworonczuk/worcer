@@ -17,10 +17,11 @@ create table if not exists public.facturas (
   -- vino del importador automático del sistema de facturación, null si vino del
   -- import histórico inicial (ver import-facturas.cjs).
   cargado_por text,
-  -- Vendedor asignado por el cruce contra pedidos_vendedor (ver
-  -- lib/cotejarVendedor.js) o cargado a mano en un caso ambiguo.
+  -- Vendedor asignado: por el vendedor fijo del cliente (clientes.vendedor,
+  -- la vía más segura — ver /api/cotejar-vendedores), por el cruce contra
+  -- pedidos_vendedor (lib/cotejarVendedor.js), o cargado a mano.
   vendedor text,
-  vendedor_fuente text check (vendedor_fuente in ('cotejo_automatico', 'manual'))
+  vendedor_fuente text check (vendedor_fuente in ('cotejo_automatico', 'manual', 'cliente_asignado'))
 );
 
 create index if not exists idx_facturas_cuit on public.facturas(cuit_normalizado);

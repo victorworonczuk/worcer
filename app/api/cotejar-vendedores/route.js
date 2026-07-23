@@ -29,6 +29,17 @@ export async function POST(request) {
   const client = new Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
   try {
+    // Paso 1: el cliente ya tiene un vendedor fijo asignado (cartera fija,
+    // confirmado con Víctor) — es la vía más segura, ni siquiera hace falta
+    // cotejar importes. Se hace antes del cruce por día para que además esas
+    // facturas no compliquen la búsqueda de combinaciones del resto.
+    const { rowCount: asignadasPorCliente } = await client.query(`
+      update public.facturas f
+      set vendedor = c.vendedor, vendedor_fuente = 'cliente_asignado'
+      from public.clientes c
+      where f.cliente_id = c.id and f.vendedor is null and c.vendedor is not null
+    `);
+
     const { rows: facturas } = await client.query(
       `select id, fecha, importe_ars, nombre_facturado, empresa
        from public.facturas
@@ -128,6 +139,7 @@ export async function POST(request) {
 
     return NextResponse.json({
       ok: true,
+      facturas_asignadas_por_cliente: asignadasPorCliente,
       dias_cotejados: diasCotejados,
       dias_sin_solucion: diasSinSolucion,
       facturas_asignadas: asignadas,

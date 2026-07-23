@@ -147,6 +147,17 @@ export async function POST(request) {
       );
     }
 
+    // El vendedor de un cliente es fijo (cartera fija, confirmado con
+    // Víctor) — si el cliente ya tiene uno asignado, se copia directo a la
+    // factura recién vinculada, sin necesitar el cruce por importe de
+    // /cotejar-vendedores.html.
+    const { rowCount: vendedorAsignado } = await client.query(`
+      update public.facturas f
+      set vendedor = c.vendedor, vendedor_fuente = 'cliente_asignado'
+      from public.clientes c
+      where f.cliente_id = c.id and f.vendedor is null and c.vendedor is not null
+    `);
+
     const { rows: sinVincular } = await client.query(`
       select nombre_facturado, cuit_original, empresa, importe_ars
       from public.facturas
@@ -162,6 +173,7 @@ export async function POST(request) {
       vinculadas,
       altas_automaticas: altasAutomaticas,
       vinculadas_por_nombre: vinculadasPorNombre,
+      vendedor_asignado_por_cliente: vendedorAsignado,
       sin_vincular: sinVincular,
     });
   } finally {
