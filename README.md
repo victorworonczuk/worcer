@@ -155,6 +155,8 @@ Filtra `factura_items` por cliente(s), vendedor, línea, pieza+calidad y rango d
 - Es idempotente: upsert por `(factura_id, pieza_id)` — correr el mismo archivo, o uno con rango de fechas más amplio, no duplica ni suma de más.
 - `factura_items.cantidad` puede ser negativa (una nota de crédito resta piezas) — el `check` original solo permitía positivos, se relajó a "distinto de cero".
 
+**Líneas importadas (Belmond, Lira)**: Worcer no las fabrica, solo las revende — nunca van a tener `produccion` con `tipo='produccion'`, solo `'venta'`. El reporte "Producción" (`/produccion.html`) lee de la tabla `produccion`, no de `factura_items`, así que sin este puente sus ventas quedaban invisibles ahí aunque ya estuvieran en "Análisis de piezas". `LINEAS_IMPORTADAS` (`public/assets/nueva-factura.js` y `scripts/import-salidas-stock.cjs`, deben estar sincronizadas) resuelve esto: cuando se carga una factura con piezas de esas líneas — a mano o por Salidas de Stocks — se recalcula el total vendido ese día para esa pieza (sumando todas las facturas del día, no solo la que se acaba de cargar) y se refleja en `produccion` (`tipo='venta'`, `cargado_por='sync-salidas-stock'` si vino del import). No hace falta cargarlas de nuevo a mano en "Cargar producción".
+
 - **0 o 1 cliente elegido**: tabla simple agrupada por cliente/pieza/calidad, con cantidad total, **monto total en pesos** y N° de facturas.
 - **2 o 3 clientes elegidos** (el filtro de cliente admite selección múltiple, con chips removibles): cambia a una **tabla comparativa** — una fila por pieza+calidad, una columna por cada cliente elegido (cantidad + monto en cada celda), fila de totales en pesos al final.
 

@@ -20,6 +20,12 @@ if (!CONNECTION_STRING) {
   process.exit(1);
 }
 
+// Líneas que Worcer no fabrica (son importadas) — solo tienen venta, nunca
+// producción propia. Sus ventas se reflejan solas en produccion (tipo='venta')
+// para que el reporte "Producción" las muestre sin cargarlas de nuevo a mano.
+// Debe estar sincronizado con LINEAS_IMPORTADAS en public/assets/nueva-factura.js.
+const LINEAS_IMPORTADAS = new Set(['Belmond', 'Lira']);
+
 async function main() {
   const jsonPath = path.join(__dirname, '..', 'salidas_stock_export.json');
   if (!fs.existsSync(jsonPath)) {
@@ -56,7 +62,7 @@ async function main() {
 
   for (const r of grupos.values()) {
     const { rows: facturaRows } = await client.query(
-      `select id from public.facturas where empresa = $1 and tipo_comprobante = $2 and numero_comprobante = $3`,
+      `select id, fecha from public.facturas where empresa = $1 and tipo_comprobante = $2 and numero_comprobante = $3`,
       [r.empresa, r.tipo_comprobante, r.numero_comprobante]
     );
     if (facturaRows.length === 0) {
@@ -65,6 +71,7 @@ async function main() {
       continue;
     }
     const facturaId = facturaRows[0].id;
+    const facturaFecha = facturaRows[0].fecha;
 
     const { rows: piezaRows } = await client.query(
       `select id from public.piezas where linea = $1 and tipo_pieza = $2 and variante = $3 and calidad = $4`,
@@ -84,6 +91,22 @@ async function main() {
       [facturaId, piezaId, r.cantidad, r.precio_vta]
     );
     cargados += 1;
+
+    if (LINEAS_IMPORTADAS.has(r.linea) && facturaFecha) {
+      const { rows: sumaRows } = await client.query(
+        `select sum(fi.cantidad) as total
+         from public.factura_items fi
+         join public.facturas f on f.id = fi.factura_id
+         where fi.pieza_id = $1 and f.fecha = $2`,
+        [piezaId, facturaFecha]
+      );
+      await client.query(
+        `insert into public.produccion (fecha, pieza_id, tipo, cantidad, cargado_por)
+         values ($1, $2, 'venta', $3, 'sync-salidas-stock')
+         on conflict (fecha, pieza_id, tipo) do update set cantidad = excluded.cantidad, cargado_por = excluded.cargado_por`,
+        [facturaFecha, piezaId, Number(sumaRows[0].total || 0)]
+      );
+    }
   }
 
   console.log(`Cargados en factura_items: ${cargados}`);

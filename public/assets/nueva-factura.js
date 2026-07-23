@@ -26,6 +26,13 @@ const EMPRESA_CONFIG = {
 
 const CALIDAD_LABEL = { '1era': '1ª', comercial: 'Comercial', '3era': '3ª' };
 
+// Líneas que Worcer no fabrica (son importadas) — solo tienen venta, nunca
+// producción propia. Sus ventas cargadas acá se reflejan solas en el reporte
+// "Producción" (tabla produccion, tipo='venta'), sin tener que cargarlas de
+// nuevo a mano en "Cargar producción". Debe estar sincronizado con
+// LINEAS_IMPORTADAS en scripts/import-salidas-stock.cjs.
+const LINEAS_IMPORTADAS = new Set(['Belmond', 'Lira']);
+
 // Debe estar sincronizado con VENDEDORES en public/assets/app.js — se
 // duplica acá porque es un <script> suelto sin módulos (mismo criterio que
 // fetchAll() en el resto del proyecto).
@@ -257,6 +264,34 @@ function resetPiezasRows() {
   els.arsHint.className = 'ars-hint';
 }
 
+// Para piezas de líneas importadas (Belmond, Lira): recalcula el total
+// vendido ese día para esa pieza (sumando TODAS las facturas del día, no solo
+// la que se acaba de cargar) y lo refleja en produccion (tipo='venta'), para
+// que el reporte "Producción" lo muestre sin cargarlo de nuevo a mano.
+async function sincronizarVentaImportada(piezasVendidas, fecha) {
+  const piezaIdsImportados = new Set(
+    piezasVendidas
+      .map((it) => state.piezas.find((p) => p.id === it.pieza_id))
+      .filter((p) => p && LINEAS_IMPORTADAS.has(p.linea))
+      .map((p) => p.id)
+  );
+  for (const piezaId of piezaIdsImportados) {
+    const { data: itemsDelDia } = await client
+      .from('factura_items')
+      .select('cantidad, facturas(fecha)')
+      .eq('pieza_id', piezaId);
+    const total = (itemsDelDia || [])
+      .filter((r) => r.facturas && r.facturas.fecha === fecha)
+      .reduce((sum, r) => sum + r.cantidad, 0);
+    await client
+      .from('produccion')
+      .upsert(
+        { fecha, pieza_id: piezaId, tipo: 'venta', cantidad: total, cargado_por: state.currentUser },
+        { onConflict: 'fecha,pieza_id,tipo' }
+      );
+  }
+}
+
 // --- Envío del formulario ---
 
 els.form.addEventListener('submit', async (e) => {
@@ -321,6 +356,8 @@ els.form.addEventListener('submit', async (e) => {
     const { error: itemsError } = await client.from('factura_items').insert(itemsPayload);
     if (itemsError) {
       els.formError.textContent = 'La factura se guardó, pero hubo un error guardando las piezas: ' + itemsError.message;
+    } else {
+      await sincronizarVentaImportada(piezasSeleccionadas, fecha);
     }
   }
 
