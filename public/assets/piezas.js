@@ -18,6 +18,15 @@ async function fetchAll(buildQuery, pageSize = 1000) {
 
 const CALIDAD_LABEL = { '1era': '1ª', comercial: 'Comercial', '3era': '3ª' };
 
+// Debe estar sincronizado con VENDEDORES en public/assets/app.js — se
+// duplica acá porque es un <script> suelto sin módulos (mismo criterio que
+// fetchAll() en el resto del proyecto).
+const VENDEDORES = [
+  'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
+  'Javier Viglino', 'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
+  'Mariano Cabarrus', 'Sebastián Guerra', 'Horacio Vostrosky', 'Víctor W.',
+];
+
 const state = {
   clientes: [],
   clientesSeleccionados: [],
@@ -31,6 +40,7 @@ const els = {
   clienteInput: document.getElementById('f-cliente'),
   suggestions: document.getElementById('cliente-suggestions'),
   clienteChips: document.getElementById('cliente-chips'),
+  vendedor: document.getElementById('f-vendedor'),
   linea: document.getElementById('f-linea'),
   pieza: document.getElementById('f-pieza'),
   desde: document.getElementById('f-desde'),
@@ -85,6 +95,7 @@ async function init() {
     state.piezasPorLinea.set(p.linea, list);
   }
   els.linea.innerHTML = '<option value="">Todas</option>' + state.lineasDisponibles.map((l) => `<option value="${l}">${l}</option>`).join('');
+  els.vendedor.innerHTML = '<option value="">Todos</option>' + VENDEDORES.map((v) => `<option value="${v}">${v}</option>`).join('');
 
   buscar();
 }
@@ -154,6 +165,7 @@ els.limpiarBtn.addEventListener('click', () => {
   els.clienteInput.value = '';
   state.clientesSeleccionados = [];
   renderChips();
+  els.vendedor.value = '';
   els.linea.value = '';
   els.pieza.innerHTML = '<option value="">Todas</option>';
   els.desde.value = '';
@@ -167,7 +179,7 @@ async function buscar() {
   const { data, error } = await fetchAll(() =>
     client
       .from('factura_items')
-      .select('cantidad, precio_unitario, factura_id, pieza_id, facturas(fecha, cliente_id, nombre_facturado), piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
+      .select('cantidad, precio_unitario, factura_id, pieza_id, facturas(fecha, cliente_id, nombre_facturado, vendedor), piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
   );
 
   if (error) {
@@ -176,6 +188,7 @@ async function buscar() {
   }
 
   const idsSeleccionados = new Set(state.clientesSeleccionados.map((c) => c.id));
+  const vendedorFiltro = els.vendedor.value || null;
   const lineaFiltro = els.linea.value || null;
   const piezaIdFiltro = els.pieza.value ? Number(els.pieza.value) : null;
   const desde = els.desde.value || null;
@@ -184,6 +197,7 @@ async function buscar() {
   const filtrados = data.filter((item) => {
     if (!item.facturas || !item.piezas) return false;
     if (idsSeleccionados.size > 0 && !idsSeleccionados.has(item.facturas.cliente_id)) return false;
+    if (vendedorFiltro && item.facturas.vendedor !== vendedorFiltro) return false;
     if (lineaFiltro && item.piezas.linea !== lineaFiltro) return false;
     if (piezaIdFiltro && item.pieza_id !== piezaIdFiltro) return false;
     if (desde && item.facturas.fecha < desde) return false;
