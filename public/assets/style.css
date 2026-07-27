@@ -245,7 +245,7 @@ main {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 thead th {
@@ -253,7 +253,7 @@ thead th {
   top: 0;
   background: #fafbfc;
   text-align: left;
-  padding: 10px 12px;
+  padding: 8px 8px;
   font-weight: 600;
   color: var(--text-muted);
   border-bottom: 1px solid var(--border);
@@ -268,7 +268,7 @@ thead th {
 .th-help:hover { opacity: 1; }
 
 tbody td {
-  padding: 10px 12px;
+  padding: 7px 8px;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
@@ -347,19 +347,19 @@ tbody tr:hover {
 .contacto-block {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 170px;
+  gap: 5px;
+  min-width: 135px;
 }
 .contacto-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 .contacto-input {
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 12px;
+  padding: 5px 6px;
+  font-size: 11.5px;
   color: var(--text);
   background: var(--surface);
   width: 100%;
@@ -416,8 +416,8 @@ tbody tr:hover {
 .remove-telefono:hover { color: var(--seg-e); }
 
 .factura-cell {
-  min-width: 140px;
-  font-size: 12px;
+  min-width: 115px;
+  font-size: 11.5px;
 }
 .factura-cell .none { color: var(--text-muted); }
 button.toggle-facturas {
@@ -456,8 +456,8 @@ table.factura-table td {
 select.estado-select {
   border-radius: 6px;
   border: 1px solid var(--border);
-  padding: 4px 6px;
-  font-size: 12px;
+  padding: 3px 5px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #fff;
 }
@@ -475,8 +475,8 @@ select.estado-select option { color: #000; background: #fff; }
 select.confianza-select {
   border-radius: 6px;
   border: 1px solid var(--border);
-  padding: 4px 6px;
-  font-size: 12px;
+  padding: 3px 5px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #fff;
 }
@@ -486,20 +486,23 @@ select.badge-conf-baja { background: var(--conf-baja); }
 select.badge-conf-sin_datos, select.badge-conf-sin { background: var(--conf-sin); }
 select.confianza-select option { color: #000; background: #fff; }
 
-.ubicacion-cell { min-width: 150px; }
+.ubicacion-cell { min-width: 115px; }
 .ubicacion-select, .ubicacion-input, .rubro-select, .descripcion-input, .vendedor-select, .vendedor-otro-input, .canal-captacion-select {
   display: block;
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 12px;
+  padding: 5px 6px;
+  font-size: 11.5px;
   color: var(--text);
   background: var(--surface);
   font-family: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
-.ubicacion-input { margin-top: 5px; }
-.vendedor-otro-input { margin-top: 5px; }
+.ubicacion-input { margin-top: 4px; }
+.vendedor-otro-input { margin-top: 4px; }
 .ubicacion-select:hover, .ubicacion-input:hover, .rubro-select:hover, .descripcion-input:hover, .vendedor-select:hover, .vendedor-otro-input:hover, .canal-captacion-select:hover {
   border-color: #c7ccd4;
 }
@@ -508,30 +511,27 @@ select.confianza-select option { color: #000; background: #fff; }
   background: #fff;
 }
 
-.canal-captacion-cell { min-width: 150px; }
+.canal-captacion-cell { min-width: 120px; }
 
-.rubro-cell { min-width: 140px; }
+.rubro-cell { min-width: 110px; }
 .rubro-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 .rubro-check {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 11.5px;
   color: var(--text);
   cursor: pointer;
 }
 .rubro-check input { cursor: pointer; }
 
-.vendedor-cell { min-width: 170px; }
+.vendedor-cell { min-width: 130px; }
 .vendedor-select {
   padding-right: 22px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
 }
 
 .descripcion-input {
@@ -546,7 +546,7 @@ select.confianza-select option { color: #000; background: #fff; }
   color: var(--text-muted);
 }
 
-.historial-cell { min-width: 140px; }
+.historial-cell { min-width: 110px; }
 button.toggle-historial {
   border: 1px solid var(--border);
   background: var(--bg);
