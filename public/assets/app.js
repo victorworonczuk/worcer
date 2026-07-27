@@ -231,7 +231,7 @@ function actualizarSubtitulo() {
 }
 
 async function loadData() {
-  els.tbody.innerHTML = `<tr><td colspan="11" class="loading">Cargando clientes…</td></tr>`;
+  els.tbody.innerHTML = `<tr><td colspan="8" class="loading">Cargando clientes…</td></tr>`;
   const { data, error } = await fetchAll(() =>
     client
       .from('clientes')
@@ -241,7 +241,7 @@ async function loadData() {
   );
 
   if (error) {
-    els.tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Error cargando datos: ${error.message}</td></tr>`;
+    els.tbody.innerHTML = `<tr><td colspan="8" class="empty-state">Error cargando datos: ${error.message}</td></tr>`;
     console.error(error);
     return;
   }
@@ -471,7 +471,7 @@ function renderTable() {
   els.nextBtn.disabled = state.page >= totalPages;
 
   if (pageRows.length === 0) {
-    els.tbody.innerHTML = `<tr><td colspan="11" class="empty-state">No hay clientes que coincidan con estos filtros.</td></tr>`;
+    els.tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No hay clientes que coincidan con estos filtros.</td></tr>`;
     return;
   }
 
@@ -551,7 +551,7 @@ function renderTable() {
 function facturasDetailHtml(r) {
   const facturas = state.facturasByCliente.get(r.id) || [];
   if (facturas.length === 0) {
-    return `<tr class="factura-detail-row"><td colspan="11">Sin facturas registradas.</td></tr>`;
+    return `<tr class="factura-detail-row"><td colspan="8">Sin facturas registradas.</td></tr>`;
   }
   const rows = facturas
     .map(
@@ -565,7 +565,7 @@ function facturasDetailHtml(r) {
     .join('');
   return `
     <tr class="factura-detail-row">
-      <td colspan="11">
+      <td colspan="8">
         <table class="factura-table">
           <thead><tr><th>Fecha</th><th>Línea</th><th>Importe ARS</th><th>Importe USD</th></tr></thead>
           <tbody>${rows}</tbody>
@@ -669,7 +669,7 @@ function historialDetailHtml(r) {
 
   return `
     <tr class="historial-detail-row">
-      <td colspan="11">
+      <td colspan="8">
         ${formHtml}
         ${
           filas
@@ -912,31 +912,26 @@ function canalCaptacionCellHtml(r) {
   `;
 }
 
-function telefonoRowHtml(valor) {
+function telefonoRowHtml(valor, r) {
+  const digits = valor.replace(/[^0-9]/g, '');
+  const waAction = digits
+    ? `<a class="contacto-action" href="https://wa.me/${digits}?text=${encodeURIComponent(buildMessage(r))}" target="_blank" rel="noopener" title="Abrir WhatsApp">💬</a>`
+    : '';
   return `<div class="contacto-row telefono-row">
     <input type="text" class="contacto-input telefono-input" value="${escapeHtml(valor)}" placeholder="Teléfono" />
+    ${waAction}
     <button type="button" class="remove-telefono" title="Eliminar teléfono">×</button>
   </div>`;
 }
 
 function contactLinks(r) {
   const telefonos = telefonosDe(r);
-  const telefonosHtml = (telefonos.length ? telefonos : ['']).map(telefonoRowHtml).join('')
+  const telefonosHtml = (telefonos.length ? telefonos : ['']).map((v) => telefonoRowHtml(v, r)).join('')
     + `<button type="button" class="add-telefono" data-id="${r.id}">+ Agregar otro teléfono</button>`;
-  let waAction = '';
-  if (r.whatsapp) {
-    const num = r.whatsapp.replace(/[^0-9]/g, '');
-    const text = encodeURIComponent(buildMessage(r));
-    waAction = `<a class="contacto-action" href="https://wa.me/${num}?text=${text}" target="_blank" rel="noopener" title="Abrir WhatsApp">💬</a>`;
-  }
 
   return `
     <div class="contacto-block">
       <div class="telefono-group" data-id="${r.id}">${telefonosHtml}</div>
-      <div class="contacto-row">
-        <input type="text" class="contacto-input" data-field="whatsapp" value="${escapeHtml(r.whatsapp || '')}" placeholder="WhatsApp (549...)" />
-        ${waAction}
-      </div>
       <div class="contacto-row">
         <input type="email" class="contacto-input" data-field="email" value="${escapeHtml(r.email || '')}" placeholder="Email" />
       </div>
@@ -973,7 +968,6 @@ function rowHtml(r) {
           <textarea class="descripcion-input" data-field="descripcion" rows="2" placeholder="Sin descripción">${escapeHtml(r.descripcion || '')}</textarea>
           <span class="save-indicator">✓</span>
         </div>` : ''}
-        <button type="button" class="delete-cliente" data-id="${r.id}" title="Eliminar cliente">🗑 Eliminar</button>
       </td>
       <td class="ubicacion-cell">
         <select class="ubicacion-select" data-field="provincia">
@@ -984,8 +978,8 @@ function rowHtml(r) {
         <input type="text" class="ubicacion-input" data-field="domicilio" value="${escapeHtml(r.domicilio || '')}" placeholder="Domicilio" />
         <span class="save-indicator">✓</span>
       </td>
-      <td><span class="badge ${segClass(r.segmento)}" title="${escapeHtml(segmentoTooltip(r))}">${segLabel}</span></td>
-      <td>
+      <td class="stacked-cell">
+        <span class="badge ${segClass(r.segmento)}" title="${escapeHtml(segmentoTooltip(r))}">${segLabel}</span>
         <select class="confianza-select ${confClass(r.confianza_dato)}" data-field="confianza_dato">
           <option value="alta" ${r.confianza_dato === 'alta' ? 'selected' : ''}>Alta</option>
           <option value="media" ${r.confianza_dato === 'media' ? 'selected' : ''}>Media</option>
@@ -996,10 +990,12 @@ function rowHtml(r) {
       </td>
       <td class="contact-links">${contactLinks(r)}</td>
       <td class="rubro-cell">${rubroCellHtml(r)}</td>
-      <td class="vendedor-cell">${vendedorCellHtml(r)}</td>
-      <td class="canal-captacion-cell">${canalCaptacionCellHtml(r)}</td>
+      <td class="stacked-cell vendedor-cell">
+        ${vendedorCellHtml(r)}
+        ${canalCaptacionCellHtml(r)}
+      </td>
       <td class="factura-cell">${facturacionCell(r)}</td>
-      <td>
+      <td class="stacked-cell estado-historial-cell">
         <select class="estado-select ${estadoClass(r.estado_contacto)}" data-field="estado_contacto">
           <option value="pendiente" ${r.estado_contacto === 'pendiente' || !r.estado_contacto ? 'selected' : ''}>Pendiente</option>
           <option value="contactado" ${r.estado_contacto === 'contactado' ? 'selected' : ''}>Contactado</option>
@@ -1007,8 +1003,9 @@ function rowHtml(r) {
           <option value="descartado" ${r.estado_contacto === 'descartado' ? 'selected' : ''}>Descartado</option>
         </select>
         <span class="save-indicator">✓</span>
+        <div class="historial-cell">${historialCell(r)}</div>
+        <button type="button" class="delete-cliente" data-id="${r.id}" title="Eliminar cliente">🗑</button>
       </td>
-      <td class="historial-cell">${historialCell(r)}</td>
     </tr>
   `;
 }
@@ -1068,7 +1065,7 @@ async function onConfianzaChange(e) {
   if (rec) rec.confianza_dato = value;
 }
 
-const CAMPOS_CONTACTO = ['whatsapp', 'email'];
+const CAMPOS_CONTACTO = ['email'];
 
 async function onEditableFieldChange(e) {
   const tr = e.target.closest('tr');

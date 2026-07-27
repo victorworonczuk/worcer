@@ -335,18 +335,27 @@ tbody tr:hover {
   color: var(--text-muted);
   font-size: 12px;
 }
-.nombre-cell .delete-cliente {
-  display: block;
+.stacked-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.delete-cliente {
+  align-self: flex-end;
+  margin-top: 6px;
   border: none;
   background: none;
-  padding: 0;
-  margin-top: 4px;
-  font-size: 11px;
+  padding: 2px 4px;
+  font-size: 12px;
+  line-height: 1;
   color: var(--text-muted);
+  opacity: 0.4;
   cursor: pointer;
 }
-.nombre-cell .delete-cliente:hover { color: var(--seg-e); text-decoration: underline; }
-.nombre-cell .delete-cliente:disabled { opacity: 0.5; cursor: not-allowed; }
+.delete-cliente:hover { opacity: 1; color: var(--seg-e); }
+.delete-cliente:disabled { opacity: 0.25; cursor: not-allowed; }
 
 .badge {
   display: inline-block;
@@ -540,8 +549,6 @@ select.confianza-select option { color: #000; background: #fff; }
   background: #fff;
 }
 
-.canal-captacion-cell { min-width: 120px; }
-
 .rubro-cell { min-width: 110px; }
 .rubro-group {
   display: flex;
@@ -558,7 +565,8 @@ select.confianza-select option { color: #000; background: #fff; }
 }
 .rubro-check input { cursor: pointer; }
 
-.vendedor-cell { min-width: 130px; }
+.vendedor-cell { min-width: 140px; }
+.vendedor-cell select { width: 100%; }
 .vendedor-select {
   padding-right: 22px;
 }
