@@ -6,7 +6,7 @@ const state = {
   all: [],
   filtered: [],
   page: 1,
-  filters: { q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false, soloCandidatosDescarte: false, soloContactados: false },
+  filters: { q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false, soloCandidatosDescarte: false, tipoCliente: '', soloConDatoContacto: false },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
   interaccionesByCliente: new Map(),
@@ -369,69 +369,55 @@ function renderStats() {
     : `🎯 Contactos esta semana · Faltan ${faltan}`;
 
   const cards = [
-    { label: 'Clientes', value: clientesReales },
-    { label: 'Personas', value: personas },
-    { label: 'Con dato de contacto', value: conContacto },
-    { label: '📅 Seguimientos vencidos', value: vencidos, id: 'card-vencidos', special: true },
-    { label: `⚠️ ${UMBRAL_INTENTOS_SIN_RESULTADO}+ intentos sin resultado`, value: candidatosDescarte, id: 'card-candidatos-descarte', special: true },
-    { label: metaLabel, value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, id: 'card-contactados-semana', clickMeta: true, metaCumplida: faltan === 0 },
-    { label: 'Recuperados', value: estadoCounts.recuperado || 0 },
-    { label: 'Contactados', value: estadoCounts.contactado || 0, id: 'card-contactados', special: true },
-    { label: 'Descartados', value: estadoCounts.descartado || 0 },
-    { label: 'Seg. A · Activo sano', value: segCounts.A || 0 },
-    { label: 'Seg. B · Alerta temprana', value: segCounts.B || 0 },
-    { label: 'Seg. C · Riesgo medio', value: segCounts.C || 0 },
-    { label: 'Seg. D · Riesgo alto', value: segCounts.D || 0 },
-    { label: 'Seg. E · Muy frío', value: segCounts.E || 0 },
-    { label: 'Seg. F · Dormido total', value: segCounts.F || 0 },
+    { label: 'Clientes', value: clientesReales, id: 'card-clientes', filterKey: 'tipoCliente', filterValue: 'cliente' },
+    { label: 'Personas', value: personas, id: 'card-personas', filterKey: 'tipoCliente', filterValue: 'persona' },
+    { label: 'Con dato de contacto', value: conContacto, id: 'card-con-contacto', filterKey: 'soloConDatoContacto', filterValue: true },
+    { label: '📅 Seguimientos vencidos', value: vencidos, id: 'card-vencidos', special: true, filterKey: 'soloVencidos', filterValue: true },
+    { label: `⚠️ ${UMBRAL_INTENTOS_SIN_RESULTADO}+ intentos sin resultado`, value: candidatosDescarte, id: 'card-candidatos-descarte', special: true, filterKey: 'soloCandidatosDescarte', filterValue: true },
+    { label: metaLabel, value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, id: 'card-contactados-semana', clickMeta: true, metaCumplida: faltan === 0, filterKey: 'soloContactadosSemana', filterValue: true },
+    { label: 'Recuperados', value: estadoCounts.recuperado || 0, id: 'card-recuperados', filterKey: 'estado', filterValue: 'recuperado' },
+    { label: 'Contactados', value: estadoCounts.contactado || 0, id: 'card-contactados', filterKey: 'estado', filterValue: 'contactado' },
+    { label: 'Descartados', value: estadoCounts.descartado || 0, id: 'card-descartados', filterKey: 'estado', filterValue: 'descartado' },
+    { label: 'Seg. A · Activo sano', value: segCounts.A || 0, id: 'card-seg-a', filterKey: 'segmento', filterValue: 'A' },
+    { label: 'Seg. B · Alerta temprana', value: segCounts.B || 0, id: 'card-seg-b', filterKey: 'segmento', filterValue: 'B' },
+    { label: 'Seg. C · Riesgo medio', value: segCounts.C || 0, id: 'card-seg-c', filterKey: 'segmento', filterValue: 'C' },
+    { label: 'Seg. D · Riesgo alto', value: segCounts.D || 0, id: 'card-seg-d', filterKey: 'segmento', filterValue: 'D' },
+    { label: 'Seg. E · Muy frío', value: segCounts.E || 0, id: 'card-seg-e', filterKey: 'segmento', filterValue: 'E' },
+    { label: 'Seg. F · Dormido total', value: segCounts.F || 0, id: 'card-seg-f', filterKey: 'segmento', filterValue: 'F' },
   ];
 
   els.stats.innerHTML = cards
-    .map(
-      (c) =>
-        `<div class="stat-card${c.special ? ' stat-card-clickable' : ''}${c.clickMeta ? ' stat-card-clickable-meta' : ''}${c.metaCumplida ? ' stat-card-success' : ''}${state.filters.soloVencidos && c.id === 'card-vencidos' ? ' active' : ''}${state.filters.soloContactadosSemana && c.id === 'card-contactados-semana' ? ' active' : ''}${state.filters.soloCandidatosDescarte && c.id === 'card-candidatos-descarte' ? ' active' : ''}${state.filters.soloContactados && c.id === 'card-contactados' ? ' active' : ''}" ${c.id ? `id="${c.id}"` : ''}><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
-    )
+    .map((c) => {
+      const active = c.filterKey && state.filters[c.filterKey] === c.filterValue;
+      const cls = [
+        'stat-card',
+        c.special ? 'stat-card-clickable' : '',
+        c.clickMeta ? 'stat-card-clickable-meta' : '',
+        !c.special && !c.clickMeta && c.filterKey ? 'stat-card-filter' : '',
+        c.metaCumplida ? 'stat-card-success' : '',
+        active ? 'active' : '',
+      ].filter(Boolean).join(' ');
+      return `<div class="${cls}" id="${c.id}"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`;
+    })
     .join('');
 
-  const cardVencidos = document.getElementById('card-vencidos');
-  if (cardVencidos) {
-    cardVencidos.addEventListener('click', () => {
-      state.filters.soloVencidos = !state.filters.soloVencidos;
+  cards.forEach((c) => {
+    if (!c.filterKey) return;
+    const el = document.getElementById(c.id);
+    if (!el) return;
+    el.addEventListener('click', () => {
+      const isActive = state.filters[c.filterKey] === c.filterValue;
+      state.filters[c.filterKey] = isActive ? (typeof c.filterValue === 'boolean' ? false : '') : c.filterValue;
+      if (c.filterKey === 'segmento') els.segmento.value = state.filters.segmento;
+      if (c.filterKey === 'estado') els.estado.value = state.filters.estado;
       applyFilters();
       renderStats();
     });
-  }
-
-  const cardContactadosSemana = document.getElementById('card-contactados-semana');
-  if (cardContactadosSemana) {
-    cardContactadosSemana.addEventListener('click', () => {
-      state.filters.soloContactadosSemana = !state.filters.soloContactadosSemana;
-      applyFilters();
-      renderStats();
-    });
-  }
-
-  const cardCandidatosDescarte = document.getElementById('card-candidatos-descarte');
-  if (cardCandidatosDescarte) {
-    cardCandidatosDescarte.addEventListener('click', () => {
-      state.filters.soloCandidatosDescarte = !state.filters.soloCandidatosDescarte;
-      applyFilters();
-      renderStats();
-    });
-  }
-
-  const cardContactados = document.getElementById('card-contactados');
-  if (cardContactados) {
-    cardContactados.addEventListener('click', () => {
-      state.filters.soloContactados = !state.filters.soloContactados;
-      applyFilters();
-      renderStats();
-    });
-  }
+  });
 }
 
 function applyFilters() {
-  const { q, segmento, provincia, localidad, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana, soloCandidatosDescarte, soloContactados } = state.filters;
+  const { q, segmento, provincia, localidad, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana, soloCandidatosDescarte, tipoCliente, soloConDatoContacto } = state.filters;
   const qLower = q.trim().toLowerCase();
 
   state.filtered = state.all.filter((r) => {
@@ -446,7 +432,12 @@ function applyFilters() {
     if (soloVencidos && !esVencido(proximoSeguimientoDe(r.id))) return false;
     if (soloContactadosSemana && !clienteContactadoEstaSemana(r.id)) return false;
     if (soloCandidatosDescarte && !esCandidatoADescarte(r, r.estado_contacto || 'pendiente')) return false;
-    if (soloContactados && (r.estado_contacto || 'pendiente') !== 'contactado') return false;
+    if (tipoCliente) {
+      const esCliente = (state.facturasByCliente.get(r.id) || []).length > 0;
+      if (tipoCliente === 'cliente' && !esCliente) return false;
+      if (tipoCliente === 'persona' && esCliente) return false;
+    }
+    if (soloConDatoContacto && !(r.telefono || r.whatsapp || r.email)) return false;
     if (qLower) {
       const hay = `${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`.toLowerCase();
       if (!hay.includes(qLower)) return false;
@@ -527,6 +518,9 @@ function renderTable() {
   });
   els.tbody.querySelectorAll('.add-telefono').forEach((btn) => {
     btn.addEventListener('click', onAddTelefono);
+  });
+  els.tbody.querySelectorAll('.remove-telefono').forEach((btn) => {
+    btn.addEventListener('click', onRemoveTelefono);
   });
   els.tbody.querySelectorAll('.toggle-facturas').forEach((btn) => {
     btn.addEventListener('click', onToggleFacturas);
@@ -921,6 +915,7 @@ function canalCaptacionCellHtml(r) {
 function telefonoRowHtml(valor) {
   return `<div class="contacto-row telefono-row">
     <input type="text" class="contacto-input telefono-input" value="${escapeHtml(valor)}" placeholder="Teléfono" />
+    <button type="button" class="remove-telefono" title="Eliminar teléfono">×</button>
   </div>`;
 }
 
@@ -1126,6 +1121,19 @@ async function onTelefonoChange(e) {
   renderTable();
 }
 
+async function onRemoveTelefono(e) {
+  const tr = e.target.closest('tr');
+  const id = tr.dataset.id;
+  const group = e.target.closest('.telefono-group');
+  e.target.closest('.telefono-row').remove();
+  const valores = [...group.querySelectorAll('.telefono-input')].map((i) => i.value.trim()).filter(Boolean);
+  const value = valores.length ? valores.join(', ') : null;
+  await saveField(id, 'telefono', value, e.target);
+  const rec = state.all.find((r) => String(r.id) === String(id));
+  if (rec) rec.telefono = value;
+  renderTable();
+}
+
 function onAddTelefono(e) {
   const btn = e.target;
   const row = document.createElement('div');
@@ -1174,6 +1182,7 @@ els.search.addEventListener('input', (e) => {
 els.segmento.addEventListener('change', (e) => {
   state.filters.segmento = e.target.value;
   applyFilters();
+  renderStats();
 });
 els.provincia.addEventListener('change', (e) => {
   state.filters.provincia = e.target.value;
@@ -1190,6 +1199,7 @@ els.confianza.addEventListener('change', (e) => {
 els.estado.addEventListener('change', (e) => {
   state.filters.estado = e.target.value;
   applyFilters();
+  renderStats();
 });
 els.rubro.addEventListener('change', (e) => {
   state.filters.rubro = e.target.value;

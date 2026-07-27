@@ -163,6 +163,17 @@ main {
   background: #eef1ff;
 }
 
+.stat-card-filter {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.stat-card-filter:hover { border-color: var(--primary); }
+.stat-card-filter.active {
+  border-color: var(--primary);
+  background: #eef1ff;
+}
+.stat-card-filter.active .value { color: var(--primary); }
+
 .seguimiento-tag {
   font-size: 11px;
   color: var(--text-muted);
@@ -392,6 +403,17 @@ tbody tr:hover {
   cursor: pointer;
 }
 .add-telefono:hover { text-decoration: underline; }
+.remove-telefono {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0 4px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.remove-telefono:hover { color: var(--seg-e); }
 
 .factura-cell {
   min-width: 140px;
