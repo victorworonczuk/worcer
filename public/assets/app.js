@@ -6,7 +6,7 @@ const state = {
   all: [],
   filtered: [],
   page: 1,
-  filters: { q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false, soloCandidatosDescarte: false },
+  filters: { q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false, soloCandidatosDescarte: false, soloContactados: false },
   facturasByCliente: new Map(),
   openFacturas: new Set(),
   interaccionesByCliente: new Map(),
@@ -376,7 +376,7 @@ function renderStats() {
     { label: `⚠️ ${UMBRAL_INTENTOS_SIN_RESULTADO}+ intentos sin resultado`, value: candidatosDescarte, id: 'card-candidatos-descarte', special: true },
     { label: metaLabel, value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, id: 'card-contactados-semana', clickMeta: true, metaCumplida: faltan === 0 },
     { label: 'Recuperados', value: estadoCounts.recuperado || 0 },
-    { label: 'Contactados', value: estadoCounts.contactado || 0 },
+    { label: 'Contactados', value: estadoCounts.contactado || 0, id: 'card-contactados', special: true },
     { label: 'Descartados', value: estadoCounts.descartado || 0 },
     { label: 'Seg. A · Activo sano', value: segCounts.A || 0 },
     { label: 'Seg. B · Alerta temprana', value: segCounts.B || 0 },
@@ -389,7 +389,7 @@ function renderStats() {
   els.stats.innerHTML = cards
     .map(
       (c) =>
-        `<div class="stat-card${c.special ? ' stat-card-clickable' : ''}${c.clickMeta ? ' stat-card-clickable-meta' : ''}${c.metaCumplida ? ' stat-card-success' : ''}${state.filters.soloVencidos && c.id === 'card-vencidos' ? ' active' : ''}${state.filters.soloContactadosSemana && c.id === 'card-contactados-semana' ? ' active' : ''}${state.filters.soloCandidatosDescarte && c.id === 'card-candidatos-descarte' ? ' active' : ''}" ${c.id ? `id="${c.id}"` : ''}><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
+        `<div class="stat-card${c.special ? ' stat-card-clickable' : ''}${c.clickMeta ? ' stat-card-clickable-meta' : ''}${c.metaCumplida ? ' stat-card-success' : ''}${state.filters.soloVencidos && c.id === 'card-vencidos' ? ' active' : ''}${state.filters.soloContactadosSemana && c.id === 'card-contactados-semana' ? ' active' : ''}${state.filters.soloCandidatosDescarte && c.id === 'card-candidatos-descarte' ? ' active' : ''}${state.filters.soloContactados && c.id === 'card-contactados' ? ' active' : ''}" ${c.id ? `id="${c.id}"` : ''}><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
     )
     .join('');
 
@@ -419,10 +419,19 @@ function renderStats() {
       renderStats();
     });
   }
+
+  const cardContactados = document.getElementById('card-contactados');
+  if (cardContactados) {
+    cardContactados.addEventListener('click', () => {
+      state.filters.soloContactados = !state.filters.soloContactados;
+      applyFilters();
+      renderStats();
+    });
+  }
 }
 
 function applyFilters() {
-  const { q, segmento, provincia, localidad, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana, soloCandidatosDescarte } = state.filters;
+  const { q, segmento, provincia, localidad, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana, soloCandidatosDescarte, soloContactados } = state.filters;
   const qLower = q.trim().toLowerCase();
 
   state.filtered = state.all.filter((r) => {
@@ -437,6 +446,7 @@ function applyFilters() {
     if (soloVencidos && !esVencido(proximoSeguimientoDe(r.id))) return false;
     if (soloContactadosSemana && !clienteContactadoEstaSemana(r.id)) return false;
     if (soloCandidatosDescarte && !esCandidatoADescarte(r, r.estado_contacto || 'pendiente')) return false;
+    if (soloContactados && (r.estado_contacto || 'pendiente') !== 'contactado') return false;
     if (qLower) {
       const hay = `${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`.toLowerCase();
       if (!hay.includes(qLower)) return false;
