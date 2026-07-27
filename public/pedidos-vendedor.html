@@ -21,11 +21,16 @@
       <div class="subtitle" id="user-subtitle">Cargando…</div>
     </div>
     </div>
-    <div class="topbar-actions">
-      <a href="/cargar-pedidos.html" class="nav-link">Cargar pedidos</a>
-      <a href="/cotejar-vendedores.html" class="nav-link">Cotejar vendedores</a>
-      <a href="/index.html" class="nav-link">← Ver dashboard</a>
-      <a href="/api/logout" class="logout-link">Cerrar sesión</a>
+    <div class="nav-menu">
+      <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-dropdown" id="nav-dropdown">
+        <a href="/cargar-pedidos.html" class="nav-item">Cargar pedidos</a>
+        <a href="/cotejar-vendedores.html" class="nav-item">Cotejar vendedores</a>
+        <a href="/index.html" class="nav-item">← Ver dashboard</a>
+        <a href="/api/logout" class="nav-item">Cerrar sesión</a>
+      </nav>
     </div>
   </header>
 
@@ -79,5 +84,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/config.js"></script>
   <script src="assets/pedidos-vendedor.js"></script>
+  <script src="assets/nav.js"></script>
 </body>
 </html>

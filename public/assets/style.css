@@ -4,8 +4,8 @@
   --border: #e3e6ea;
   --text: #1c2126;
   --text-muted: #6b7280;
-  --primary: #2453ff;
-  --primary-dark: #1638b3;
+  --primary: #2e6ea0;
+  --primary-dark: #225277;
   --worcer-blue: #408cc8;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
@@ -23,7 +23,7 @@
   --conf-sin: #9ca3af;
 
   --estado-pendiente: #9ca3af;
-  --estado-contactado: #2453ff;
+  --estado-contactado: #2e6ea0;
   --estado-recuperado: #1a9d5c;
   --estado-descartado: #d64545;
 }
@@ -75,34 +75,63 @@ header.topbar .subtitle {
   margin-top: 2px;
 }
 
-.logout-link {
-  font-size: 13px;
-  color: #ffffff;
-  text-decoration: none;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 8px;
-  padding: 6px 12px;
-}
-.logout-link:hover {
-  background: rgba(255, 255, 255, 0.15);
+.nav-menu {
+  position: relative;
 }
 
-.topbar-actions {
+.hamburger-btn {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 10px;
-}
-.nav-link {
-  font-size: 13px;
-  color: #ffffff;
-  text-decoration: none;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 8px;
-  padding: 6px 12px;
+  background: transparent;
+  cursor: pointer;
 }
-.nav-link:hover {
-  background: rgba(255, 255, 255, 0.15);
+.hamburger-btn:hover { background: rgba(255, 255, 255, 0.15); }
+.hamburger-btn span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 2px;
 }
+
+.nav-dropdown {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 6px;
+  z-index: 20;
+}
+.nav-dropdown.open { display: flex; }
+
+.nav-item {
+  display: block;
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  color: var(--text);
+  text-decoration: none;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.nav-item:hover { background: var(--bg); }
 
 main {
   max-width: 1400px;
@@ -683,22 +712,13 @@ table.historial-table td {
    que se cortan sin scroll, modal más ancho que la pantalla, etc. */
 @media (max-width: 640px) {
   header.topbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
     padding: 12px 16px;
   }
   header.topbar h1 {
     font-size: 16px;
   }
-  .topbar-actions {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 2px;
-  }
-  .nav-link, button.nav-link, .logout-link {
-    flex: 0 0 auto;
-    white-space: nowrap;
+  .nav-dropdown {
+    right: -12px;
   }
 
   main {

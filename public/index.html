@@ -19,14 +19,19 @@
       <div class="subtitle" id="user-subtitle">Base histórica y activa unificada</div>
     </div>
     </div>
-    <div class="topbar-actions">
-      <button type="button" id="btn-nuevo-cliente" class="nav-link">+ Nuevo cliente</button>
-      <a href="/nueva-factura.html" class="nav-link">+ Cargar factura</a>
-      <a href="/importar-ventas.html" class="nav-link">Importar ventas</a>
-      <a href="/piezas.html" class="nav-link">Análisis de piezas</a>
-      <a href="/produccion.html" class="nav-link">Producción</a>
-      <a href="/pedidos-vendedor.html" class="nav-link">Pedidos por vendedor</a>
-      <a href="/api/logout" class="logout-link">Cerrar sesión</a>
+    <div class="nav-menu">
+      <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-dropdown" id="nav-dropdown">
+        <button type="button" id="btn-nuevo-cliente" class="nav-item">+ Nuevo cliente</button>
+        <a href="/nueva-factura.html" class="nav-item">+ Cargar factura</a>
+        <a href="/importar-ventas.html" class="nav-item">Importar ventas</a>
+        <a href="/piezas.html" class="nav-item">Análisis de piezas</a>
+        <a href="/produccion.html" class="nav-item">Producción</a>
+        <a href="/pedidos-vendedor.html" class="nav-item">Pedidos por vendedor</a>
+        <a href="/api/logout" class="nav-item">Cerrar sesión</a>
+      </nav>
     </div>
   </header>
 
@@ -211,5 +216,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/config.js"></script>
   <script src="assets/app.js"></script>
+  <script src="assets/nav.js"></script>
 </body>
 </html>

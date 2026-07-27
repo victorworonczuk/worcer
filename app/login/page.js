@@ -6,7 +6,7 @@ export default async function LoginPage({ searchParams }) {
     <div style={styles.page}>
       <img src="/icons/logo-worcer.jpg" alt="Worcer" style={styles.logo} />
       <form method="POST" action="/api/login" style={styles.card}>
-        <p style={styles.subtitle}>Panel de recupero de clientes</p>
+        <p style={styles.subtitle}>Panel de gestión de clientes</p>
 
         {hasError && <div style={styles.error}>Usuario o contraseña incorrectos.</div>}
 
@@ -91,7 +91,7 @@ const styles = {
     outline: 'none',
   },
   button: {
-    background: '#2453ff',
+    background: '#2e6ea0',
     color: '#fff',
     border: 'none',
     borderRadius: '8px',
