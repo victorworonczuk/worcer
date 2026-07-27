@@ -6,6 +6,7 @@
   --text-muted: #6b7280;
   --primary: #2453ff;
   --primary-dark: #1638b3;
+  --worcer-blue: #408cc8;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
 
@@ -37,9 +38,9 @@ body {
 }
 
 header.topbar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
+  background: var(--worcer-blue);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 12px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -48,29 +49,42 @@ header.topbar {
   z-index: 10;
 }
 
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-logo {
+  height: 40px;
+  width: auto;
+  display: block;
+  border-radius: 4px;
+}
+
 header.topbar h1 {
   font-size: 18px;
   margin: 0;
   font-weight: 700;
+  color: #ffffff;
 }
 
 header.topbar .subtitle {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.85);
   font-size: 13px;
   margin-top: 2px;
 }
 
 .logout-link {
   font-size: 13px;
-  color: var(--text-muted);
+  color: #ffffff;
   text-decoration: none;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 8px;
   padding: 6px 12px;
 }
 .logout-link:hover {
-  background: var(--bg);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .topbar-actions {
@@ -80,14 +94,14 @@ header.topbar .subtitle {
 }
 .nav-link {
   font-size: 13px;
-  color: var(--primary);
+  color: #ffffff;
   text-decoration: none;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 8px;
   padding: 6px 12px;
 }
 .nav-link:hover {
-  background: #eef1ff;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 main {
@@ -705,7 +719,7 @@ table.historial-table td {
 
 button.nav-link {
   font-family: inherit;
-  background: var(--surface);
+  background: transparent;
   cursor: pointer;
 }
 

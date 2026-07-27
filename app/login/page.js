@@ -4,8 +4,8 @@ export default async function LoginPage({ searchParams }) {
 
   return (
     <div style={styles.page}>
+      <img src="/icons/logo-worcer.jpg" alt="Worcer" style={styles.logo} />
       <form method="POST" action="/api/login" style={styles.card}>
-        <h1 style={styles.title}>Worcer</h1>
         <p style={styles.subtitle}>Panel de recupero de clientes</p>
 
         {hasError && <div style={styles.error}>Usuario o contraseña incorrectos.</div>}
@@ -41,10 +41,17 @@ const styles = {
   page: {
     minHeight: '100vh',
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#f6f7f9',
+    gap: '24px',
+    background: '#408CC8',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  },
+  logo: {
+    height: '90px',
+    width: 'auto',
+    borderRadius: '6px',
   },
   card: {
     background: '#ffffff',
@@ -56,14 +63,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
   },
-  title: {
-    margin: 0,
-    fontSize: '22px',
-    fontWeight: 700,
-    color: '#1c2126',
-  },
   subtitle: {
-    margin: '4px 0 24px',
+    margin: '0 0 24px',
     fontSize: '13px',
     color: '#6b7280',
   },
