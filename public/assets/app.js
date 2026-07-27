@@ -58,6 +58,7 @@ const els = {
   tbody: document.getElementById('tbody'),
   stats: document.getElementById('stats'),
   search: document.getElementById('f-search'),
+  searchSuggestions: document.getElementById('search-suggestions'),
   segmento: document.getElementById('f-segmento'),
   provincia: document.getElementById('f-provincia'),
   localidad: document.getElementById('f-localidad'),
@@ -284,6 +285,12 @@ async function loadData() {
       state.interaccionesByCliente.set(i.cliente_id, list);
     }
   }
+
+  // Por defecto se muestra solo "Pendiente" al entrar — con 1470 clientes,
+  // ver la base entera sin filtrar de entrada abruma a un usuario nuevo.
+  // Se puede sacar el filtro en cualquier momento desde el desplegable Estado.
+  state.filters.estado = 'pendiente';
+  els.estado.value = 'pendiente';
 
   populateFilterOptions();
   renderStats();
@@ -1165,6 +1172,9 @@ async function saveField(id, field, value, targetEl) {
     alert('No se pudo guardar el cambio: ' + error.message);
     return;
   }
+  targetEl.classList.add('field-flash');
+  setTimeout(() => targetEl.classList.remove('field-flash'), 900);
+
   const indicator = targetEl.closest('td')?.querySelector('.save-indicator');
   if (indicator) {
     indicator.classList.add('show');
@@ -1172,9 +1182,52 @@ async function saveField(id, field, value, targetEl) {
   }
 }
 
+function renderSearchSuggestions(q) {
+  const qLower = q.trim().toLowerCase();
+  if (!qLower) {
+    els.searchSuggestions.classList.remove('show');
+    return;
+  }
+  const matches = state.all.filter((r) => (r.nombre || '').toLowerCase().includes(qLower)).slice(0, 8);
+  if (matches.length === 0) {
+    els.searchSuggestions.classList.remove('show');
+    return;
+  }
+  els.searchSuggestions.innerHTML = matches
+    .map((r) => {
+      const meta = [r.localidad, r.cuit].filter(Boolean).join(' · ');
+      return `<button type="button" class="search-suggestion" data-nombre="${escapeHtml(r.nombre)}">
+        <div class="nombre">${escapeHtml(r.nombre)}</div>
+        ${meta ? `<div class="meta">${escapeHtml(meta)}</div>` : ''}
+      </button>`;
+    })
+    .join('');
+  els.searchSuggestions.classList.add('show');
+}
+
+els.searchSuggestions.addEventListener('click', (e) => {
+  const btn = e.target.closest('.search-suggestion');
+  if (!btn) return;
+  els.search.value = btn.dataset.nombre;
+  state.filters.q = btn.dataset.nombre;
+  applyFilters();
+  els.searchSuggestions.classList.remove('show');
+});
+
+document.addEventListener('click', (e) => {
+  if (!els.searchSuggestions.contains(e.target) && e.target !== els.search) {
+    els.searchSuggestions.classList.remove('show');
+  }
+});
+
+els.search.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') els.searchSuggestions.classList.remove('show');
+});
+
 els.search.addEventListener('input', (e) => {
   state.filters.q = e.target.value;
   applyFilters();
+  renderSearchSuggestions(e.target.value);
 });
 els.segmento.addEventListener('change', (e) => {
   state.filters.segmento = e.target.value;

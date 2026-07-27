@@ -40,7 +40,10 @@
 
     <div class="panel">
       <div class="filters-search">
-        <input type="search" id="f-search" placeholder="Buscar por nombre, CUIT, localidad..." />
+        <div class="search-wrap">
+          <input type="search" id="f-search" placeholder="Buscar por nombre, CUIT, localidad..." autocomplete="off" />
+          <div id="search-suggestions" class="search-suggestions"></div>
+        </div>
         <span id="result-count" class="result-count"></span>
       </div>
       <div class="filters">
