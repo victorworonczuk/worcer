@@ -1151,13 +1151,20 @@ function onAddTelefono(e) {
 
 // El rol "facturacion" es para tareas de back-office (cargar facturas,
 // producción, recuento) sin tocar los datos de relación del cliente — a
-// diferencia de "ventas", que sí necesita poder actualizarlos. Esto es un
-// límite del lado del cliente, no hay RLS de por medio (mismo criterio que el
-// resto de la base: protegido por el login del sitio, no por la base) — pero
-// alcanza para el caso de uso real (evitar ediciones accidentales/fuera de
-// tarea, no defenderse de alguien que abre la consola a propósito).
+// diferencia de "ventas", que sí necesita poder actualizarlos. El rol
+// "analisis" es de solo lectura en TODO el sistema (ve todo, no carga ni
+// edita nada en ninguna pantalla — ver el mismo chequeo replicado en
+// nueva-factura.js, produccion-carga.js, recuento.js, cargar-pedidos.js,
+// movimiento-piezas.js, importar-ventas.js y cotejar-vendedores.js).
+// Esto es un límite del lado del cliente, no hay RLS de por medio (mismo
+// criterio que el resto de la base: protegido por el login del sitio, no por
+// la base) — alcanza para el caso de uso real (evitar ediciones accidentales/
+// fuera de tarea, no defenderse de alguien que abre la consola a propósito).
+function esAnalisis() {
+  return state.currentUserRol === 'analisis';
+}
 function esSoloLecturaClientes() {
-  return state.currentUserRol === 'facturacion';
+  return state.currentUserRol === 'facturacion' || esAnalisis();
 }
 
 async function saveField(id, field, value, targetEl) {
@@ -1287,6 +1294,7 @@ async function loadUser() {
       state.currentUserRol = me.rol;
       state.currentUserNombre = me.nombre || me.user;
       actualizarSubtitulo();
+      if (esAnalisis()) els.btnNuevoCliente.style.display = 'none';
     }
   } catch (err) {
     console.error('No se pudo obtener el usuario', err);

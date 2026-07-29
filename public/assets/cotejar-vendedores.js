@@ -10,6 +10,11 @@ async function initUser() {
   const me = await res.json();
   if (!me.user) { window.location.href = '/login'; return; }
   els.userSubtitle.textContent = `Sesión: ${me.nombre || me.user}`;
+
+  if (me.rol === 'analisis') {
+    els.btnCotejar.disabled = true;
+    els.resultado.innerHTML = '<p class="resultado-error">Tu usuario es de solo lectura — no podés ejecutar el cruce de vendedores.</p>';
+  }
 }
 
 function fmtPesos(n) {

@@ -1,5 +1,6 @@
 const state = {
   archivo: null, // File | null
+  soloLectura: false,
 };
 
 const els = {
@@ -16,6 +17,12 @@ async function initUser() {
   const me = await res.json();
   if (!me.user) { window.location.href = '/login'; return; }
   els.userSubtitle.textContent = `Sesión: ${me.nombre || me.user}`;
+
+  if (me.rol === 'analisis') {
+    state.soloLectura = true;
+    els.dropzone.classList.add('dropzone-disabled');
+    els.resultado.innerHTML = '<p class="resultado-error">Tu usuario es de solo lectura — no podés cargar pedidos.</p>';
+  }
 }
 
 function renderFileList() {
@@ -33,6 +40,7 @@ function renderFileList() {
 }
 
 function elegirArchivo(fileListLike) {
+  if (state.soloLectura) return;
   const f = fileListLike[0];
   if (!f || !f.name.toLowerCase().endsWith('.xlsx')) return;
   state.archivo = f;

@@ -29,6 +29,11 @@
   border-color: var(--primary);
   background: #eef1ff;
 }
+.dropzone.dropzone-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+}
 .dropzone-text {
   color: var(--text-muted);
   font-size: 14px;

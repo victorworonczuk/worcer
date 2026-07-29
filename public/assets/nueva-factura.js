@@ -81,6 +81,11 @@ async function init() {
   state.currentUser = me.user;
   els.userSubtitle.textContent = `Sesión: ${me.user}`;
 
+  if (me.rol === 'analisis') {
+    els.submitBtn.disabled = true;
+    els.formError.textContent = 'Tu usuario es de solo lectura — no podés cargar facturas.';
+  }
+
   els.fecha.value = new Date().toISOString().slice(0, 10);
   els.vendedor.innerHTML = '<option value="">— sin especificar —</option>' + VENDEDORES.map((v) => `<option value="${v}">${v}</option>`).join('');
 

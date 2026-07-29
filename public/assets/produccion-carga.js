@@ -31,6 +31,11 @@ async function init() {
   state.currentUser = me.user;
   els.userSubtitle.textContent = `Sesión: ${me.nombre || me.user}`;
 
+  if (me.rol === 'analisis') {
+    els.guardarBtn.disabled = true;
+    els.formError.textContent = 'Tu usuario es de solo lectura — no podés cargar producción.';
+  }
+
   els.fecha.value = new Date().toISOString().slice(0, 10);
 
   const { data, error } = await client
