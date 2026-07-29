@@ -24,10 +24,11 @@
         <span></span><span></span><span></span>
       </button>
       <nav class="nav-dropdown" id="nav-dropdown">
-        <button type="button" id="btn-nuevo-cliente" class="nav-item">+ Nuevo cliente</button>
+        <button type="button" id="btn-nuevo-cliente" class="nav-item">+ Nueva persona</button>
         <a href="/nueva-factura.html" class="nav-item">+ Cargar factura</a>
         <a href="/cargar-pedidos.html" class="nav-item">+ Cargar pedidos</a>
         <a href="/importar-ventas.html" class="nav-item">Importar ventas</a>
+        <a href="/movimiento-piezas.html" class="nav-item">+ Movimiento de piezas</a>
         <a href="/piezas.html" class="nav-item">Análisis de piezas</a>
         <a href="/produccion.html" class="nav-item">Producción</a>
         <a href="/pedidos-vendedor.html" class="nav-item">Pedidos por vendedor</a>
@@ -136,7 +137,8 @@
 
   <div id="modal-overlay" class="modal-overlay hidden">
     <div class="modal-panel">
-      <h2>Nuevo cliente</h2>
+      <h2>Nueva persona</h2>
+      <p class="modal-hint">Para cargar a alguien que se contactó pero todavía no compró. Pasa a ser "cliente" automáticamente cuando se le carga la primera factura.</p>
       <form id="form-nuevo-cliente">
         <label>Razón social / Nombre *
           <input type="text" id="nc-nombre" required />
@@ -179,14 +181,9 @@
         <label>Domicilio
           <input type="text" id="nc-domicilio" />
         </label>
-        <div class="modal-row">
-          <label>Teléfono
-            <input type="text" id="nc-telefono" />
-          </label>
-          <label>WhatsApp
-            <input type="text" id="nc-whatsapp" placeholder="549..." />
-          </label>
-        </div>
+        <label>Teléfono
+          <input type="text" id="nc-telefono" />
+        </label>
         <label>Email
           <input type="email" id="nc-email" />
         </label>
@@ -208,7 +205,7 @@
         <div class="modal-error" id="nc-error"></div>
         <div class="modal-actions">
           <button type="button" id="btn-cancelar-nuevo-cliente" class="btn-secondary">Cancelar</button>
-          <button type="submit" class="btn-primary">Guardar cliente</button>
+          <button type="submit" class="btn-primary">Guardar</button>
         </div>
       </form>
     </div>

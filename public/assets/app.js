@@ -809,7 +809,6 @@ async function onSubmitNuevoCliente(e) {
     localidad: document.getElementById('nc-localidad').value.trim() || null,
     domicilio: document.getElementById('nc-domicilio').value.trim() || null,
     telefono: document.getElementById('nc-telefono').value.trim() || null,
-    whatsapp: document.getElementById('nc-whatsapp').value.trim() || null,
     email: document.getElementById('nc-email').value.trim() || null,
     rubro: document.getElementById('nc-rubro').value.trim() || null,
     canal_captacion: document.getElementById('nc-canal-captacion').value || null,

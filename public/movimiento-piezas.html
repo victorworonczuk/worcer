@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Worcer · Importar ventas</title>
+  <title>Worcer · Movimiento de piezas</title>
   <link rel="stylesheet" href="assets/style.css" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192.png" />
@@ -16,7 +16,7 @@
     <div class="topbar-brand">
       <img src="/icons/logo-worcer.jpg" alt="Worcer" class="topbar-logo" />
       <div>
-        <h1>Worcer · Importar ventas</h1>
+        <h1>Worcer · Movimiento de piezas</h1>
       <div class="subtitle" id="user-subtitle">Cargando…</div>
     </div>
     </div>
@@ -25,7 +25,8 @@
         <span></span><span></span><span></span>
       </button>
       <nav class="nav-dropdown" id="nav-dropdown">
-        <a href="/movimiento-piezas.html" class="nav-item">Movimiento de piezas</a>
+        <a href="/piezas.html" class="nav-item">Análisis de piezas</a>
+        <a href="/produccion.html" class="nav-item">Producción</a>
         <a href="/index.html" class="nav-item">← Ver dashboard</a>
         <a href="/api/logout" class="nav-item">Cerrar sesión</a>
       </nav>
@@ -35,16 +36,18 @@
   <main class="importar-main">
     <div class="panel importar-panel">
       <p class="importar-intro">
-        Subí acá los reportes de ventas del sistema de facturación (Cerámica, Porcelanas y/o
-        Presupuesto — podés subir los que tengas, no hace falta que sean los tres juntos).
-        Se pueden volver a subir sin miedo: los comprobantes que ya estaban cargados se saltean
-        automáticamente, solo se agregan los nuevos. Si una factura es de un cliente que todavía
-        no está en la base, se da de alta solo (salvo que sea un CUIT genérico compartido por
-        varias ventas distintas — esos quedan sin vincular para revisar a mano).
+        Subí acá los reportes de <strong>"Salidas de Stocks"</strong> del sistema de facturación
+        (uno por empresa: Cerámica, Porcelanas y/o Presupuesto — podés subir los que tengas, no
+        hace falta que sean los tres juntos). El nombre del archivo tiene que incluir el nombre
+        de la empresa (por ejemplo "SalidasStocks Cerámica.xlsx") para que el sistema sepa a cuál
+        corresponde. Se pueden volver a subir sin miedo: lo que ya estaba cargado se actualiza,
+        no se duplica. Cada renglón se vincula a la factura ya cargada por "Importar ventas" —
+        si un comprobante todavía no fue importado ahí, ese renglón queda sin cargar (se avisa
+        al final).
       </p>
 
       <div class="dropzone" id="dropzone">
-        <input type="file" id="file-input" accept=".xml" multiple hidden />
+        <input type="file" id="file-input" accept=".xlsx" multiple hidden />
         <div class="dropzone-text">
           <strong>Arrastrá los archivos acá</strong> o hacé clic para elegirlos
         </div>
@@ -57,7 +60,7 @@
     </div>
   </main>
 
-  <script src="assets/importar-ventas.js"></script>
+  <script src="assets/movimiento-piezas.js"></script>
   <script src="assets/nav.js"></script>
 </body>
 </html>

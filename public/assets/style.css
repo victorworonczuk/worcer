@@ -845,8 +845,14 @@ button.nav-link {
   overflow-y: auto;
 }
 .modal-panel h2 {
-  margin: 0 0 16px;
+  margin: 0 0 4px;
   font-size: 18px;
+}
+.modal-hint {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 .modal-panel form label {
   display: block;
