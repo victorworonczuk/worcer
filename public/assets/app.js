@@ -415,6 +415,14 @@ function renderStats() {
     el.addEventListener('click', () => {
       const isActive = state.filters[c.filterKey] === c.filterValue;
       state.filters[c.filterKey] = isActive ? (typeof c.filterValue === 'boolean' ? false : '') : c.filterValue;
+      // "Contactos esta semana" muestra a quién se contactó, sin importar en
+      // qué estado quedó después — si se deja puesto el filtro por defecto
+      // "Estado: Pendiente", la combinación da 0 resultados siempre (contactar
+      // a alguien casi nunca lo deja en "pendiente"), por eso se saca acá.
+      if (c.filterKey === 'soloContactadosSemana' && !isActive) {
+        state.filters.estado = '';
+        els.estado.value = '';
+      }
       if (c.filterKey === 'segmento') els.segmento.value = state.filters.segmento;
       if (c.filterKey === 'estado') els.estado.value = state.filters.estado;
       applyFilters();
