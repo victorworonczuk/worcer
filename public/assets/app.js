@@ -814,6 +814,8 @@ async function onSubmitNuevoCliente(e) {
     canal_captacion: document.getElementById('nc-canal-captacion').value || null,
     confianza_dato: 'alta',
     origen: 'Alta manual',
+    actualizado_por: state.currentUser,
+    actualizado_en: new Date().toISOString(),
   };
 
   const submitBtn = els.formNuevoCliente.querySelector('.btn-primary');
@@ -824,7 +826,7 @@ async function onSubmitNuevoCliente(e) {
   const { data, error } = await client.from('clientes').insert(nuevo).select().single();
 
   submitBtn.disabled = false;
-  submitBtn.textContent = 'Guardar cliente';
+  submitBtn.textContent = 'Guardar';
 
   if (error) {
     els.ncError.textContent = 'No se pudo guardar: ' + error.message;
@@ -965,7 +967,7 @@ function rowHtml(r) {
     <tr data-id="${r.id}">
       <td class="nombre-cell">
         <div class="nombre-row">
-          <strong>${escapeHtml(r.nombre)}</strong>
+          <strong title="${escapeHtml(tooltipUltimaEdicion(r))}">${escapeHtml(r.nombre)}</strong>
           <button type="button" class="toggle-descripcion ${r.descripcion ? 'has-desc' : ''}" data-id="${r.id}" title="Ver/editar descripción">📝</button>
         </div>
         <span class="cuit">${escapeHtml(r.cuit || '')}</span>
@@ -1167,12 +1169,22 @@ function esSoloLecturaClientes() {
   return state.currentUserRol === 'facturacion' || esAnalisis();
 }
 
+function tooltipUltimaEdicion(r) {
+  if (!r.actualizado_por || !r.actualizado_en) return 'Última edición: sin datos';
+  const fecha = new Date(r.actualizado_en).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return `Última edición: ${r.actualizado_por}, ${fecha}`;
+}
+
 async function saveField(id, field, value, targetEl) {
   if (esSoloLecturaClientes()) {
     alert('Tu usuario no puede modificar datos de clientes.');
     return;
   }
-  const { error } = await client.from('clientes').update({ [field]: value }).eq('id', id);
+  const actualizadoEn = new Date().toISOString();
+  const { error } = await client
+    .from('clientes')
+    .update({ [field]: value, actualizado_por: state.currentUser, actualizado_en: actualizadoEn })
+    .eq('id', id);
   if (error) {
     console.error('Error guardando', field, error);
     alert('No se pudo guardar el cambio: ' + error.message);
@@ -1185,6 +1197,14 @@ async function saveField(id, field, value, targetEl) {
   if (indicator) {
     indicator.classList.add('show');
     setTimeout(() => indicator.classList.remove('show'), 1200);
+  }
+
+  const rec = state.all.find((r) => String(r.id) === String(id));
+  if (rec) {
+    rec.actualizado_por = state.currentUser;
+    rec.actualizado_en = actualizadoEn;
+    const nombreEl = targetEl.closest('tr')?.querySelector('.nombre-cell strong');
+    if (nombreEl) nombreEl.title = tooltipUltimaEdicion(rec);
   }
 }
 
