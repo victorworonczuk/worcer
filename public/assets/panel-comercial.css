@@ -12,6 +12,17 @@
   margin: 16px 16px 0;
 }
 
+.metodologia {
+  margin: 0;
+  padding: 12px 16px;
+  background: #eef1ff;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
 .cobertura {
   font-size: 12px;
   color: var(--text-muted);
