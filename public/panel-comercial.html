@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Worcer · Lista de precios</title>
+  <title>Worcer · Panel comercial</title>
   <link rel="stylesheet" href="assets/style.css" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192.png" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <meta name="theme-color" content="#408CC8" />
   <link rel="stylesheet" href="assets/piezas.css" />
-  <link rel="stylesheet" href="assets/lista-precios.css" />
+  <link rel="stylesheet" href="assets/panel-comercial.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-brand">
       <img src="/icons/logo-worcer.jpg" alt="Worcer" class="topbar-logo" />
       <div>
-        <h1>Worcer · Lista de precios</h1>
+        <h1>Worcer · Panel comercial</h1>
       <div class="subtitle" id="user-subtitle">Cargando…</div>
     </div>
     </div>
@@ -28,57 +28,72 @@
       <nav class="nav-dropdown" id="nav-dropdown">
         <a href="/piezas.html" class="nav-item" title="Reporte de piezas vendidas por cliente y período. Solo consulta, no se carga nada acá.">Análisis de piezas</a>
         <a href="/produccion.html" class="nav-item" title="Reporte consolidado de producción, venta y rotura por pieza. Solo consulta, no se carga nada acá.">Producción</a>
-        <a href="/panel-comercial.html" class="nav-item" title="Ventas, márgenes, punto de equilibrio y de dónde viene la facturación. Solo consulta, no se carga nada acá.">Panel comercial</a>
+        <a href="/lista-precios.html" class="nav-item" title="Lista de precios vigente y descuentos por escala. Solo consulta, no se carga nada acá.">Lista de precios</a>
         <a href="/index.html" class="nav-item">← Ver dashboard</a>
         <a href="/api/logout" class="nav-item">Cerrar sesión</a>
       </nav>
     </div>
   </header>
 
-  <main class="precios-main">
+  <main class="panel-main">
     <div class="panel">
-      <div id="resumen" class="resumen"></div>
+      <div class="filters">
+        <div class="field-inline">
+          <label for="f-mes">Mes</label>
+          <select id="f-mes"></select>
+        </div>
+        <div class="cobertura" id="cobertura"></div>
+      </div>
 
+      <div id="resumen" class="resumen resumen-grande"></div>
+      <p class="nota-pie" id="nota-resultado"></p>
+    </div>
+
+    <div class="panel">
+      <h2>Piezas más vendidas este mes</h2>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Línea</th>
               <th>Pieza</th>
-              <th class="col-precio">Precio sin IVA</th>
+              <th class="col-num">Unidades</th>
+              <th class="col-num">Facturado</th>
+              <th class="col-num">Margen</th>
             </tr>
           </thead>
-          <tbody id="tbody-precios">
-            <tr><td colspan="3" class="loading">Cargando…</td></tr>
+          <tbody id="tbody-piezas">
+            <tr><td colspan="4" class="loading">Cargando…</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <div class="panel">
-      <h2>Descuentos por escala</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Desde</th>
-              <th>Hasta</th>
-              <th>Descuento</th>
-              <th>Plazo de pago</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-descuentos">
-            <tr><td colspan="4" class="loading">Cargando…</td></tr>
-          </tbody>
-        </table>
+    <div class="panel-row">
+      <div class="panel panel-half">
+        <h2>Facturación por vendedor</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Vendedor</th><th class="col-num">Facturado</th><th class="col-num">%</th></tr></thead>
+            <tbody id="tbody-vendedor"><tr><td colspan="3" class="loading">Cargando…</td></tr></tbody>
+          </table>
+        </div>
       </div>
-      <p class="nota-pie" id="nota-pie"></p>
+
+      <div class="panel panel-half">
+        <h2>Facturación por segmento</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Segmento</th><th class="col-num">Facturado</th><th class="col-num">%</th></tr></thead>
+            <tbody id="tbody-segmento"><tr><td colspan="3" class="loading">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/config.js"></script>
-  <script src="assets/lista-precios.js"></script>
+  <script src="assets/panel-comercial.js"></script>
   <script src="assets/nav.js"></script>
 </body>
 </html>

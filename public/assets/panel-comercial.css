@@ -1,0 +1,49 @@
+.panel-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panel-main h2 {
+  font-size: 15px;
+  margin: 16px 16px 0;
+}
+
+.cobertura {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.resumen-grande {
+  flex-wrap: wrap;
+  gap: 20px 32px;
+}
+.resumen-grande strong {
+  font-size: 22px;
+}
+.valor-positivo { color: var(--conf-alta); }
+.valor-negativo { color: var(--seg-e); }
+
+.nota-pie {
+  padding: 0 16px 16px;
+  font-size: 12px;
+  color: var(--seg-d);
+  line-height: 1.5;
+}
+
+.col-num {
+  text-align: right;
+}
+
+.panel-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.panel-half {
+  flex: 1 1 380px;
+}
