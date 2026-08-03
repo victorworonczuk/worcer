@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Lista de precios</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#408CC8" />
+  <link rel="stylesheet" href="assets/piezas.css" />
+  <link rel="stylesheet" href="assets/lista-precios.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="/icons/logo-worcer.jpg" alt="Worcer" class="topbar-logo" />
+      <div>
+        <h1>Worcer · Lista de precios</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    </div>
+    <div class="nav-menu">
+      <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-dropdown" id="nav-dropdown">
+        <a href="/piezas.html" class="nav-item" title="Reporte de piezas vendidas por cliente y período. Solo consulta, no se carga nada acá.">Análisis de piezas</a>
+        <a href="/produccion.html" class="nav-item" title="Reporte consolidado de producción, venta y rotura por pieza. Solo consulta, no se carga nada acá.">Producción</a>
+        <a href="/index.html" class="nav-item">← Ver dashboard</a>
+        <a href="/api/logout" class="nav-item">Cerrar sesión</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="precios-main">
+    <div class="panel">
+      <div id="resumen" class="resumen"></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Línea</th>
+              <th>Pieza</th>
+              <th class="col-precio">Precio sin IVA</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-precios">
+            <tr><td colspan="3" class="loading">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Descuentos por escala</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Desde</th>
+              <th>Hasta</th>
+              <th>Descuento</th>
+              <th>Plazo de pago</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-descuentos">
+            <tr><td colspan="4" class="loading">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="nota-pie" id="nota-pie"></p>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/config.js"></script>
+  <script src="assets/lista-precios.js"></script>
+  <script src="assets/nav.js"></script>
+</body>
+</html>
