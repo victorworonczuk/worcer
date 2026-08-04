@@ -107,7 +107,9 @@ header.topbar .subtitle {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  min-width: 220px;
+  min-width: 260px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -116,6 +118,20 @@ header.topbar .subtitle {
   z-index: 20;
 }
 .nav-dropdown.open { display: flex; }
+
+.nav-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding: 10px 12px 4px;
+}
+.nav-section-title:first-child { padding-top: 6px; }
+.nav-section-divider {
+  border-top: 1px solid var(--border);
+  margin: 6px 4px;
+}
 
 .nav-item {
   display: block;
@@ -128,10 +144,15 @@ header.topbar .subtitle {
   border: none;
   background: none;
   border-radius: 6px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   cursor: pointer;
 }
 .nav-item:hover { background: var(--bg); }
+.nav-item.active {
+  background: var(--bg);
+  color: var(--primary);
+  font-weight: 600;
+}
 
 main {
   max-width: 1400px;

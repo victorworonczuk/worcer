@@ -73,7 +73,6 @@ const els = {
   pageInfo: document.getElementById('page-info'),
   prevBtn: document.getElementById('prev-page'),
   nextBtn: document.getElementById('next-page'),
-  btnNuevoCliente: document.getElementById('btn-nuevo-cliente'),
   modalOverlay: document.getElementById('modal-overlay'),
   formNuevoCliente: document.getElementById('form-nuevo-cliente'),
   btnCancelarNuevoCliente: document.getElementById('btn-cancelar-nuevo-cliente'),
@@ -1344,7 +1343,6 @@ els.nextBtn.addEventListener('click', () => {
   state.page += 1;
   renderTable();
 });
-els.btnNuevoCliente.addEventListener('click', openNuevoClienteModal);
 els.btnCancelarNuevoCliente.addEventListener('click', closeNuevoClienteModal);
 els.modalOverlay.addEventListener('click', (e) => {
   if (e.target === els.modalOverlay) closeNuevoClienteModal();
@@ -1360,11 +1358,24 @@ async function loadUser() {
       state.currentUserRol = me.rol;
       state.currentUserNombre = me.nombre || me.user;
       actualizarSubtitulo();
-      if (esAnalisis()) els.btnNuevoCliente.style.display = 'none';
     }
   } catch (err) {
     console.error('No se pudo obtener el usuario', err);
   }
+}
+
+// El ítem "+ Nueva persona" del menú (assets/nav.js) es un link a
+// /index.html#nueva-persona en vez de un botón propio — así funciona igual
+// desde cualquier página. Acá lo interceptamos para abrir el modal y
+// limpiamos el hash para que no se reabra solo si se refresca la página.
+function abrirNuevaPersonaSiCorresponde() {
+  if (location.hash !== '#nueva-persona') return;
+  history.replaceState(null, '', location.pathname + location.search);
+  if (esAnalisis()) {
+    alert('Tu usuario no puede cargar clientes nuevos.');
+    return;
+  }
+  openNuevoClienteModal();
 }
 
 // Se espera loadUser() antes de loadData() para saber el rol (y así si hay
@@ -1373,5 +1384,6 @@ async function loadUser() {
 // por un instante hasta que se supiera su rol.
 (async () => {
   await loadUser();
+  abrirNuevaPersonaSiCorresponde();
   loadData();
 })();
