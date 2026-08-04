@@ -163,6 +163,7 @@ function renderPivot(items) {
 
   const totalPorMes = meses.map((m) => filas.reduce((s, f) => s + (f.porMes.get(m) || 0), 0));
   const granTotal = totalPorMes.reduce((s, v) => s + v, 0);
+  const maxTotal = Math.max(...filas.map((f) => f.total), 1);
 
   const filasHtml = filas.map((f) => `<tr>
     <td class="col-grupo">${escapeHtml(f.label)}</td>
@@ -170,7 +171,7 @@ function renderPivot(items) {
       const v = f.porMes.get(m) || 0;
       return `<td class="${v ? '' : 'zero'}">${v ? fmt(v) : '·'}</td>`;
     }).join('')}
-    <td class="col-total"><strong>${fmt(f.total)}</strong></td>
+    <td class="col-total bar-cell" style="--bar-pct:${Math.round((f.total / maxTotal) * 100)}%"><strong>${fmt(f.total)}</strong></td>
   </tr>`).join('');
 
   const filaTotal = `<tr class="fila-total">
@@ -286,6 +287,7 @@ function renderStock() {
     stock: a.stock + f.stock, valorProd: a.valorProd + f.valorProd, valorRoto: a.valorRoto + f.valorRoto,
   }), { base: 0, prod: 0, venta: 0, rotura: 0, stock: 0, valorProd: 0, valorRoto: 0 });
   const pctRoturaTotal = t.prod > 0 ? (t.rotura / t.prod) * 100 : 0;
+  const maxStock = Math.max(...filas.map((f) => Math.max(f.stock, 0)), 1);
 
   els.tbody.innerHTML = filas.map((f) => `<tr>
     <td class="col-grupo">${escapeHtml(f.label)}</td>
@@ -293,8 +295,8 @@ function renderStock() {
     <td>${fmt(f.prod)}</td>
     <td>${fmt(f.venta)}</td>
     <td>${fmt(f.rotura)}</td>
-    <td class="${f.stock < 0 ? 'stock-neg' : ''}"><strong>${fmt(f.stock)}</strong></td>
-    <td>${f.pctRotura.toFixed(1)}%</td>
+    <td class="${f.stock < 0 ? 'stock-neg' : 'bar-cell'}" style="${f.stock >= 0 ? `--bar-pct:${Math.round((f.stock / maxStock) * 100)}%` : ''}"><strong>${fmt(f.stock)}</strong></td>
+    <td class="bar-cell bar-cell-pct" style="--bar-pct:${Math.min(Math.round(f.pctRotura), 100)}%">${f.pctRotura.toFixed(1)}%</td>
     <td>${f.valorProd ? fmtPesos(f.valorProd) : '·'}</td>
     <td class="${f.valorRoto ? 'stock-neg' : ''}">${f.valorRoto ? fmtPesos(f.valorRoto) : '·'}</td>
   </tr>`).join('') + `<tr class="fila-total">

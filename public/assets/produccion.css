@@ -59,3 +59,33 @@ table.pivot tbody tr:hover td.col-grupo {
   margin: 0;
   padding: 16px 16px 0;
 }
+
+/* Barra de magnitud dentro de la celda (estilo "data bar" de planilla): el
+   relleno arranca desde la izquierda de la celda con --bar-pct definido en
+   JS por fila, el texto queda arriba sin cambiar de color. Azul = cantidad
+   normal (producción/venta/stock); rojo = métrica de pérdida (% rotura),
+   mismo tono que ya usa esta tabla para roturas y pérdidas en $. */
+.bar-cell {
+  background: linear-gradient(90deg, rgba(46, 110, 160, 0.16) var(--bar-pct, 0%), transparent var(--bar-pct, 0%));
+}
+.bar-cell-pct {
+  background: linear-gradient(90deg, rgba(214, 69, 69, 0.16) var(--bar-pct, 0%), transparent var(--bar-pct, 0%));
+}
+
+/* Filtros: entran en un solo renglón en pantallas de escritorio (en mobile
+   se sigue permitiendo que envuelvan, como antes). */
+@media (min-width: 860px) {
+  .piezas-main .filters {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .piezas-main .field-inline input,
+  .piezas-main .field-inline select {
+    min-width: 0;
+  }
+  #f-linea { width: 110px; }
+  #f-agrupar { width: 150px; }
+  #f-calidad { width: 95px; }
+  #f-ubicacion { width: 125px; }
+  #f-desde, #f-hasta { width: 125px; }
+}
