@@ -28,6 +28,7 @@
       <nav class="nav-dropdown" id="nav-dropdown">
         <a href="/produccion-carga.html" class="nav-item" title="Cargá acá, día por día, las cantidades de producción, venta y rotura por pieza y calidad.">Cargar producción</a>
         <a href="/recuento.html" class="nav-item" title="Cargá acá un conteo físico de stock — fija el stock del sistema a esa fecha.">Recuento</a>
+        <a href="/traslado.html" class="nav-item" title="Registrá el envío de piezas por expreso entre Alberti y Lanús Oeste.">Traslado entre depósitos</a>
         <a href="/piezas.html" class="nav-item" title="Reporte de piezas vendidas por cliente y período. Solo consulta, no se carga nada acá.">Análisis de piezas</a>
         <a href="/panel-comercial.html" class="nav-item" title="Ventas, márgenes, punto de equilibrio y de dónde viene la facturación. Solo consulta, no se carga nada acá.">Panel comercial</a>
         <a href="/movimiento-piezas.html" class="nav-item" title="Subí acá los reportes &quot;Salidas de Stocks&quot; (.xlsx) — siempre después de Importar ventas, nunca antes.">Movimiento de piezas</a>
@@ -60,6 +61,14 @@
             <option value="1era">1ª</option>
             <option value="comercial">Comercial (2ª)</option>
             <option value="3era">3ª</option>
+          </select>
+        </div>
+        <div class="field-inline">
+          <label for="f-ubicacion">Depósito</label>
+          <select id="f-ubicacion">
+            <option value="">Todos (unificado)</option>
+            <option value="alberti">Alberti</option>
+            <option value="lanus">Lanús Oeste</option>
           </select>
         </div>
         <div class="field-inline">

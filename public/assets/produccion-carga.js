@@ -13,6 +13,7 @@ const els = {
   userSubtitle: document.getElementById('user-subtitle'),
   fecha: document.getElementById('f-fecha'),
   linea: document.getElementById('f-linea'),
+  ubicacion: document.getElementById('f-ubicacion'),
   status: document.getElementById('carga-status'),
   guardarBtn: document.getElementById('guardar-btn'),
   tbody: document.getElementById('tbody'),
@@ -95,6 +96,7 @@ async function prefill() {
     .from('produccion')
     .select('pieza_id, tipo, cantidad')
     .eq('fecha', fecha)
+    .eq('ubicacion', els.ubicacion.value)
     .limit(2000);
   if (error) { els.status.textContent = ''; return; }
   const byKey = new Map();
@@ -121,6 +123,7 @@ async function guardar() {
       fecha,
       pieza_id: Number(inp.dataset.pieza),
       tipo: inp.dataset.tipo,
+      ubicacion: els.ubicacion.value,
       cantidad,
       cargado_por: state.currentUser,
     });
@@ -132,13 +135,14 @@ async function guardar() {
   els.guardarBtn.textContent = 'Guardando…';
   const { error } = await client
     .from('produccion')
-    .upsert(filas, { onConflict: 'fecha,pieza_id,tipo' });
+    .upsert(filas, { onConflict: 'fecha,pieza_id,tipo,ubicacion' });
   els.guardarBtn.disabled = false;
   els.guardarBtn.textContent = 'Guardar día';
 
   if (error) { els.formError.textContent = 'Error al guardar: ' + error.message; return; }
 
-  els.status.textContent = `✓ Guardado: ${filas.length} valor(es) para el ${new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR')}.`;
+  const depositoLabel = els.ubicacion.value === 'lanus' ? 'Lanús Oeste' : 'Alberti';
+  els.status.textContent = `✓ Guardado: ${filas.length} valor(es) para el ${new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR')} (${depositoLabel}).`;
   loadRecientes();
 }
 
@@ -146,7 +150,7 @@ async function loadRecientes() {
   // Últimas fechas con carga manual (cargado_por no nulo).
   const { data, error } = await client
     .from('produccion')
-    .select('fecha, tipo, cantidad, cargado_por, created_at')
+    .select('fecha, tipo, ubicacion, cantidad, cargado_por, created_at')
     .not('cargado_por', 'is', null)
     .order('created_at', { ascending: false })
     .limit(500);
@@ -155,19 +159,21 @@ async function loadRecientes() {
     els.recientesList.innerHTML = '<div class="loading">Todavía no se cargó producción a mano.</div>';
     return;
   }
-  // Agrupar por fecha
+  // Agrupar por fecha + ubicación
   const porFecha = new Map();
   for (const r of data) {
-    if (!porFecha.has(r.fecha)) porFecha.set(r.fecha, { prod: 0, venta: 0, rotura: 0, por: r.cargado_por });
-    const g = porFecha.get(r.fecha);
+    const key = `${r.fecha}|${r.ubicacion}`;
+    if (!porFecha.has(key)) porFecha.set(key, { fecha: r.fecha, ubicacion: r.ubicacion, prod: 0, venta: 0, rotura: 0, por: r.cargado_por });
+    const g = porFecha.get(key);
     if (r.tipo === 'produccion') g.prod += r.cantidad;
     else if (r.tipo === 'venta') g.venta += r.cantidad;
     else if (r.tipo === 'rotura' || r.tipo === 'rotura_deposito') g.rotura += r.cantidad;
   }
-  const fechas = [...porFecha.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, 15);
-  els.recientesList.innerHTML = fechas.map(([fecha, g]) => `<div class="recientes-item">
+  const DEPOSITO_LABEL = { alberti: 'Alberti', lanus: 'Lanús Oeste' };
+  const filas = [...porFecha.values()].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 15);
+  els.recientesList.innerHTML = filas.map((g) => `<div class="recientes-item">
       <div>
-        <div class="nombre">${new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR')}</div>
+        <div class="nombre">${new Date(g.fecha + 'T00:00:00').toLocaleDateString('es-AR')} · ${DEPOSITO_LABEL[g.ubicacion] || g.ubicacion}</div>
         <div class="meta">Prod ${g.prod} · Venta ${g.venta} · Rotura ${g.rotura} · ${escapeHtml(g.por || '')}</div>
       </div>
     </div>`).join('');
@@ -175,6 +181,7 @@ async function loadRecientes() {
 
 els.fecha.addEventListener('change', prefill);
 els.linea.addEventListener('change', async () => { renderGrid(); await prefill(); });
+els.ubicacion.addEventListener('change', prefill);
 els.guardarBtn.addEventListener('click', guardar);
 
 function escapeHtml(str) {

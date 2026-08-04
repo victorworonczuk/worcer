@@ -1,8 +1,6 @@
 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Supabase/PostgREST corta cada respuesta a 1000 filas aunque se pida un
-// .limit() más alto — hay que paginar con .range() hasta que la página
-// vuelva incompleta (ver la misma nota en public/assets/app.js).
+// Supabase/PostgREST corta cada respuesta a 1000 filas — paginar con .range().
 async function fetchAll(buildQuery, pageSize = 1000) {
   let desde = 0;
   let todos = [];
@@ -17,14 +15,15 @@ async function fetchAll(buildQuery, pageSize = 1000) {
 }
 
 const CALIDAD_LABEL = { '1era': '1ª', comercial: 'Comercial', '3era': '3ª' };
+const DEPOSITO_LABEL = { alberti: 'Alberti', lanus: 'Lanús Oeste' };
 
 const state = { currentUser: null, piezas: [], lineas: [] };
 
 const els = {
   userSubtitle: document.getElementById('user-subtitle'),
   fecha: document.getElementById('f-fecha'),
+  direccion: document.getElementById('f-direccion'),
   linea: document.getElementById('f-linea'),
-  ubicacion: document.getElementById('f-ubicacion'),
   status: document.getElementById('carga-status'),
   guardarBtn: document.getElementById('guardar-btn'),
   tbody: document.getElementById('tbody'),
@@ -37,6 +36,11 @@ function piezaLabel(p) {
   return `${p.tipo_pieza}${variante}`;
 }
 
+function origenDestino() {
+  const [origen, destino] = els.direccion.value.split('-');
+  return { origen, destino };
+}
+
 async function init() {
   const me = await (await fetch('/api/me')).json();
   if (!me.user) { window.location.href = '/login'; return; }
@@ -45,7 +49,7 @@ async function init() {
 
   if (me.rol === 'analisis') {
     els.guardarBtn.disabled = true;
-    els.formError.textContent = 'Tu usuario es de solo lectura — no podés cargar recuentos.';
+    els.formError.textContent = 'Tu usuario es de solo lectura — no podés registrar traslados.';
   }
 
   els.fecha.value = new Date().toISOString().slice(0, 10);
@@ -101,13 +105,14 @@ async function prefill() {
   els.tbody.querySelectorAll('.cell-input').forEach((i) => { i.value = ''; });
   const fecha = els.fecha.value;
   if (!fecha) return;
-  els.status.textContent = 'Cargando recuento de la fecha…';
+  const { origen } = origenDestino();
+  els.status.textContent = 'Cargando traslados de la fecha…';
   const { data, error } = await client
     .from('produccion')
     .select('pieza_id, cantidad')
     .eq('fecha', fecha)
-    .eq('tipo', 'recuento')
-    .eq('ubicacion', els.ubicacion.value)
+    .eq('tipo', 'traslado_salida')
+    .eq('ubicacion', origen)
     .limit(2000);
   if (error) { els.status.textContent = ''; return; }
   const byPieza = new Map();
@@ -116,23 +121,26 @@ async function prefill() {
     if (byPieza.has(inp.dataset.pieza)) inp.value = byPieza.get(inp.dataset.pieza);
   });
   const n = data ? data.length : 0;
-  els.status.textContent = n ? `${n} pieza(s) ya tienen recuento en esta fecha.` : 'Sin recuento cargado para esta fecha todavía.';
+  els.status.textContent = n ? `${n} pieza(s) ya trasladadas en esta fecha y dirección.` : 'Sin traslados cargados para esta fecha y dirección todavía.';
 }
 
 async function guardar() {
   els.formError.textContent = '';
   const fecha = els.fecha.value;
-  if (!fecha) { els.formError.textContent = 'Elegí la fecha del recuento.'; return; }
+  if (!fecha) { els.formError.textContent = 'Elegí una fecha.'; return; }
+  const { origen, destino } = origenDestino();
 
   const filas = [];
   els.tbody.querySelectorAll('.cell-input').forEach((inp) => {
     if (inp.value === '') return;
     const cantidad = Number(inp.value);
     if (Number.isNaN(cantidad) || cantidad < 0) return;
-    filas.push({ fecha, pieza_id: Number(inp.dataset.pieza), tipo: 'recuento', ubicacion: els.ubicacion.value, cantidad, cargado_por: state.currentUser });
+    const piezaId = Number(inp.dataset.pieza);
+    filas.push({ fecha, pieza_id: piezaId, tipo: 'traslado_salida', ubicacion: origen, cantidad, cargado_por: state.currentUser });
+    filas.push({ fecha, pieza_id: piezaId, tipo: 'traslado_entrada', ubicacion: destino, cantidad, cargado_por: state.currentUser });
   });
 
-  if (filas.length === 0) { els.formError.textContent = 'No cargaste ninguna cantidad contada.'; return; }
+  if (filas.length === 0) { els.formError.textContent = 'No cargaste ninguna cantidad.'; return; }
 
   els.guardarBtn.disabled = true;
   els.guardarBtn.textContent = 'Guardando…';
@@ -140,12 +148,12 @@ async function guardar() {
     .from('produccion')
     .upsert(filas, { onConflict: 'fecha,pieza_id,tipo,ubicacion' });
   els.guardarBtn.disabled = false;
-  els.guardarBtn.textContent = 'Guardar recuento';
+  els.guardarBtn.textContent = 'Registrar traslado';
 
   if (error) { els.formError.textContent = 'Error al guardar: ' + error.message; return; }
 
-  const depositoLabel = els.ubicacion.value === 'lanus' ? 'Lanús Oeste' : 'Alberti';
-  els.status.textContent = `✓ Recuento guardado: ${filas.length} pieza(s) para el ${new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR')} (${depositoLabel}).`;
+  const piezas = filas.length / 2;
+  els.status.textContent = `✓ Traslado registrado: ${piezas} pieza(s) de ${DEPOSITO_LABEL[origen]} a ${DEPOSITO_LABEL[destino]} el ${new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR')}.`;
   loadRecientes();
 }
 
@@ -154,35 +162,37 @@ async function loadRecientes() {
     client
       .from('produccion')
       .select('fecha, ubicacion, cantidad, cargado_por')
-      .eq('tipo', 'recuento')
+      .eq('tipo', 'traslado_salida')
       .order('fecha', { ascending: false })
   );
   if (error) { els.recientesList.innerHTML = `<div class="loading">Error: ${error.message}</div>`; return; }
   if (!data || !data.length) {
-    els.recientesList.innerHTML = '<div class="loading">Todavía no se cargó ningún recuento.</div>';
+    els.recientesList.innerHTML = '<div class="loading">Todavía no se registró ningún traslado.</div>';
     return;
   }
-  const DEPOSITO_LABEL = { alberti: 'Alberti', lanus: 'Lanús Oeste' };
-  const porFecha = new Map();
+  const porFechaDireccion = new Map();
   for (const r of data) {
     const key = `${r.fecha}|${r.ubicacion}`;
-    if (!porFecha.has(key)) porFecha.set(key, { fecha: r.fecha, ubicacion: r.ubicacion, piezas: 0, total: 0, por: r.cargado_por });
-    const g = porFecha.get(key);
+    if (!porFechaDireccion.has(key)) porFechaDireccion.set(key, { fecha: r.fecha, origen: r.ubicacion, piezas: 0, total: 0, por: r.cargado_por });
+    const g = porFechaDireccion.get(key);
     g.piezas += 1;
     g.total += r.cantidad;
   }
-  const filas = [...porFecha.values()].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 15);
-  els.recientesList.innerHTML = filas.map((g) => `<div class="recientes-item">
+  const filas = [...porFechaDireccion.values()].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 15);
+  els.recientesList.innerHTML = filas.map((g) => {
+    const destino = g.origen === 'alberti' ? 'lanus' : 'alberti';
+    return `<div class="recientes-item">
       <div>
-        <div class="nombre">${new Date(g.fecha + 'T00:00:00').toLocaleDateString('es-AR')} · ${DEPOSITO_LABEL[g.ubicacion] || g.ubicacion}</div>
-        <div class="meta">${g.piezas} pieza(s) · ${g.total} u. contadas · ${escapeHtml(g.por || '')}</div>
+        <div class="nombre">${new Date(g.fecha + 'T00:00:00').toLocaleDateString('es-AR')} · ${DEPOSITO_LABEL[g.origen]} → ${DEPOSITO_LABEL[destino]}</div>
+        <div class="meta">${g.piezas} pieza(s) · ${g.total} u. trasladadas · ${escapeHtml(g.por || '')}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 els.fecha.addEventListener('change', prefill);
+els.direccion.addEventListener('change', prefill);
 els.linea.addEventListener('change', async () => { renderGrid(); await prefill(); });
-els.ubicacion.addEventListener('change', prefill);
 els.guardarBtn.addEventListener('click', guardar);
 
 function escapeHtml(str) {

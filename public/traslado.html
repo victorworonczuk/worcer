@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Worcer · Cargar producción</title>
+  <title>Worcer · Traslado entre depósitos</title>
   <link rel="stylesheet" href="assets/style.css" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192.png" />
@@ -17,7 +17,7 @@
     <div class="topbar-brand">
       <img src="/icons/logo-worcer.jpg" alt="Worcer" class="topbar-logo" />
       <div>
-        <h1>Worcer · Cargar producción</h1>
+        <h1>Worcer · Traslado entre depósitos</h1>
       <div class="subtitle" id="user-subtitle">Cargando…</div>
     </div>
     </div>
@@ -27,8 +27,8 @@
       </button>
       <nav class="nav-dropdown" id="nav-dropdown">
         <a href="/produccion.html" class="nav-item" title="Reporte consolidado de producción, venta y rotura por pieza. Solo consulta, no se carga nada acá.">Ver consolidado</a>
+        <a href="/produccion-carga.html" class="nav-item" title="Cargá acá, día por día, las cantidades de producción, venta y rotura por pieza y calidad.">Cargar producción</a>
         <a href="/recuento.html" class="nav-item" title="Cargá acá un conteo físico de stock — fija el stock del sistema a esa fecha.">Recuento</a>
-        <a href="/traslado.html" class="nav-item" title="Registrá el envío de piezas por expreso entre Alberti y Lanús Oeste.">Traslado entre depósitos</a>
         <a href="/index.html" class="nav-item">← Ver dashboard</a>
         <a href="/api/logout" class="nav-item">Cerrar sesión</a>
       </nav>
@@ -43,23 +43,24 @@
           <input type="date" id="f-fecha" />
         </div>
         <div class="field-inline">
+          <label for="f-direccion">Dirección</label>
+          <select id="f-direccion">
+            <option value="alberti-lanus">Alberti → Lanús Oeste</option>
+            <option value="lanus-alberti">Lanús Oeste → Alberti</option>
+          </select>
+        </div>
+        <div class="field-inline">
           <label for="f-linea">Línea</label>
           <select id="f-linea"><option value="">Todas</option></select>
         </div>
-        <div class="field-inline">
-          <label for="f-ubicacion">Depósito</label>
-          <select id="f-ubicacion">
-            <option value="alberti">Alberti</option>
-            <option value="lanus">Lanús Oeste</option>
-          </select>
-        </div>
         <div class="carga-status" id="carga-status"></div>
-        <button type="button" id="guardar-btn" class="buscar-btn">Guardar día</button>
+        <button type="button" id="guardar-btn" class="buscar-btn">Registrar traslado</button>
       </div>
 
       <p class="carga-hint">
-        Cargá las cantidades del día por pieza y calidad, para el depósito elegido arriba. Lo que dejes en blanco no se toca;
-        podés escribir <strong>0</strong> para registrar un cero. Al guardar, se actualiza lo ya cargado de esa fecha y depósito.
+        Cargá la cantidad de cada pieza que se mandó por expreso en la dirección elegida arriba. Al guardar, el sistema
+        resta del depósito de origen y suma al de destino — sin necesidad de remito ni factura. Lo que dejes en blanco
+        no se toca; al guardar se actualiza lo ya cargado de esa fecha, pieza y dirección.
       </p>
 
       <div class="table-wrap">
@@ -68,14 +69,11 @@
             <tr>
               <th class="col-pieza">Pieza</th>
               <th class="col-cal">Calidad</th>
-              <th>Producción</th>
-              <th>Venta</th>
-              <th>Rotura fábrica</th>
-              <th>Rotura depósito</th>
+              <th>Cantidad trasladada</th>
             </tr>
           </thead>
           <tbody id="tbody">
-            <tr><td colspan="6" class="loading">Cargando piezas…</td></tr>
+            <tr><td colspan="3" class="loading">Cargando piezas…</td></tr>
           </tbody>
         </table>
       </div>
@@ -84,7 +82,7 @@
     </div>
 
     <div class="panel recientes-panel">
-      <h2>Últimas cargas</h2>
+      <h2>Últimos traslados</h2>
       <div id="recientes-list" class="recientes-list">
         <div class="loading">Cargando…</div>
       </div>
@@ -93,7 +91,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/config.js"></script>
-  <script src="assets/produccion-carga.js"></script>
+  <script src="assets/traslado.js"></script>
   <script src="assets/nav.js"></script>
 </body>
 </html>

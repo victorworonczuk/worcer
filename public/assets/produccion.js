@@ -10,11 +10,14 @@ const state = {
   tipo: 'produccion',  // métrica activa de la tabla
 };
 
+const DEPOSITO_LABEL = { alberti: 'Alberti', lanus: 'Lanús Oeste' };
+
 const els = {
   userSubtitle: document.getElementById('user-subtitle'),
   linea: document.getElementById('f-linea'),
   agrupar: document.getElementById('f-agrupar'),
   calidad: document.getElementById('f-calidad'),
+  ubicacion: document.getElementById('f-ubicacion'),
   desde: document.getElementById('f-desde'),
   hasta: document.getElementById('f-hasta'),
   limpiarBtn: document.getElementById('limpiar-btn'),
@@ -41,7 +44,7 @@ async function init() {
   for (let from = 0; ; from += PAGE) {
     const { data: page, error } = await client
       .from('produccion')
-      .select('fecha, tipo, cantidad, piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
+      .select('fecha, tipo, ubicacion, cantidad, piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
       .order('fecha', { ascending: true })
       .range(from, from + PAGE - 1);
     if (error) {
@@ -55,7 +58,7 @@ async function init() {
   state.rows = data
     .filter((r) => r.piezas)
     .map((r) => ({
-      fecha: r.fecha, tipo: r.tipo, cantidad: r.cantidad,
+      fecha: r.fecha, tipo: r.tipo, ubicacion: r.ubicacion, cantidad: r.cantidad,
       linea: r.piezas.linea, tipo_pieza: r.piezas.tipo_pieza,
       variante: r.piezas.variante, calidad: r.piezas.calidad,
       precio: r.piezas.precio_ars != null ? Number(r.piezas.precio_ars) : null,
@@ -76,11 +79,13 @@ async function init() {
 function filtrar() {
   const linea = els.linea.value || null;
   const calidad = els.calidad.value || null;
+  const ubicacion = els.ubicacion.value || null;
   const desde = els.desde.value || null;
   const hasta = els.hasta.value || null;
   return state.rows.filter((r) => {
     if (linea && r.linea !== linea) return false;
     if (calidad && r.calidad !== calidad) return false;
+    if (ubicacion && r.ubicacion !== ubicacion) return false;
     if (desde && r.fecha < desde) return false;
     if (hasta && r.fecha > hasta) return false;
     return true;
@@ -187,25 +192,30 @@ function fmtPesos(n) { return '$' + Math.round(n).toLocaleString('es-AR'); }
 
 function piezaKeyDe(r) { return `${r.linea}|${r.tipo_pieza}|${r.variante || ''}|${r.calidad}`; }
 
-// El stock es "actual": para cada pieza toma el último recuento como base y suma
-// los movimientos posteriores. No depende del rango de fechas del filtro.
+// El stock es "actual": para cada pieza y depósito toma el último recuento de
+// ESE depósito como base y suma los movimientos posteriores (incluidos los
+// traslados). No depende del rango de fechas del filtro. Con "Todos
+// (unificado)" se suma Alberti + Lanús pieza por pieza — los traslados se
+// cancelan solos (lo que sale de un depósito entra al otro), así que el
+// total no se infla por moverlos de un lado a otro.
 function renderStock() {
   const lineaFiltro = els.linea.value || null;
   const calidadFiltro = els.calidad.value || null;
+  const ubicacionFiltro = els.ubicacion.value || null;
   const base = state.rows.filter((r) =>
     (!lineaFiltro || r.linea === lineaFiltro) && (!calidadFiltro || r.calidad === calidadFiltro));
 
-  // 1) Calcular por pieza individual (con calidad = pieza_id), usando el ancla del recuento.
-  const porPieza = new Map();
+  // 1) Calcular por pieza individual + depósito, usando el ancla del recuento de ese depósito.
+  const porPiezaUbic = new Map();
   for (const r of base) {
-    const k = piezaKeyDe(r);
-    if (!porPieza.has(k)) porPieza.set(k, { rows: [], grupo: grupoDe(r), precio: r.precio });
-    porPieza.get(k).rows.push(r);
+    const k = `${piezaKeyDe(r)}|${r.ubicacion}`;
+    if (!porPiezaUbic.has(k)) porPiezaUbic.set(k, { rows: [], piezaKey: piezaKeyDe(r), ubicacion: r.ubicacion, grupo: grupoDe(r), precio: r.precio });
+    porPiezaUbic.get(k).rows.push(r);
   }
   let faltaPrecio = false;
   let hayRecuento = false;
-  const piezasCalc = [];
-  for (const { rows, grupo, precio } of porPieza.values()) {
+  const calcPorPiezaUbic = new Map();
+  for (const [key, { rows, piezaKey, ubicacion, grupo, precio }] of porPiezaUbic) {
     const recuentos = rows.filter((r) => r.tipo === 'recuento');
     let baseFecha = null, baseQty = 0;
     if (recuentos.length) {
@@ -213,22 +223,40 @@ function renderStock() {
       const ult = recuentos.reduce((a, b) => (b.fecha > a.fecha ? b : a));
       baseFecha = ult.fecha; baseQty = ult.cantidad;
     }
-    let prod = 0, venta = 0, rotura = 0;
+    let prod = 0, venta = 0, rotura = 0, trasladoIn = 0, trasladoOut = 0;
     for (const r of rows) {
       if (r.tipo === 'recuento') continue;
       if (baseFecha && r.fecha <= baseFecha) continue; // solo movimientos posteriores al recuento
       if (r.tipo === 'produccion') prod += r.cantidad;
       else if (r.tipo === 'venta') venta += r.cantidad;
       else if (r.tipo === 'rotura' || r.tipo === 'rotura_deposito') rotura += r.cantidad;
+      else if (r.tipo === 'traslado_entrada') trasladoIn += r.cantidad;
+      else if (r.tipo === 'traslado_salida') trasladoOut += r.cantidad;
     }
-    const stock = baseQty + prod - venta - rotura;
+    const stock = baseQty + prod + trasladoIn - venta - rotura - trasladoOut;
     const valorProd = precio != null ? precio * prod : 0;
     const valorRoto = precio != null ? precio * rotura : 0;
     if (precio == null && (prod || rotura)) faltaPrecio = true;
-    piezasCalc.push({ grupo, baseQty, prod, venta, rotura, stock, valorProd, valorRoto });
+    calcPorPiezaUbic.set(key, { piezaKey, ubicacion, grupo, baseQty, prod, venta, rotura, stock, valorProd, valorRoto });
   }
 
-  // 2) Agrupar según "Agrupar por".
+  // 2) Si hay un depósito elegido, usar ese cálculo directo. Si es "Todos", sumar
+  // Alberti + Lanús por pieza antes de agrupar.
+  let piezasCalc;
+  if (ubicacionFiltro) {
+    piezasCalc = [...calcPorPiezaUbic.values()].filter((p) => p.ubicacion === ubicacionFiltro);
+  } else {
+    const porPieza = new Map();
+    for (const p of calcPorPiezaUbic.values()) {
+      if (!porPieza.has(p.piezaKey)) porPieza.set(p.piezaKey, { grupo: p.grupo, baseQty: 0, prod: 0, venta: 0, rotura: 0, stock: 0, valorProd: 0, valorRoto: 0 });
+      const acc = porPieza.get(p.piezaKey);
+      acc.baseQty += p.baseQty; acc.prod += p.prod; acc.venta += p.venta; acc.rotura += p.rotura;
+      acc.stock += p.stock; acc.valorProd += p.valorProd; acc.valorRoto += p.valorRoto;
+    }
+    piezasCalc = [...porPieza.values()];
+  }
+
+  // 3) Agrupar según "Agrupar por".
   const grupos = new Map();
   for (const p of piezasCalc) {
     if (!grupos.has(p.grupo.key)) grupos.set(p.grupo.key, { label: p.grupo.label, base: 0, prod: 0, venta: 0, rotura: 0, stock: 0, valorProd: 0, valorRoto: 0 });
@@ -278,8 +306,9 @@ function renderStock() {
   </tr>`;
 
   const notas = [];
-  if (hayRecuento) notas.push('Stock actual = último recuento + producción − venta − roturas posteriores. Producción/Venta/Rotura son desde el último recuento.');
+  if (hayRecuento) notas.push('Stock actual = último recuento + producción + traslados entrantes − venta − roturas − traslados salientes, todo posterior al recuento. Producción/Venta/Rotura de la tabla son desde el último recuento.');
   else notas.push('Stock = Producción − Venta − Rotura desde enero (sin recuento todavía: cargá el stock inicial en "Recuento" para corregir los negativos). Rotura incluye fábrica + depósito.');
+  notas.push(ubicacionFiltro ? `Depósito: ${DEPOSITO_LABEL[ubicacionFiltro]}. El recuento (columna "Base recuento") es el de ese depósito.` : 'Depósito: Todos (unificado) — suma Alberti + Lanús Oeste por pieza; los traslados entre ambos se cancelan solos y no inflan el total.');
   notas.push('No depende del rango de fechas.');
   if (faltaPrecio) notas.push('Algunas piezas de 3ª calidad no tienen precio — su valorización no se cuenta.');
   els.notaPie.textContent = notas.join(' ');
@@ -294,9 +323,9 @@ els.metricTabs.querySelectorAll('.metric-tab').forEach((tab) => {
     render();
   });
 });
-[els.linea, els.agrupar, els.calidad, els.desde, els.hasta].forEach((el) => el.addEventListener('change', render));
+[els.linea, els.agrupar, els.calidad, els.ubicacion, els.desde, els.hasta].forEach((el) => el.addEventListener('change', render));
 els.limpiarBtn.addEventListener('click', () => {
-  els.linea.value = ''; els.agrupar.value = 'pieza'; els.calidad.value = '';
+  els.linea.value = ''; els.agrupar.value = 'pieza'; els.calidad.value = ''; els.ubicacion.value = '';
   els.desde.value = ''; els.hasta.value = '';
   render();
 });

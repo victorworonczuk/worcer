@@ -28,6 +28,7 @@
       <nav class="nav-dropdown" id="nav-dropdown">
         <a href="/produccion.html" class="nav-item" title="Reporte consolidado de producción, venta y rotura por pieza. Solo consulta, no se carga nada acá.">Ver consolidado</a>
         <a href="/produccion-carga.html" class="nav-item" title="Cargá acá, día por día, las cantidades de producción, venta y rotura por pieza y calidad.">Cargar producción</a>
+        <a href="/traslado.html" class="nav-item" title="Registrá el envío de piezas por expreso entre Alberti y Lanús Oeste.">Traslado entre depósitos</a>
         <a href="/index.html" class="nav-item">← Ver dashboard</a>
         <a href="/api/logout" class="nav-item">Cerrar sesión</a>
       </nav>
@@ -45,14 +46,22 @@
           <label for="f-linea">Línea</label>
           <select id="f-linea"><option value="">Todas</option></select>
         </div>
+        <div class="field-inline">
+          <label for="f-ubicacion">Depósito</label>
+          <select id="f-ubicacion">
+            <option value="alberti">Alberti</option>
+            <option value="lanus">Lanús Oeste</option>
+          </select>
+        </div>
         <div class="carga-status" id="carga-status"></div>
         <button type="button" id="guardar-btn" class="buscar-btn">Guardar recuento</button>
       </div>
 
       <p class="carga-hint">
         Un <strong>recuento</strong> es un conteo físico: la cantidad que ponés acá <strong>fija el stock</strong> de cada
-        pieza a esa fecha, y desde ahí el sistema vuelve a sumar la producción y restar ventas y roturas.
-        El <strong>primer recuento es tu stock inicial</strong>. Dejá en blanco lo que no cuentes.
+        pieza a esa fecha, para el depósito elegido arriba, y desde ahí el sistema vuelve a sumar la producción y restar
+        ventas y roturas. El <strong>primer recuento de cada depósito es su stock inicial</strong> — hacé uno para Alberti
+        y otro para Lanús Oeste para arrancar los dos stocks al día. Dejá en blanco lo que no cuentes.
       </p>
 
       <div class="table-wrap">
