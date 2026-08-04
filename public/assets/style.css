@@ -361,11 +361,50 @@ tbody tr:hover {
 }
 .toggle-descripcion:hover { opacity: 0.8; }
 .toggle-descripcion.has-desc { opacity: 1; }
+.toggle-transporte {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.35;
+  flex-shrink: 0;
+}
+.toggle-transporte:hover { opacity: 0.8; }
+.toggle-transporte.has-desc { opacity: 1; }
 .descripcion-panel {
   margin-top: 6px;
   min-width: 200px;
   max-width: 260px;
 }
+.transporte-panel {
+  margin-top: 6px;
+  min-width: 200px;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.transporte-titulo {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.transporte-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: inherit;
+}
+.transporte-input:hover { border-color: #c7ccd4; }
+.transporte-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.transporte-input::placeholder { color: var(--text-muted); }
 .nombre-cell .cuit {
   color: var(--text-muted);
   font-size: 12px;

@@ -12,6 +12,7 @@ const state = {
   interaccionesByCliente: new Map(),
   openHistorial: new Set(),
   openDescripcion: new Set(),
+  openTransporte: new Set(),
   vendedorOtro: new Set(),
   currentUser: null,
   currentUserRol: null,
@@ -537,6 +538,13 @@ function renderTable() {
   els.tbody.querySelectorAll('.toggle-descripcion').forEach((btn) => {
     btn.addEventListener('click', onToggleDescripcion);
   });
+  els.tbody.querySelectorAll('.toggle-transporte').forEach((btn) => {
+    btn.addEventListener('click', onToggleTransporte);
+  });
+  els.tbody.querySelectorAll('.transporte-input').forEach((input) => {
+    input.addEventListener('blur', onEditableFieldChange);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+  });
   els.tbody.querySelectorAll('.telefono-input').forEach((input) => {
     input.addEventListener('blur', onTelefonoChange);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
@@ -725,6 +733,16 @@ function onToggleDescripcion(e) {
     state.openDescripcion.delete(id);
   } else {
     state.openDescripcion.add(id);
+  }
+  renderTable();
+}
+
+function onToggleTransporte(e) {
+  const id = Number(e.target.dataset.id);
+  if (state.openTransporte.has(id)) {
+    state.openTransporte.delete(id);
+  } else {
+    state.openTransporte.add(id);
   }
   renderTable();
 }
@@ -987,11 +1005,20 @@ function rowHtml(r) {
         <div class="nombre-row">
           <strong title="${escapeHtml(tooltipUltimaEdicion(r))}">${escapeHtml(r.nombre)}</strong>
           <button type="button" class="toggle-descripcion ${r.descripcion ? 'has-desc' : ''}" data-id="${r.id}" title="Ver/editar descripción">📝</button>
+          <button type="button" class="toggle-transporte ${(r.transporte_nombre || r.transporte_telefono || r.transporte_direccion) ? 'has-desc' : ''}" data-id="${r.id}" title="Ver/editar transporte/expreso">🚚</button>
         </div>
         <span class="cuit">${escapeHtml(r.cuit || '')}</span>
         ${state.openDescripcion.has(r.id) ? `
         <div class="descripcion-panel">
           <textarea class="descripcion-input" data-field="descripcion" rows="2" placeholder="Sin descripción">${escapeHtml(r.descripcion || '')}</textarea>
+          <span class="save-indicator">✓</span>
+        </div>` : ''}
+        ${state.openTransporte.has(r.id) ? `
+        <div class="transporte-panel">
+          <span class="transporte-titulo">Transporte / expreso</span>
+          <input type="text" class="transporte-input" data-field="transporte_nombre" value="${escapeHtml(r.transporte_nombre || '')}" placeholder="Nombre del transporte" />
+          <input type="text" class="transporte-input" data-field="transporte_telefono" value="${escapeHtml(r.transporte_telefono || '')}" placeholder="Teléfono(s) de contacto" />
+          <input type="text" class="transporte-input" data-field="transporte_direccion" value="${escapeHtml(r.transporte_direccion || '')}" placeholder="Dirección" />
           <span class="save-indicator">✓</span>
         </div>` : ''}
       </td>

@@ -24,3 +24,9 @@ alter table public.facturas add column if not exists cargado_por text;
 -- columnas, van a quedar en null hasta la próxima edición de cada cliente.
 alter table public.clientes add column if not exists actualizado_por text;
 alter table public.clientes add column if not exists actualizado_en timestamptz;
+
+-- Datos de contacto del transporte/expreso al que se le envía la mercadería
+-- de este cliente (no es el contacto del cliente en sí).
+alter table public.clientes add column if not exists transporte_nombre text;
+alter table public.clientes add column if not exists transporte_telefono text;
+alter table public.clientes add column if not exists transporte_direccion text;
