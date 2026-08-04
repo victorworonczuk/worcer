@@ -66,10 +66,10 @@ table.pivot tbody tr:hover td.col-grupo {
    normal (producción/venta/stock); rojo = métrica de pérdida (% rotura),
    mismo tono que ya usa esta tabla para roturas y pérdidas en $. */
 .bar-cell {
-  background: linear-gradient(90deg, rgba(46, 110, 160, 0.16) var(--bar-pct, 0%), transparent var(--bar-pct, 0%));
+  background: linear-gradient(90deg, rgba(64, 140, 200, 0.4) var(--bar-pct, 0%), transparent var(--bar-pct, 0%));
 }
 .bar-cell-pct {
-  background: linear-gradient(90deg, rgba(214, 69, 69, 0.16) var(--bar-pct, 0%), transparent var(--bar-pct, 0%));
+  background: linear-gradient(90deg, rgba(214, 69, 69, 0.3) var(--bar-pct, 0%), transparent var(--bar-pct, 0%));
 }
 
 /* Filtros: entran en un solo renglón en pantallas de escritorio (en mobile
