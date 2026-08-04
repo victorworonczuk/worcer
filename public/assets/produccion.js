@@ -22,6 +22,8 @@ const els = {
   hasta: document.getElementById('f-hasta'),
   limpiarBtn: document.getElementById('limpiar-btn'),
   resumen: document.getElementById('resumen'),
+  comparativoChart: document.getElementById('comparativo-chart'),
+  comparativoLegend: document.getElementById('comparativo-legend'),
   metricTabs: document.getElementById('metric-tabs'),
   thead: document.getElementById('thead'),
   tbody: document.getElementById('tbody'),
@@ -108,6 +110,7 @@ function grupoDe(r) {
 function render() {
   const items = filtrar();
   renderResumen(items);
+  renderComparativo(items);
   if (state.tipo === 'stock') renderStock();
   else renderPivot(items);
 }
@@ -126,6 +129,156 @@ function renderResumen(items) {
     <div><strong>${fmt(tot.rotura)}</strong><span class="label">rotura</span></div>
     <div><strong>${fmt(ratio)}%</strong><span class="label">venta / producción</span></div>
   `;
+}
+
+// Gráfico de líneas Producción vs Venta por mes — siempre visible arriba de
+// la tabla, sin importar qué pestaña de métrica esté activa, sobre el mismo
+// conjunto filtrado (línea/calidad/depósito/fecha).
+const SERIES_COMPARATIVO = [
+  { key: 'produccion', label: 'Producción', color: '#2e6ea0' },
+  { key: 'venta', label: 'Venta', color: '#1a9d5c' },
+];
+
+function niceMax(v) {
+  if (v <= 0) return 10;
+  const pow = Math.pow(10, Math.floor(Math.log10(v)));
+  const n = v / pow;
+  const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+  return step * pow;
+}
+
+function renderComparativo(items) {
+  const porMes = new Map(); // ym -> { produccion, venta }
+  for (const r of items) {
+    if (r.tipo !== 'produccion' && r.tipo !== 'venta') continue;
+    const ym = `${anioDe(r.fecha)}-${String(mesDe(r.fecha)).padStart(2, '0')}`;
+    if (!porMes.has(ym)) porMes.set(ym, { produccion: 0, venta: 0 });
+    porMes.get(ym)[r.tipo] += r.cantidad;
+  }
+  const meses = [...porMes.keys()].sort();
+
+  els.comparativoLegend.innerHTML = SERIES_COMPARATIVO.map((s) => `
+    <span class="legend-item"><span class="legend-swatch" style="background:${s.color}"></span>${s.label}</span>
+  `).join('');
+
+  if (meses.length === 0) {
+    els.comparativoChart.innerHTML = '<p class="empty-state">No hay datos para graficar con estos filtros.</p>';
+    return;
+  }
+
+  const W = 880, H = 260, ML = 46, MR = 16, MT = 12, MB = 28;
+  const PW = W - ML - MR, PH = H - MT - MB;
+  const colLabel = (ym) => `${MESES[Number(ym.slice(5, 7))]} ${ym.slice(2, 4)}`;
+
+  const series = SERIES_COMPARATIVO.map((s) => ({ ...s, values: meses.map((m) => porMes.get(m)[s.key]) }));
+  const maxVal = niceMax(Math.max(...series.flatMap((s) => s.values), 1));
+  const xAt = (i) => meses.length === 1 ? ML + PW / 2 : ML + (PW * i) / (meses.length - 1);
+  const yAt = (v) => MT + PH - (v / maxVal) * PH;
+
+  const yTicks = 4;
+  const gridHtml = Array.from({ length: yTicks + 1 }, (_, i) => {
+    const v = (maxVal / yTicks) * i;
+    const y = yAt(v);
+    return `<line x1="${ML}" y1="${y}" x2="${W - MR}" y2="${y}" class="comparativo-grid" />
+      <text x="${ML - 8}" y="${y}" class="comparativo-axis-y" text-anchor="end" dominant-baseline="middle">${fmt(v)}</text>`;
+  }).join('');
+
+  const xLabelStep = meses.length > 9 ? Math.ceil(meses.length / 9) : 1;
+  const xLabelsHtml = meses.map((m, i) => (i % xLabelStep === 0 ? `
+    <text x="${xAt(i)}" y="${H - 6}" class="comparativo-axis-x" text-anchor="middle">${colLabel(m)}</text>` : '')).join('');
+
+  const lineHtml = series.map((s) => {
+    const d = s.values.map((v, i) => `${i === 0 ? 'M' : 'L'}${xAt(i)},${yAt(v)}`).join(' ');
+    const dots = s.values.map((v, i) => `<circle cx="${xAt(i)}" cy="${yAt(v)}" r="4" fill="${s.color}" stroke="var(--surface)" stroke-width="2" />`).join('');
+    return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />${dots}`;
+  }).join('');
+
+  // Etiquetas de valor al final de cada línea — si las dos quedan a menos de
+  // 16px de distancia vertical (se van a superponer), no se muestran y el
+  // dato queda en la leyenda + tooltip en su lugar.
+  const lastI = meses.length - 1;
+  const endYs = series.map((s) => yAt(s.values[lastI]));
+  const endsCollide = Math.abs(endYs[0] - endYs[1]) < 16;
+  const endLabelsHtml = endsCollide ? '' : series.map((s, idx) => `
+    <text x="${xAt(lastI) + 6}" y="${endYs[idx]}" class="comparativo-end-label" dominant-baseline="middle">${fmt(s.values[lastI])}</text>
+  `).join('');
+
+  els.comparativoChart.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" class="comparativo-svg" id="comparativo-svg" preserveAspectRatio="xMinYMin meet">
+      ${gridHtml}
+      ${lineHtml}
+      ${xLabelsHtml}
+      ${endLabelsHtml}
+      <rect x="${ML}" y="${MT}" width="${PW}" height="${PH}" fill="transparent" id="comparativo-hitarea" />
+      <line x1="0" y1="${MT}" x2="0" y2="${MT + PH}" class="comparativo-crosshair" id="comparativo-crosshair" style="display:none" />
+    </svg>
+    <div class="comparativo-tooltip" id="comparativo-tooltip" style="display:none"></div>
+  `;
+
+  wireComparativoHover({ meses, series, xAt, yAt, colLabel, ML, MR, W });
+}
+
+function wireComparativoHover({ meses, series, xAt, colLabel, ML, MR, W }) {
+  const svg = document.getElementById('comparativo-svg');
+  const hitArea = document.getElementById('comparativo-hitarea');
+  const crosshair = document.getElementById('comparativo-crosshair');
+  const tooltip = document.getElementById('comparativo-tooltip');
+  if (!svg || !hitArea) return;
+
+  function nearestIndex(svgX) {
+    let best = 0, bestDist = Infinity;
+    meses.forEach((_, i) => {
+      const d = Math.abs(xAt(i) - svgX);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+  }
+
+  function onMove(e) {
+    const rect = svg.getBoundingClientRect();
+    const scaleX = W / rect.width;
+    const svgX = (e.clientX - rect.left) * scaleX;
+    const i = nearestIndex(svgX);
+    const x = xAt(i);
+    crosshair.setAttribute('x1', x);
+    crosshair.setAttribute('x2', x);
+    crosshair.style.display = '';
+
+    tooltip.innerHTML = '';
+    const titulo = document.createElement('div');
+    titulo.className = 'comparativo-tooltip-titulo';
+    titulo.textContent = colLabel(meses[i]);
+    tooltip.appendChild(titulo);
+    series.forEach((s) => {
+      const row = document.createElement('div');
+      row.className = 'comparativo-tooltip-row';
+      const key = document.createElement('span');
+      key.className = 'comparativo-tooltip-key';
+      key.style.background = s.color;
+      const val = document.createElement('strong');
+      val.textContent = fmt(s.values[i]);
+      const label = document.createElement('span');
+      label.className = 'comparativo-tooltip-label';
+      label.textContent = s.label;
+      row.appendChild(key);
+      row.appendChild(val);
+      row.appendChild(label);
+      tooltip.appendChild(row);
+    });
+
+    const pctLeft = ((x - ML) / (W - ML - MR)) * 100;
+    tooltip.style.display = '';
+    tooltip.style.left = `${Math.min(Math.max(pctLeft, 8), 92)}%`;
+    tooltip.style.top = '4px';
+  }
+
+  function onLeave() {
+    crosshair.style.display = 'none';
+    tooltip.style.display = 'none';
+  }
+
+  hitArea.addEventListener('pointermove', onMove);
+  hitArea.addEventListener('pointerleave', onLeave);
 }
 
 function renderPivot(items) {
