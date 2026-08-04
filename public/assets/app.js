@@ -467,6 +467,16 @@ function applyFilters() {
   if (orden === 'facturacion_desc' || orden === 'facturacion_asc') {
     const signo = orden === 'facturacion_desc' ? -1 : 1;
     state.filtered.sort((a, b) => signo * ((a.usd_total_2025_2026 || 0) - (b.usd_total_2025_2026 || 0)));
+  } else if (orden === 'ultima_compra_desc' || orden === 'ultima_compra_asc') {
+    // "Nunca compró" (sin fecha) cuenta como lo más viejo posible: al final
+    // en "más reciente primero", al principio en "hace más tiempo primero".
+    const signo = orden === 'ultima_compra_desc' ? -1 : 1;
+    state.filtered.sort((a, b) => {
+      if (!a.ultima_compra && !b.ultima_compra) return 0;
+      if (!a.ultima_compra) return orden === 'ultima_compra_desc' ? 1 : -1;
+      if (!b.ultima_compra) return orden === 'ultima_compra_desc' ? -1 : 1;
+      return signo * (new Date(a.ultima_compra) - new Date(b.ultima_compra));
+    });
   }
 
   state.page = 1;
@@ -996,6 +1006,7 @@ function rowHtml(r) {
       </td>
       <td class="stacked-cell">
         <span class="badge ${segClass(r.segmento)}" title="${escapeHtml(segmentoTooltip(r))}">${segLabel}</span>
+        <span class="ultima-compra">${r.ultima_compra ? `Última compra: ${fmtFecha(r.ultima_compra)}` : 'Nunca compró'}</span>
         <select class="confianza-select ${confClass(r.confianza_dato)}" data-field="confianza_dato">
           <option value="alta" ${r.confianza_dato === 'alta' ? 'selected' : ''}>Alta</option>
           <option value="media" ${r.confianza_dato === 'media' ? 'selected' : ''}>Media</option>

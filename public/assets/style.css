@@ -377,6 +377,12 @@ tbody tr:hover {
   gap: 6px;
 }
 
+.ultima-compra {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
 .delete-cliente {
   align-self: flex-end;
   margin-top: 6px;
