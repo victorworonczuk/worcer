@@ -30,3 +30,7 @@ alter table public.clientes add column if not exists actualizado_en timestamptz;
 alter table public.clientes add column if not exists transporte_nombre text;
 alter table public.clientes add column if not exists transporte_telefono text;
 alter table public.clientes add column if not exists transporte_direccion text;
+
+-- Nombre de la persona de contacto (a quién pedir cuando se llama), separado
+-- de nombre/nombre_fantasia que son la razón social de la empresa.
+alter table public.clientes add column if not exists nombre_contacto text;

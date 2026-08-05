@@ -869,15 +869,18 @@ async function onSubmitNuevoCliente(e) {
     return;
   }
 
+  const rubrosElegidos = [...document.querySelectorAll('#nc-rubro-group input:checked')].map((c) => c.value);
+
   const nuevo = {
     nombre,
     cuit: document.getElementById('nc-cuit').value.trim() || null,
     provincia: document.getElementById('nc-provincia').value || null,
     localidad: document.getElementById('nc-localidad').value.trim() || null,
     domicilio: document.getElementById('nc-domicilio').value.trim() || null,
+    nombre_contacto: document.getElementById('nc-nombre-contacto').value.trim() || null,
     telefono: document.getElementById('nc-telefono').value.trim() || null,
     email: document.getElementById('nc-email').value.trim() || null,
-    rubro: document.getElementById('nc-rubro').value.trim() || null,
+    rubro: rubrosElegidos.length ? rubrosElegidos.join(', ') : null,
     canal_captacion: document.getElementById('nc-canal-captacion').value || null,
     confianza_dato: 'alta',
     origen: 'Alta manual',
@@ -1006,6 +1009,9 @@ function contactLinks(r) {
 
   return `
     <div class="contacto-block">
+      <div class="contacto-row">
+        <input type="text" class="contacto-input" data-field="nombre_contacto" value="${escapeHtml(r.nombre_contacto || '')}" placeholder="Nombre de contacto" />
+      </div>
       <div class="telefono-group" data-id="${r.id}">${telefonosHtml}</div>
       <div class="contacto-row">
         <input type="email" class="contacto-input" data-field="email" value="${escapeHtml(r.email || '')}" placeholder="Email" />

@@ -176,15 +176,24 @@
         <label>Domicilio
           <input type="text" id="nc-domicilio" />
         </label>
+        <label>Nombre de contacto
+          <input type="text" id="nc-nombre-contacto" placeholder="A quién pedir cuando se llama" />
+        </label>
         <label>Teléfono
           <input type="text" id="nc-telefono" />
         </label>
         <label>Email
           <input type="email" id="nc-email" />
         </label>
-        <label>Rubro
-          <input type="text" id="nc-rubro" placeholder="Corralón, ferretería, sanitarios..." />
-        </label>
+        <label>Rubro</label>
+        <div class="rubro-group modal-rubro-group" id="nc-rubro-group">
+          <label class="rubro-check"><input type="checkbox" value="Distribuidor" /> Distribuidor</label>
+          <label class="rubro-check"><input type="checkbox" value="Venta online" /> Venta online</label>
+          <label class="rubro-check"><input type="checkbox" value="Sanitario" /> Sanitario</label>
+          <label class="rubro-check"><input type="checkbox" value="Corralón" /> Corralón</label>
+          <label class="rubro-check"><input type="checkbox" value="Ferretería" /> Ferretería</label>
+          <label class="rubro-check"><input type="checkbox" value="Otros" /> Otros</label>
+        </div>
         <label>¿Cómo llegó?
           <select id="nc-canal-captacion">
             <option value="">—</option>

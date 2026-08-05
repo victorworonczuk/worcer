@@ -986,6 +986,23 @@ button.nav-link {
 }
 .modal-row label { flex: 1; }
 
+.modal-rubro-group {
+  margin: -6px 0 12px;
+}
+.modal-rubro-group label.rubro-check {
+  display: flex;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.modal-rubro-group input[type="checkbox"] {
+  display: inline-block;
+  width: auto;
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
 .modal-error {
   color: var(--seg-e);
   font-size: 12px;
