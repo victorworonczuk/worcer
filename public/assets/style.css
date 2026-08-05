@@ -7,6 +7,8 @@
   --primary: #2e6ea0;
   --primary-dark: #225277;
   --worcer-blue: #408cc8;
+  --primary-tint: rgba(46, 110, 160, 0.09);
+  --primary-tint-solid: #ecf2f6;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
 
@@ -125,7 +127,7 @@ header.topbar .subtitle {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--primary);
-  background: rgba(46, 110, 160, 0.09);
+  background: var(--primary-tint);
   border-bottom: 2px solid var(--primary);
   padding: 7px 12px;
   margin: 8px -6px 4px;
@@ -339,14 +341,27 @@ table {
 thead th {
   position: sticky;
   top: 0;
-  background: #fafbfc;
+  background: var(--primary-tint-solid);
   text-align: left;
   padding: 8px 8px;
-  font-weight: 600;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
   white-space: nowrap;
 }
+
+/* Títulos de panel/sección (arriba de una tabla o lista) — mismo tono
+   azul que las secciones del menú hamburguesa, en vez del gris genérico.
+   No es un h2 global a propósito: panel-comercial.html tiene sus propios
+   títulos narrativos con otro estilo, que no deben pisarse. */
+.section-title, .panel-title {
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 8px;
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+.panel-title { font-size: 14px; }
 
 .th-help {
   cursor: help;
