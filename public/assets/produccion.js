@@ -293,10 +293,11 @@ function renderPivot(items) {
     <th class="col-grupo">${els.agrupar.value === 'linea' ? 'Línea' : 'Pieza'}</th>
     ${meses.map((m) => `<th>${colLabel(m)}</th>`).join('')}
     <th class="col-total">Total</th>
+    <th class="col-pct">%</th>
   </tr>`;
 
   if (deTipo.length === 0) {
-    els.tbody.innerHTML = `<tr><td class="empty-state" colspan="${meses.length + 2}">No hay ${TIPO_LABEL[state.tipo].toLowerCase()} con estos filtros.</td></tr>`;
+    els.tbody.innerHTML = `<tr><td class="empty-state" colspan="${meses.length + 3}">No hay ${TIPO_LABEL[state.tipo].toLowerCase()} con estos filtros.</td></tr>`;
     els.notaPie.textContent = '';
     return;
   }
@@ -325,12 +326,14 @@ function renderPivot(items) {
       return `<td class="${v ? '' : 'zero'}">${v ? fmt(v) : '·'}</td>`;
     }).join('')}
     <td class="col-total bar-cell" style="--bar-pct:${Math.round((f.total / maxTotal) * 100)}%"><strong>${fmt(f.total)}</strong></td>
+    <td class="col-pct">${granTotal > 0 ? ((f.total / granTotal) * 100).toFixed(1) : '0.0'}%</td>
   </tr>`).join('');
 
   const filaTotal = `<tr class="fila-total">
     <td class="col-grupo">TOTAL</td>
     ${totalPorMes.map((v) => `<td>${fmt(v)}</td>`).join('')}
     <td class="col-total">${fmt(granTotal)}</td>
+    <td class="col-pct">100%</td>
   </tr>`;
 
   els.tbody.innerHTML = filasHtml + filaTotal;

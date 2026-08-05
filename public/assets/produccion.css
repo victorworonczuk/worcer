@@ -131,6 +131,7 @@ table.pivot th.col-grupo, table.pivot td.col-grupo {
 table.pivot thead th.col-grupo { background: var(--bg); }
 table.pivot td.zero { color: var(--text-muted); }
 table.pivot .col-total { border-left: 2px solid var(--border); font-weight: 600; }
+table.pivot .col-pct { color: var(--text-muted); font-size: 12px; min-width: 56px; }
 table.pivot .fila-total td.col-grupo { background: var(--bg); }
 
 table.pivot td.stock-neg { color: var(--seg-e, #c0392b); font-weight: 600; }
