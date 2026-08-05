@@ -17,6 +17,7 @@ const NAV_GROUPS = [
       { href: '/nueva-factura.html', label: '+ Cargar factura', title: 'Cargá acá una factura del sistema de facturación, a mano, una por una.' },
       { href: '/importar-ventas.html', label: '+ Importar ventas', title: 'Subí acá los reportes .xml de facturas del sistema de facturación (Cerámica, Porcelanas y/o Presupuesto).' },
       { href: '/cargar-pedidos.html', label: '+ Cargar pedidos', title: 'Subí acá el Tablero de pedidos de venta (Excel, una hoja por mes) cuando haya una versión nueva.' },
+      { href: '/tipo-cambio.html', label: '+ Tipo de cambio', title: 'Cargá el tipo de cambio del mes para completar el valor en dólares de las facturas que todavía no lo tienen.' },
       { href: '/pedidos-vendedor.html', label: 'Pedidos por vendedor', title: 'Reporte de pedidos cargados por vendedor y día. Solo consulta, no se carga nada acá.' },
       { href: '/cotejar-vendedores.html', label: 'Cotejar vendedores', title: 'Asigná a mano el vendedor de las facturas donde el cruce automático no encontró un match confiable.' },
       { href: '/lista-precios.html', label: 'Lista de precios', title: 'Lista de precios vigente y descuentos por escala. Solo consulta, no se carga nada acá.' },
