@@ -283,6 +283,28 @@ main {
   padding-right: 26px;
 }
 
+/* Habilitado (hay algún filtro puesto) queda en rojo a propósito — es la
+   forma de darse cuenta de un vistazo que algo está filtrando la lista,
+   sin tener que repasar cada select. Deshabilitado = no hay nada aplicado. */
+.limpiar-filtros-btn {
+  border: 1px solid var(--seg-e);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--seg-e);
+  cursor: pointer;
+}
+.limpiar-filtros-btn:hover { background: #fdecec; }
+.limpiar-filtros-btn:disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
+  background: var(--surface);
+  cursor: default;
+  opacity: 0.6;
+}
+
 .search-wrap {
   position: relative;
   flex: 1;

@@ -69,6 +69,7 @@ const els = {
   vendedor: document.getElementById('f-vendedor'),
   canalCaptacion: document.getElementById('f-canal-captacion'),
   orden: document.getElementById('f-orden'),
+  limpiarFiltrosBtn: document.getElementById('limpiar-filtros-btn'),
   resultCount: document.getElementById('result-count'),
   pageInfo: document.getElementById('page-info'),
   prevBtn: document.getElementById('prev-page'),
@@ -480,7 +481,38 @@ function applyFilters() {
   }
 
   state.page = 1;
+  updateLimpiarFiltrosBtn();
   renderTable();
+}
+
+// El botón queda deshabilitado cuando no hay ningún filtro puesto (incluido
+// el buscador y el orden) — así de un vistazo se ve si hay algo aplicado,
+// sin tener que repasar cada select uno por uno.
+function updateLimpiarFiltrosBtn() {
+  const f = state.filters;
+  const hayFiltro = Object.values(f).some((v) => v !== '' && v !== false)
+    || els.orden.value !== 'segmento';
+  els.limpiarFiltrosBtn.disabled = !hayFiltro;
+}
+
+function limpiarFiltros() {
+  state.filters = {
+    q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '',
+    vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false,
+    soloCandidatosDescarte: false, tipoCliente: '', soloConDatoContacto: false,
+  };
+  els.search.value = '';
+  els.segmento.value = '';
+  els.provincia.value = '';
+  els.localidad.value = '';
+  els.confianza.value = '';
+  els.estado.value = '';
+  els.rubro.value = '';
+  els.vendedor.value = '';
+  els.canalCaptacion.value = '';
+  els.orden.value = 'segmento';
+  applyFilters();
+  renderStats();
 }
 
 function renderTable() {
@@ -1335,6 +1367,7 @@ els.canalCaptacion.addEventListener('change', (e) => {
   applyFilters();
 });
 els.orden.addEventListener('change', applyFilters);
+els.limpiarFiltrosBtn.addEventListener('click', limpiarFiltros);
 els.prevBtn.addEventListener('click', () => {
   state.page -= 1;
   renderTable();
