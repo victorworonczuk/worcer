@@ -455,7 +455,7 @@ function applyFilters() {
     }
     if (soloConDatoContacto && !(r.telefono || r.whatsapp || r.email)) return false;
     if (qLower) {
-      const hay = `${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`.toLowerCase();
+      const hay = `${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.nombre_contacto || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`.toLowerCase();
       if (!hay.includes(qLower)) return false;
     }
     return true;
@@ -1297,14 +1297,20 @@ function renderSearchSuggestions(q) {
     els.searchSuggestions.classList.remove('show');
     return;
   }
-  const matches = state.all.filter((r) => (r.nombre || '').toLowerCase().includes(qLower)).slice(0, 8);
+  const matches = state.all.filter((r) =>
+    (r.nombre || '').toLowerCase().includes(qLower) || (r.nombre_contacto || '').toLowerCase().includes(qLower)
+  ).slice(0, 8);
   if (matches.length === 0) {
     els.searchSuggestions.classList.remove('show');
     return;
   }
   els.searchSuggestions.innerHTML = matches
     .map((r) => {
-      const meta = [r.localidad, r.cuit].filter(Boolean).join(' · ');
+      // Si matcheó por el nombre de contacto (no por la razón social), se
+      // muestra primero en el meta para que quede claro por qué apareció.
+      const matchoPorContacto = r.nombre_contacto && r.nombre_contacto.toLowerCase().includes(qLower)
+        && !(r.nombre || '').toLowerCase().includes(qLower);
+      const meta = [matchoPorContacto ? `Contacto: ${r.nombre_contacto}` : null, r.localidad, r.cuit].filter(Boolean).join(' · ');
       return `<button type="button" class="search-suggestion" data-nombre="${escapeHtml(r.nombre)}">
         <div class="nombre">${escapeHtml(r.nombre)}</div>
         ${meta ? `<div class="meta">${escapeHtml(meta)}</div>` : ''}
