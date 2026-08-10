@@ -18,6 +18,11 @@ create table if not exists public.factura_items (
   id bigint generated always as identity primary key,
   factura_id bigint not null references public.facturas(id) on delete cascade,
   pieza_id bigint not null references public.piezas(id),
+  -- De qué depósito salió (Alberti/Lanús) — sale del código ALB/LAN del ítem
+  -- en el reporte "Salidas de Stocks" del sistema de facturación (Regisoft).
+  -- Todo lo cargado antes de que existiera esa distinción es Alberti con
+  -- certeza (único depósito hasta ahora) — mismo criterio que produccion.ubicacion.
+  ubicacion text not null default 'alberti' check (ubicacion in ('alberti', 'lanus')),
   -- Puede ser negativa: una nota de crédito (devolución) resta piezas. Lo que
   -- no tiene sentido es 0 (ningún movimiento real).
   cantidad integer not null check (cantidad <> 0),
@@ -45,3 +50,6 @@ grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on public.piezas to anon, authenticated;
 grant select, insert, update, delete on public.factura_items to anon, authenticated;
 grant usage, select on all sequences in schema public to anon, authenticated;
+
+-- Migración: soporte para dos depósitos en factura_items (ver produccion.ubicacion).
+alter table public.factura_items add column if not exists ubicacion text not null default 'alberti' check (ubicacion in ('alberti', 'lanus'));

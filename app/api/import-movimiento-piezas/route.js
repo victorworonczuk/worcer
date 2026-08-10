@@ -73,7 +73,7 @@ export async function POST(request) {
   // scripts/import-salidas-stock.cjs, para que este import quede idempotente.
   const grupos = new Map();
   for (const r of registros) {
-    const key = `${r.empresa}|${r.tipo_comprobante}|${r.numero_comprobante}|${r.linea}|${r.tipo_pieza}|${r.variante}|${r.calidad}`;
+    const key = `${r.empresa}|${r.tipo_comprobante}|${r.numero_comprobante}|${r.linea}|${r.tipo_pieza}|${r.variante}|${r.calidad}|${r.ubicacion}`;
     const actual = grupos.get(key);
     if (actual) {
       actual.cantidad += r.cantidad;
@@ -122,6 +122,7 @@ export async function POST(request) {
       paraCargar.push({
         factura_id: factura.id,
         pieza_id: piezaId,
+        ubicacion: r.ubicacion,
         cantidad: r.cantidad,
         precio_unitario: r.precio_vta,
         fecha: factura.fecha,
@@ -130,7 +131,7 @@ export async function POST(request) {
     }
 
     const cargados = await upsertPorLotes(
-      client, 'factura_items', ['factura_id', 'pieza_id', 'cantidad', 'precio_unitario'], ['factura_id', 'pieza_id'],
+      client, 'factura_items', ['factura_id', 'pieza_id', 'ubicacion', 'cantidad', 'precio_unitario'], ['factura_id', 'pieza_id'],
       paraCargar
     );
 
@@ -145,23 +146,27 @@ export async function POST(request) {
 
     let produccionSincronizada = 0;
     if (piezaIdsImportadas.length > 0) {
+      // Se agrupa también por ubicación (factura_items.ubicacion) para que
+      // una venta de Belmond/Lira desde Lanús no se mezcle con la de
+      // Alberti en el mismo día — ver schema_piezas.sql.
       const { rows: sumaRows } = await client.query(
-        `select fi.pieza_id, f.fecha, sum(fi.cantidad) as total
+        `select fi.pieza_id, f.fecha, fi.ubicacion, sum(fi.cantidad) as total
          from public.factura_items fi
          join public.facturas f on f.id = fi.factura_id
          where fi.pieza_id = any($1::int[]) and f.fecha = any($2::date[])
-         group by fi.pieza_id, f.fecha`,
+         group by fi.pieza_id, f.fecha, fi.ubicacion`,
         [piezaIdsImportadas, fechasImportadas]
       );
       const filasProduccion = sumaRows.map((s) => ({
         fecha: s.fecha,
         pieza_id: s.pieza_id,
         tipo: 'venta',
+        ubicacion: s.ubicacion,
         cantidad: Number(s.total || 0),
         cargado_por: 'sync-salidas-stock',
       }));
       produccionSincronizada = await upsertPorLotes(
-        client, 'produccion', ['fecha', 'pieza_id', 'tipo', 'cantidad', 'cargado_por'], ['fecha', 'pieza_id', 'tipo'],
+        client, 'produccion', ['fecha', 'pieza_id', 'tipo', 'ubicacion', 'cantidad', 'cargado_por'], ['fecha', 'pieza_id', 'tipo', 'ubicacion'],
         filasProduccion
       );
     }
