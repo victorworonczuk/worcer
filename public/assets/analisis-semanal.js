@@ -492,10 +492,13 @@ function renderPiezas(itemsPeriodo, facturasPeriodo) {
   // (facturas.importe_ars) se reparte entre sus ítems en proporción al
   // precio de lista de cada uno, para que el total sea la plata real.
   const listaPorFactura = new Map();
+  const cantidadPorFactura = new Map();
   for (const it of itemsPeriodo) {
     if (!it.piezas) continue;
-    const lista = Number(it.cantidad || 0) * Number(it.precio_unitario || 0);
+    const cantidad = Number(it.cantidad || 0);
+    const lista = cantidad * Number(it.precio_unitario || 0);
     listaPorFactura.set(it.factura_id, (listaPorFactura.get(it.factura_id) || 0) + lista);
+    cantidadPorFactura.set(it.factura_id, (cantidadPorFactura.get(it.factura_id) || 0) + cantidad);
   }
 
   const porPieza = new Map();
@@ -507,8 +510,22 @@ function renderPiezas(itemsPeriodo, facturasPeriodo) {
     const cantidad = Number(it.cantidad || 0);
     const listaItem = cantidad * Number(it.precio_unitario || 0);
     const listaFactura = listaPorFactura.get(it.factura_id) || 0;
-    const factorReal = (factura && listaFactura) ? Number(factura.importe_ars || 0) / listaFactura : 1;
-    const facturado = listaItem * factorReal;
+    const importeReal = factura ? Number(factura.importe_ars || 0) : 0;
+    let facturado;
+    if (listaFactura) {
+      // Caso normal: se reparte el importe real en proporción al precio de
+      // lista de cada ítem (así el descuento de la factura queda repartido
+      // entre sus piezas).
+      facturado = listaItem * (importeReal / listaFactura);
+    } else {
+      // Factura con ítems cargados pero sin precio de lista (ej. un Remito
+      // X cargado a mano sin precio unitario — caso real: factura 1621,
+      // 12/08/26). Sin precio no hay como ponderar, así que se reparte por
+      // cantidad — mejor que perder esa plata del todo, que es lo que
+      // pasaba antes (quedaba en $0 y desaparecía de esta tabla).
+      const cantidadFactura = cantidadPorFactura.get(it.factura_id) || 0;
+      facturado = cantidadFactura ? (cantidad / cantidadFactura) * importeReal : 0;
+    }
     const key = piezaLabelDe(it.piezas);
     if (!porPieza.has(key)) porPieza.set(key, { label: key, cantidad: 0, facturado: 0, sinIva: 0 });
     const g = porPieza.get(key);
