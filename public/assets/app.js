@@ -432,9 +432,15 @@ function renderStats() {
   });
 }
 
+// Para que el buscador encuentre "Cerámica" escribiendo "ceramica" (sin
+// acento) — normaliza a minúsculas y saca los diacríticos.
+function sinAcentos(str) {
+  return String(str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
 function applyFilters() {
   const { q, segmento, provincia, localidad, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana, soloCandidatosDescarte, tipoCliente, soloConDatoContacto } = state.filters;
-  const qLower = q.trim().toLowerCase();
+  const qLower = sinAcentos(q.trim());
 
   state.filtered = state.all.filter((r) => {
     if (segmento && !(r.segmento || '').startsWith(segmento)) return false;
@@ -455,7 +461,7 @@ function applyFilters() {
     }
     if (soloConDatoContacto && !(r.telefono || r.whatsapp || r.email)) return false;
     if (qLower) {
-      const hay = `${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.nombre_contacto || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`.toLowerCase();
+      const hay = sinAcentos(`${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.nombre_contacto || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`);
       if (!hay.includes(qLower)) return false;
     }
     return true;
@@ -1292,13 +1298,13 @@ async function saveField(id, field, value, targetEl) {
 }
 
 function renderSearchSuggestions(q) {
-  const qLower = q.trim().toLowerCase();
+  const qLower = sinAcentos(q.trim());
   if (!qLower) {
     els.searchSuggestions.classList.remove('show');
     return;
   }
   const matches = state.all.filter((r) =>
-    (r.nombre || '').toLowerCase().includes(qLower) || (r.nombre_contacto || '').toLowerCase().includes(qLower)
+    sinAcentos(r.nombre).includes(qLower) || sinAcentos(r.nombre_contacto).includes(qLower)
   ).slice(0, 8);
   if (matches.length === 0) {
     els.searchSuggestions.classList.remove('show');
@@ -1308,8 +1314,8 @@ function renderSearchSuggestions(q) {
     .map((r) => {
       // Si matcheó por el nombre de contacto (no por la razón social), se
       // muestra primero en el meta para que quede claro por qué apareció.
-      const matchoPorContacto = r.nombre_contacto && r.nombre_contacto.toLowerCase().includes(qLower)
-        && !(r.nombre || '').toLowerCase().includes(qLower);
+      const matchoPorContacto = r.nombre_contacto && sinAcentos(r.nombre_contacto).includes(qLower)
+        && !sinAcentos(r.nombre).includes(qLower);
       const meta = [matchoPorContacto ? `Contacto: ${r.nombre_contacto}` : null, r.localidad, r.cuit].filter(Boolean).join(' · ');
       return `<button type="button" class="search-suggestion" data-nombre="${escapeHtml(r.nombre)}">
         <div class="nombre">${escapeHtml(r.nombre)}</div>
