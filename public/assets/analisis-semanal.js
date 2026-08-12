@@ -220,6 +220,14 @@ function escalaDe(importe, descuentos) {
 
 function renderDescuentos(facturasSemana) {
   const listaHoy = state.listas[state.listas.length - 1];
+  // Para facturas de antes de que exista CUALQUIER lista vigente (ej. junio,
+  // antes del 01/07 — ver listas_precios) hay que usar la lista más VIEJA
+  // que tengamos (las escalas más antiguas registradas), no la más nueva.
+  // Bug real detectado por Víctor 12/08/26: con `|| listaHoy` una factura de
+  // junio de HIMPA SRL ($5.973.805) se clasificaba en la escala 32% de la
+  // lista vigente desde el 10/08 en vez de la 34% que le correspondía con
+  // las escalas de julio — el total de 34% de junio daba de menos.
+  const listaMasVieja = state.listas[0];
   const descuentosHoy = listaHoy ? (state.descuentosPorLista.get(listaHoy.id) || []) : [];
   if (descuentosHoy.length === 0) {
     els.descuentoChart.innerHTML = '<p class="empty-state">No hay escalas de descuento cargadas (ver Lista de precios).</p>';
@@ -239,7 +247,7 @@ function renderDescuentos(facturasSemana) {
   let sinEscala = 0;
   for (const f of facturasSemana) {
     const importe = Number(f.importe_ars || 0);
-    const listaDeLaFactura = listaVigenteEn(f.fecha) || listaHoy;
+    const listaDeLaFactura = listaVigenteEn(f.fecha) || listaMasVieja;
     const descuentosDeLaFactura = state.descuentosPorLista.get(listaDeLaFactura.id) || [];
     const match = escalaDe(importe, descuentosDeLaFactura);
     if (!match) { sinEscala += 1; continue; }
