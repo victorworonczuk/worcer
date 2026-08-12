@@ -114,6 +114,7 @@ const els = {
   tendenciaTitulo: document.getElementById('tendencia-titulo'),
   piezasTitulo: document.getElementById('piezas-titulo'),
   piezasTbody: document.getElementById('piezas-tbody'),
+  piezasHint: document.getElementById('piezas-hint'),
   descuentoMetricTabs: document.getElementById('descuento-metric-tabs'),
 };
 
@@ -176,7 +177,7 @@ function render() {
   renderKpis(facturasPeriodo, itemsPeriodo);
   renderDescuentos(facturasPeriodo);
   renderTendencia(anchor);
-  renderPiezas(itemsPeriodo);
+  renderPiezas(itemsPeriodo, facturasPeriodo);
 }
 
 function renderKpis(facturasSemana, itemsSemana) {
@@ -480,7 +481,23 @@ function piezaLabelDe(p) {
   return `${p.linea} · ${p.tipo_pieza}${variante} — ${CALIDAD_LABEL[p.calidad] || p.calidad}`;
 }
 
-function renderPiezas(itemsPeriodo) {
+function renderPiezas(itemsPeriodo, facturasPeriodo) {
+  // factura_items.precio_unitario es el precio DE LISTA al momento de la
+  // venta (ver schema_piezas.sql) — no el precio real facturado, porque el
+  // descuento de escala se aplica a nivel factura y no queda reflejado
+  // ítem por ítem. Sumar cantidad*precio_unitario da entonces un total
+  // "de lista" muy por encima de lo realmente facturado (detectado por
+  // Víctor 12/08/26: el TOTAL de esta tabla no coincidía con el KPI
+  // "Facturado"). Se prorratea acá: el importe real de cada factura
+  // (facturas.importe_ars) se reparte entre sus ítems en proporción al
+  // precio de lista de cada uno, para que el total sea la plata real.
+  const listaPorFactura = new Map();
+  for (const it of itemsPeriodo) {
+    if (!it.piezas) continue;
+    const lista = Number(it.cantidad || 0) * Number(it.precio_unitario || 0);
+    listaPorFactura.set(it.factura_id, (listaPorFactura.get(it.factura_id) || 0) + lista);
+  }
+
   const porPieza = new Map();
   let totalCantidad = 0;
   for (const it of itemsPeriodo) {
@@ -488,7 +505,10 @@ function renderPiezas(itemsPeriodo) {
     const factura = state.facturaPorId.get(it.factura_id);
     const empresa = factura ? factura.empresa : null;
     const cantidad = Number(it.cantidad || 0);
-    const facturado = cantidad * Number(it.precio_unitario || 0);
+    const listaItem = cantidad * Number(it.precio_unitario || 0);
+    const listaFactura = listaPorFactura.get(it.factura_id) || 0;
+    const factorReal = (factura && listaFactura) ? Number(factura.importe_ars || 0) / listaFactura : 1;
+    const facturado = listaItem * factorReal;
     const key = piezaLabelDe(it.piezas);
     if (!porPieza.has(key)) porPieza.set(key, { label: key, cantidad: 0, facturado: 0, sinIva: 0 });
     const g = porPieza.get(key);
@@ -498,11 +518,24 @@ function renderPiezas(itemsPeriodo) {
     totalCantidad += cantidad;
   }
   // Totales de TODAS las piezas del período (no solo el top 12 que se
-  // muestra), para que la fila TOTAL coincida con el KPI "Facturado" de
-  // arriba en vez de ser solo la suma de las filas visibles.
+  // muestra), para que la fila TOTAL se acerque al KPI "Facturado" de
+  // arriba en vez de ser solo la suma de las filas visibles. Puede quedar
+  // un poco por debajo del KPI si hay facturas sin detalle de piezas
+  // cargado (ver piezasHint más abajo) — esas sí entran en el KPI, pero acá
+  // no hay forma de repartirlas entre piezas.
   const todas = [...porPieza.values()];
   const totalFacturadoTodas = todas.reduce((s, f) => s + f.facturado, 0);
   const totalSinIvaTodas = todas.reduce((s, f) => s + f.sinIva, 0);
+
+  if (els.piezasHint) {
+    const facturaIdsConItems = new Set(itemsPeriodo.filter((it) => it.piezas).map((it) => it.factura_id));
+    const facturasSinItems = (facturasPeriodo || []).filter((f) => !facturaIdsConItems.has(f.id));
+    const montoSinItems = facturasSinItems.reduce((s, f) => s + Number(f.importe_ars || 0), 0);
+    const montoSinItemsTexto = (montoSinItems < 0 ? '-' : '') + fmtPesos(Math.abs(montoSinItems));
+    els.piezasHint.textContent = facturasSinItems.length > 0
+      ? `Facturado real por factura, prorrateado entre sus piezas. ${facturasSinItems.length} factura${facturasSinItems.length === 1 ? '' : 's'} sin detalle de piezas cargado (${montoSinItemsTexto}) no están en esta tabla, aunque sí en el KPI "Facturado" de arriba.`
+      : 'Facturado real por factura, prorrateado entre sus piezas según el precio de lista de cada una.';
+  }
 
   const filas = todas.sort((a, b) => b.cantidad - a.cantidad).slice(0, 12);
 
