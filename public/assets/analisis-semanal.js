@@ -217,18 +217,6 @@ function escalaDe(importe, descuentos) {
   return null;
 }
 
-// Lista anterior a la que regía en `fecha` — para detectar facturas que
-// pueden haberse cargado con la escala vieja después de un cambio de lista
-// (pedido de Víctor 12/08/26). Ojo: NO es "la última lista con fecha_vigencia
-// < fecha" (esa sería la lista vigente misma para fechas bien posteriores al
-// cambio) — es la lista justo antes de la que rige hoy en esa fecha.
-function listaAnteriorA(fecha) {
-  const vigente = listaVigenteEn(fecha);
-  if (!vigente) return null;
-  const idx = state.listas.findIndex((l) => l.id === vigente.id);
-  return idx > 0 ? state.listas[idx - 1] : null;
-}
-
 function renderDescuentos(facturasSemana) {
   const listaHoy = state.listas[state.listas.length - 1];
   const descuentosHoy = listaHoy ? (state.descuentosPorLista.get(listaHoy.id) || []) : [];
@@ -248,7 +236,6 @@ function renderDescuentos(facturasSemana) {
   });
 
   let sinEscala = 0;
-  const posiblesEscalaVieja = [];
   for (const f of facturasSemana) {
     const importe = Number(f.importe_ars || 0);
     const listaDeLaFactura = listaVigenteEn(f.fecha) || listaHoy;
@@ -257,28 +244,13 @@ function renderDescuentos(facturasSemana) {
     if (!match) { sinEscala += 1; continue; }
     const row = porEscala.find((d) => d.descuento === Number(match.descuento));
     if (row) { row.n += 1; row.monto += importe; }
-
-    // ¿Esta factura usa una lista que no es la más vieja, y el monto habría
-    // caído en una escala distinta bajo la lista anterior? Si es así, puede
-    // que se haya cargado todavía con la escala vieja.
-    const anterior = listaAnteriorA(f.fecha);
-    if (anterior && anterior.id !== listaDeLaFactura.id) {
-      const descuentosAnteriores = state.descuentosPorLista.get(anterior.id) || [];
-      const matchAnterior = escalaDe(importe, descuentosAnteriores);
-      if (matchAnterior && Number(matchAnterior.descuento) !== Number(match.descuento)) {
-        posiblesEscalaVieja.push({ factura: f, escalaNueva: match, escalaVieja: matchAnterior });
-      }
-    }
   }
   const total = facturasSemana.length;
   const etiquetaPeriodo = state.tipoPeriodo === 'mes' ? 'el mes' : 'la semana';
   const hintNormal = total > 0
     ? `Clasificadas según el monto real de cada factura contra las escalas vigentes en su fecha. ${total} factura${total === 1 ? '' : 's'} en ${etiquetaPeriodo}${sinEscala ? `, ${sinEscala} fuera de escala` : ''}.`
     : `No hay facturas en ${etiquetaPeriodo}.`;
-  const hintAviso = posiblesEscalaVieja.length > 0
-    ? `<div class="descuento-aviso">⚠️ ${posiblesEscalaVieja.length} factura${posiblesEscalaVieja.length === 1 ? '' : 's'} con un monto que habría caído en otra escala si se hubiera usado la lista de precios anterior — revisar si se cargaron con el descuento correcto.</div>`
-    : '';
-  els.descuentoHint.innerHTML = `<span>${hintNormal}</span>${hintAviso}`;
+  els.descuentoHint.textContent = hintNormal;
 
   const esMonto = state.descuentoMetrica === 'monto';
   const valorDe = (d) => esMonto ? d.monto : d.n;
