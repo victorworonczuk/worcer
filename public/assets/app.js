@@ -1429,6 +1429,12 @@ function abrirNuevaPersonaSiCorresponde() {
   openNuevoClienteModal();
 }
 
+// Si ya estás en el dashboard, un click en "+ Nueva persona" del menú solo
+// cambia el hash de la URL — el navegador no recarga la página porque es la
+// misma (a diferencia de venir desde otra pantalla), así que el chequeo de
+// arriba nunca se vuelve a correr solo. "hashchange" cubre ese caso.
+window.addEventListener('hashchange', abrirNuevaPersonaSiCorresponde);
+
 // Se espera loadUser() antes de loadData() para saber el rol (y así si hay
 // que renderizar en modo solo-lectura) antes del primer renderTable() — si
 // corrieran en paralelo, un usuario restringido podía ver la tabla editable
