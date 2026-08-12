@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Análisis semanal</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#408CC8" />
+  <link rel="stylesheet" href="assets/piezas.css" />
+  <link rel="stylesheet" href="assets/produccion.css" />
+  <link rel="stylesheet" href="assets/analisis-semanal.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="/icons/logo-worcer.jpg" alt="Worcer" class="topbar-logo" />
+      <div>
+        <h1>Worcer · Análisis semanal</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    </div>
+    <div class="nav-menu">
+      <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-dropdown" id="nav-dropdown"></nav>
+    </div>
+  </header>
+
+  <main class="semanal-main">
+    <div class="panel">
+      <div class="filters">
+        <div class="field-inline">
+          <label for="f-semana">Semana</label>
+          <input type="week" id="f-semana" />
+        </div>
+        <div class="semanal-rango" id="semanal-rango"></div>
+        <button type="button" id="semana-anterior" class="limpiar-btn" title="Semana anterior">← Anterior</button>
+        <button type="button" id="semana-siguiente" class="limpiar-btn" title="Semana siguiente">Siguiente →</button>
+        <button type="button" id="semana-actual" class="limpiar-btn">Esta semana</button>
+      </div>
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+    </div>
+
+    <div class="panel semanal-panel">
+      <div class="semanal-panel-header">
+        <h2 class="section-title">Clientes por escala de descuento</h2>
+      </div>
+      <p class="semanal-hint" id="descuento-hint"></p>
+      <div class="descuento-chart-wrap" id="descuento-chart"></div>
+    </div>
+
+    <div class="panel semanal-panel">
+      <div class="semanal-panel-header">
+        <h2 class="section-title">Facturación por semana</h2>
+        <div class="comparativo-legend" id="tendencia-legend"></div>
+      </div>
+      <div class="comparativo-chart-wrap" id="tendencia-chart"></div>
+    </div>
+
+    <div class="panel semanal-panel">
+      <h2 class="section-title">Piezas más vendidas esta semana</h2>
+      <div class="table-wrap">
+        <table class="pivot" id="piezas-table">
+          <thead>
+            <tr>
+              <th class="col-grupo">Pieza</th>
+              <th>Cantidad</th>
+              <th>Facturado</th>
+            </tr>
+          </thead>
+          <tbody id="piezas-tbody">
+            <tr><td class="loading" colspan="3">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/config.js"></script>
+  <script src="assets/analisis-semanal.js"></script>
+  <script src="assets/nav.js"></script>
+</body>
+</html>

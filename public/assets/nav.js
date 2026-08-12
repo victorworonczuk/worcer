@@ -22,6 +22,7 @@ const NAV_GROUPS = [
       { href: '/cotejar-vendedores.html', label: 'Cotejar vendedores', title: 'Asigná a mano el vendedor de las facturas donde el cruce automático no encontró un match confiable.' },
       { href: '/lista-precios.html', label: 'Lista de precios', title: 'Lista de precios vigente y descuentos por escala. Solo consulta, no se carga nada acá.' },
       { href: '/panel-comercial.html', label: 'Panel comercial', title: 'Ventas, márgenes, punto de equilibrio y de dónde viene la facturación. Solo consulta, no se carga nada acá.' },
+      { href: '/analisis-semanal.html', label: 'Análisis semanal', title: 'Facturación, piezas y escalas de descuento por semana. Solo consulta, no se carga nada acá.' },
       { href: '/piezas.html', label: 'Análisis de piezas', title: 'Reporte de piezas vendidas por cliente y período. Solo consulta, no se carga nada acá.' },
     ],
   },
