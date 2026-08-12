@@ -51,8 +51,22 @@ function fmtFechaCorta(iso) {
 const state = {
   facturas: [],       // todas las facturas (se filtra en memoria por semana)
   factura_items: [],  // con pieza embebida
-  descuentos: [],      // escalas de la lista de precios
+  listas: [],          // listas_precios, ordenadas por fecha_vigencia ascendente
+  descuentosPorLista: new Map(), // lista_id -> [{monto_desde, monto_hasta, descuento, plazo_pago}]
 };
+
+// Qué lista de precios (y por lo tanto qué escalas de descuento) regía en
+// una fecha dada — la más reciente cuya fecha_vigencia sea <= esa fecha.
+// Necesario desde que hay más de una lista (12/08/26: cambiaron los montos
+// de las escalas, mismos precios por pieza — ver listas_precios.nota).
+function listaVigenteEn(fecha) {
+  let vigente = null;
+  for (const l of state.listas) {
+    if (l.fecha_vigencia <= fecha) vigente = l;
+    else break;
+  }
+  return vigente;
+}
 
 const els = {
   userSubtitle: document.getElementById('user-subtitle'),
@@ -76,18 +90,24 @@ async function init() {
 
   els.semana.value = dateToIsoWeekStr(new Date());
 
-  const [{ data: facturas, error: e1 }, { data: items, error: e2 }, { data: descuentos, error: e3 }] = await Promise.all([
+  const [{ data: facturas, error: e1 }, { data: items, error: e2 }, { data: listas, error: e3 }, { data: descuentos, error: e4 }] = await Promise.all([
     fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, empresa')),
     fetchAll(() => client.from('factura_items').select('factura_id, cantidad, precio_unitario, piezas(linea, tipo_pieza, variante, calidad)')),
-    client.from('lista_precios_descuentos').select('monto_desde, monto_hasta, descuento, plazo_pago').order('monto_desde'),
+    client.from('listas_precios').select('id, fecha_vigencia').order('fecha_vigencia', { ascending: true }),
+    client.from('lista_precios_descuentos').select('lista_id, monto_desde, monto_hasta, descuento, plazo_pago').order('monto_desde'),
   ]);
-  if (e1 || e2 || e3) {
-    els.kpiGrid.innerHTML = `<div class="empty-state">Error al cargar: ${(e1 || e2 || e3).message}</div>`;
+  if (e1 || e2 || e3 || e4) {
+    els.kpiGrid.innerHTML = `<div class="empty-state">Error al cargar: ${(e1 || e2 || e3 || e4).message}</div>`;
     return;
   }
   state.facturas = facturas.filter((f) => f.fecha);
   state.factura_items = items;
-  state.descuentos = descuentos || [];
+  state.listas = (listas || []).map((l) => ({ ...l, fecha_vigencia: String(l.fecha_vigencia).slice(0, 10) }));
+  state.descuentosPorLista = new Map();
+  for (const d of (descuentos || [])) {
+    if (!state.descuentosPorLista.has(d.lista_id)) state.descuentosPorLista.set(d.lista_id, []);
+    state.descuentosPorLista.get(d.lista_id).push(d);
+  }
 
   render();
 }
@@ -128,11 +148,13 @@ function renderKpis(facturasSemana, itemsSemana) {
 // --- Escalas de descuento: cada escala de lista_precios_descuentos define un
 // rango de $ de factura con un % de descuento y plazo de pago asociado (ver
 // schema_listas_precios.sql). Se clasifica cada factura de la semana según
-// su importe_ars real contra esas escalas — no hay forma de reconstruir el
-// "% de descuento efectivamente aplicado" pieza por pieza porque la lista de
-// precios solo tiene 9 de las ~35 piezas cargadas, así que se usa el monto
-// de la factura tal cual, que es exactamente el criterio que define la
-// escala ("descuento por escala de monto de la factura").
+// su importe_ars real contra las escalas de la lista que regía en SU fecha
+// (puede haber más de una lista vigente en distintos momentos — ver
+// listaVigenteEn) — no hay forma de reconstruir el "% de descuento
+// efectivamente aplicado" pieza por pieza porque la lista de precios solo
+// tiene 9 de las ~35 piezas cargadas, así que se usa el monto de la factura
+// tal cual, que es exactamente el criterio que define la escala
+// ("descuento por escala de monto de la factura").
 function escalaDe(importe, descuentos) {
   for (const d of descuentos) {
     const desde = Number(d.monto_desde);
@@ -142,25 +164,67 @@ function escalaDe(importe, descuentos) {
   return null;
 }
 
+// Lista anterior a la que regía en `fecha` — para detectar facturas que
+// pueden haberse cargado con la escala vieja después de un cambio de lista
+// (pedido de Víctor 12/08/26). Ojo: NO es "la última lista con fecha_vigencia
+// < fecha" (esa sería la lista vigente misma para fechas bien posteriores al
+// cambio) — es la lista justo antes de la que rige hoy en esa fecha.
+function listaAnteriorA(fecha) {
+  const vigente = listaVigenteEn(fecha);
+  if (!vigente) return null;
+  const idx = state.listas.findIndex((l) => l.id === vigente.id);
+  return idx > 0 ? state.listas[idx - 1] : null;
+}
+
 function renderDescuentos(facturasSemana) {
-  if (state.descuentos.length === 0) {
+  const listaHoy = state.listas[state.listas.length - 1];
+  const descuentosHoy = listaHoy ? (state.descuentosPorLista.get(listaHoy.id) || []) : [];
+  if (descuentosHoy.length === 0) {
     els.descuentoChart.innerHTML = '<p class="empty-state">No hay escalas de descuento cargadas (ver Lista de precios).</p>';
     els.descuentoHint.textContent = '';
     return;
   }
-  const porEscala = state.descuentos.map((d) => ({ ...d, n: 0 }));
+
+  // Se agrupa por % de descuento (no por lista_id) para que una semana que
+  // cruza un cambio de lista siga mostrando un solo gráfico de 25/29/32/34%,
+  // sumando facturas de ambas listas bajo la misma columna.
+  const porcentajes = [...new Set(descuentosHoy.map((d) => Number(d.descuento)))].sort((a, b) => a - b);
+  const porEscala = porcentajes.map((pct) => {
+    const ref = descuentosHoy.find((d) => Number(d.descuento) === pct);
+    return { descuento: pct, plazo_pago: ref.plazo_pago, n: 0 };
+  });
+
   let sinEscala = 0;
+  const posiblesEscalaVieja = [];
   for (const f of facturasSemana) {
     const importe = Number(f.importe_ars || 0);
-    const match = escalaDe(importe, state.descuentos);
+    const listaDeLaFactura = listaVigenteEn(f.fecha) || listaHoy;
+    const descuentosDeLaFactura = state.descuentosPorLista.get(listaDeLaFactura.id) || [];
+    const match = escalaDe(importe, descuentosDeLaFactura);
     if (!match) { sinEscala += 1; continue; }
-    const row = porEscala.find((d) => d.monto_desde === match.monto_desde);
+    const row = porEscala.find((d) => d.descuento === Number(match.descuento));
     if (row) row.n += 1;
+
+    // ¿Esta factura usa una lista que no es la más vieja, y el monto habría
+    // caído en una escala distinta bajo la lista anterior? Si es así, puede
+    // que se haya cargado todavía con la escala vieja.
+    const anterior = listaAnteriorA(f.fecha);
+    if (anterior && anterior.id !== listaDeLaFactura.id) {
+      const descuentosAnteriores = state.descuentosPorLista.get(anterior.id) || [];
+      const matchAnterior = escalaDe(importe, descuentosAnteriores);
+      if (matchAnterior && Number(matchAnterior.descuento) !== Number(match.descuento)) {
+        posiblesEscalaVieja.push({ factura: f, escalaNueva: match, escalaVieja: matchAnterior });
+      }
+    }
   }
   const total = facturasSemana.length;
-  els.descuentoHint.textContent = total > 0
-    ? `Clasificadas según el monto real de cada factura contra las escalas de la lista de precios vigente (25%/29%/32%/34%). ${total} factura${total === 1 ? '' : 's'} en la semana${sinEscala ? `, ${sinEscala} fuera de escala` : ''}.`
+  const hintNormal = total > 0
+    ? `Clasificadas según el monto real de cada factura contra las escalas vigentes en su fecha. ${total} factura${total === 1 ? '' : 's'} en la semana${sinEscala ? `, ${sinEscala} fuera de escala` : ''}.`
     : 'No hay facturas en esta semana.';
+  const hintAviso = posiblesEscalaVieja.length > 0
+    ? `<div class="descuento-aviso">⚠️ ${posiblesEscalaVieja.length} factura${posiblesEscalaVieja.length === 1 ? '' : 's'} con un monto que habría caído en otra escala si se hubiera usado la lista de precios anterior — revisar si se cargaron con el descuento correcto.</div>`
+    : '';
+  els.descuentoHint.innerHTML = `<span>${hintNormal}</span>${hintAviso}`;
 
   const W = 720, H = 220, ML = 46, MR = 16, MT = 20, MB = 44;
   const PW = W - ML - MR, PH = H - MT - MB;
@@ -214,7 +278,10 @@ function renderDescuentos(facturasSemana) {
       row2.className = 'comparativo-tooltip-row';
       const lbl2 = document.createElement('span');
       lbl2.className = 'comparativo-tooltip-label';
-      lbl2.textContent = `Desde ${fmtPesos(d.monto_desde)}${d.monto_hasta ? ` hasta ${fmtPesos(d.monto_hasta)}` : ' sin techo'} · plazo ${d.plazo_pago || '—'}`;
+      const refHoy = descuentosHoy.find((x) => Number(x.descuento) === d.descuento);
+      lbl2.textContent = refHoy
+        ? `Escala vigente hoy: desde ${fmtPesos(refHoy.monto_desde)}${refHoy.monto_hasta ? ` hasta ${fmtPesos(refHoy.monto_hasta)}` : ' sin techo'} · plazo ${d.plazo_pago || '—'}`
+        : `Plazo ${d.plazo_pago || '—'}`;
       row2.appendChild(lbl2);
       tooltip.appendChild(titulo);
       tooltip.appendChild(row1);

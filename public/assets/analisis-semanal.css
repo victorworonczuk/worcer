@@ -41,6 +41,11 @@
   color: var(--text-muted);
   line-height: 1.5;
 }
+.descuento-aviso {
+  margin-top: 6px;
+  color: var(--seg-e);
+  font-weight: 600;
+}
 
 /* KPIs */
 .kpi-grid {
