@@ -48,11 +48,37 @@ function fmtFechaCorta(iso) {
   return `${d}/${m}`;
 }
 
+// --- Mes calendario ---
+function monthToRange(monthStr) {
+  const [yearStr, monthNumStr] = monthStr.split('-');
+  const year = Number(yearStr);
+  const monthNum = Number(monthNumStr); // 1-12
+  const primero = new Date(Date.UTC(year, monthNum - 1, 1));
+  const ultimo = new Date(Date.UTC(year, monthNum, 0)); // día 0 del mes siguiente = último día de este mes
+  return { desde: primero.toISOString().slice(0, 10), hasta: ultimo.toISOString().slice(0, 10), primero };
+}
+
+function dateToMonthStr(date) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+const MESES_LARGO = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+// IVA por empresa — Cerámica y Porcelanas facturan al 21% general, Presupuesto
+// al 10,5% (confirmado con Víctor 12/08/26). "Sin IVA" = importe / (1+tasa).
+const IVA_RATE = { Ceramica: 0.21, Porcelanas: 0.21, Presupuesto: 0.105 };
+function sinIva(monto, empresa) {
+  const tasa = IVA_RATE[empresa] ?? 0.21;
+  return monto / (1 + tasa);
+}
+
 const state = {
-  facturas: [],       // todas las facturas (se filtra en memoria por semana)
+  facturas: [],       // todas las facturas (se filtra en memoria por período)
+  facturaPorId: new Map(), // id -> factura, para saber la empresa de cada factura_item
   factura_items: [],  // con pieza embebida
   listas: [],          // listas_precios, ordenadas por fecha_vigencia ascendente
   descuentosPorLista: new Map(), // lista_id -> [{monto_desde, monto_hasta, descuento, plazo_pago}]
+  tipoPeriodo: 'semana', // 'semana' | 'mes'
 };
 
 // Qué lista de precios (y por lo tanto qué escalas de descuento) regía en
@@ -70,16 +96,22 @@ function listaVigenteEn(fecha) {
 
 const els = {
   userSubtitle: document.getElementById('user-subtitle'),
+  tipoPeriodo: document.getElementById('f-tipo-periodo'),
+  campoSemana: document.getElementById('campo-semana'),
+  campoMes: document.getElementById('campo-mes'),
   semana: document.getElementById('f-semana'),
+  mes: document.getElementById('f-mes'),
   rango: document.getElementById('semanal-rango'),
-  btnAnterior: document.getElementById('semana-anterior'),
-  btnSiguiente: document.getElementById('semana-siguiente'),
-  btnActual: document.getElementById('semana-actual'),
+  btnAnterior: document.getElementById('periodo-anterior'),
+  btnSiguiente: document.getElementById('periodo-siguiente'),
+  btnActual: document.getElementById('periodo-actual'),
   kpiGrid: document.getElementById('kpi-grid'),
   descuentoHint: document.getElementById('descuento-hint'),
   descuentoChart: document.getElementById('descuento-chart'),
   tendenciaChart: document.getElementById('tendencia-chart'),
   tendenciaLegend: document.getElementById('tendencia-legend'),
+  tendenciaTitulo: document.getElementById('tendencia-titulo'),
+  piezasTitulo: document.getElementById('piezas-titulo'),
   piezasTbody: document.getElementById('piezas-tbody'),
 };
 
@@ -89,6 +121,7 @@ async function init() {
   els.userSubtitle.textContent = `Sesión: ${me.nombre || me.user}`;
 
   els.semana.value = dateToIsoWeekStr(new Date());
+  els.mes.value = dateToMonthStr(new Date());
 
   const [{ data: facturas, error: e1 }, { data: items, error: e2 }, { data: listas, error: e3 }, { data: descuentos, error: e4 }] = await Promise.all([
     fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, empresa')),
@@ -101,6 +134,7 @@ async function init() {
     return;
   }
   state.facturas = facturas.filter((f) => f.fecha);
+  state.facturaPorId = new Map(state.facturas.map((f) => [f.id, f]));
   state.factura_items = items;
   state.listas = (listas || []).map((l) => ({ ...l, fecha_vigencia: String(l.fecha_vigencia).slice(0, 10) }));
   state.descuentosPorLista = new Map();
@@ -112,18 +146,35 @@ async function init() {
   render();
 }
 
-function render() {
+// Rango {desde, hasta, anchor} del período elegido, sea semana o mes.
+// `anchor` es la fecha de arranque del período (lunes de la semana, o día 1
+// del mes) — la usa renderTendencia para construir los períodos anteriores.
+function periodoActual() {
+  if (state.tipoPeriodo === 'mes') {
+    const { desde, hasta, primero } = monthToRange(els.mes.value);
+    return { desde, hasta, anchor: primero };
+  }
   const { desde, hasta, monday } = isoWeekToRange(els.semana.value);
-  els.rango.textContent = `${fmtFechaCorta(desde)} al ${fmtFechaCorta(hasta)}`;
+  return { desde, hasta, anchor: monday };
+}
 
-  const facturasSemana = state.facturas.filter((f) => f.fecha >= desde && f.fecha <= hasta);
-  const facturaIdsSemana = new Set(facturasSemana.map((f) => f.id));
-  const itemsSemana = state.factura_items.filter((it) => facturaIdsSemana.has(it.factura_id));
+function render() {
+  const { desde, hasta, anchor } = periodoActual();
+  const etiqueta = state.tipoPeriodo === 'mes'
+    ? `${MESES_LARGO[anchor.getUTCMonth()]} ${anchor.getUTCFullYear()}`
+    : `${fmtFechaCorta(desde)} al ${fmtFechaCorta(hasta)}`;
+  els.rango.textContent = etiqueta;
+  els.tendenciaTitulo.textContent = state.tipoPeriodo === 'mes' ? 'Facturación por mes' : 'Facturación por semana';
+  els.piezasTitulo.textContent = state.tipoPeriodo === 'mes' ? 'Piezas más vendidas este mes' : 'Piezas más vendidas esta semana';
 
-  renderKpis(facturasSemana, itemsSemana);
-  renderDescuentos(facturasSemana);
-  renderTendencia(monday);
-  renderPiezas(itemsSemana);
+  const facturasPeriodo = state.facturas.filter((f) => f.fecha >= desde && f.fecha <= hasta);
+  const facturaIdsPeriodo = new Set(facturasPeriodo.map((f) => f.id));
+  const itemsPeriodo = state.factura_items.filter((it) => facturaIdsPeriodo.has(it.factura_id));
+
+  renderKpis(facturasPeriodo, itemsPeriodo);
+  renderDescuentos(facturasPeriodo);
+  renderTendencia(anchor);
+  renderPiezas(itemsPeriodo);
 }
 
 function renderKpis(facturasSemana, itemsSemana) {
@@ -218,9 +269,10 @@ function renderDescuentos(facturasSemana) {
     }
   }
   const total = facturasSemana.length;
+  const etiquetaPeriodo = state.tipoPeriodo === 'mes' ? 'el mes' : 'la semana';
   const hintNormal = total > 0
-    ? `Clasificadas según el monto real de cada factura contra las escalas vigentes en su fecha. ${total} factura${total === 1 ? '' : 's'} en la semana${sinEscala ? `, ${sinEscala} fuera de escala` : ''}.`
-    : 'No hay facturas en esta semana.';
+    ? `Clasificadas según el monto real de cada factura contra las escalas vigentes en su fecha. ${total} factura${total === 1 ? '' : 's'} en ${etiquetaPeriodo}${sinEscala ? `, ${sinEscala} fuera de escala` : ''}.`
+    : `No hay facturas en ${etiquetaPeriodo}.`;
   const hintAviso = posiblesEscalaVieja.length > 0
     ? `<div class="descuento-aviso">⚠️ ${posiblesEscalaVieja.length} factura${posiblesEscalaVieja.length === 1 ? '' : 's'} con un monto que habría caído en otra escala si se hubiera usado la lista de precios anterior — revisar si se cargaron con el descuento correcto.</div>`
     : '';
@@ -297,22 +349,47 @@ function renderDescuentos(facturasSemana) {
   });
 }
 
-// --- Tendencia: últimas 8 semanas terminando en la semana elegida ---
-function renderTendencia(monday) {
-  const semanas = [];
+// --- Tendencia: últimos 8 períodos (semanas o meses) terminando en el elegido ---
+function periodosPrevios(anchor) {
+  if (state.tipoPeriodo === 'mes') {
+    const periodos = [];
+    for (let i = 7; i >= 0; i--) {
+      const primero = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() - i, 1));
+      const ultimo = new Date(Date.UTC(primero.getUTCFullYear(), primero.getUTCMonth() + 1, 0));
+      periodos.push({
+        desde: primero.toISOString().slice(0, 10),
+        hasta: ultimo.toISOString().slice(0, 10),
+        etiquetaEje: `${MESES_LARGO[primero.getUTCMonth()].slice(0, 3)} ${String(primero.getUTCFullYear()).slice(2)}`,
+        etiquetaTooltip: `${MESES_LARGO[primero.getUTCMonth()]} ${primero.getUTCFullYear()}`,
+      });
+    }
+    return periodos;
+  }
+  const periodos = [];
   for (let i = 7; i >= 0; i--) {
-    const m = new Date(monday);
-    m.setUTCDate(monday.getUTCDate() - i * 7);
+    const m = new Date(anchor);
+    m.setUTCDate(anchor.getUTCDate() - i * 7);
     const s = new Date(m);
     s.setUTCDate(m.getUTCDate() + 6);
-    semanas.push({ desde: m.toISOString().slice(0, 10), hasta: s.toISOString().slice(0, 10), label: dateToIsoWeekStr(m) });
+    periodos.push({
+      desde: m.toISOString().slice(0, 10),
+      hasta: s.toISOString().slice(0, 10),
+      etiquetaEje: fmtFechaCorta(m.toISOString().slice(0, 10)),
+      etiquetaTooltip: `Semana del ${fmtFechaCorta(m.toISOString().slice(0, 10))}`,
+    });
   }
+  return periodos;
+}
+
+function renderTendencia(anchor) {
+  const semanas = periodosPrevios(anchor);
 
   const totales = semanas.map((s) => state.facturas
     .filter((f) => f.fecha >= s.desde && f.fecha <= s.hasta)
     .reduce((acc, f) => acc + Number(f.importe_ars || 0), 0));
 
-  els.tendenciaLegend.innerHTML = `<span class="legend-item"><span class="legend-swatch" style="background:#2e6ea0"></span>Facturado por semana</span>`;
+  const etiquetaSerie = state.tipoPeriodo === 'mes' ? 'Facturado por mes' : 'Facturado por semana';
+  els.tendenciaLegend.innerHTML = `<span class="legend-item"><span class="legend-swatch" style="background:#2e6ea0"></span>${etiquetaSerie}</span>`;
 
   const W = 880, H = 240, ML = 60, MR = 16, MT = 12, MB = 28;
   const PW = W - ML - MR, PH = H - MT - MB;
@@ -329,7 +406,7 @@ function renderTendencia(monday) {
   }).join('');
 
   const xLabelsHtml = semanas.map((s, i) => `
-    <text x="${xAt(i)}" y="${H - 6}" class="comparativo-axis-x" text-anchor="middle">${fmtFechaCorta(s.desde)}</text>`).join('');
+    <text x="${xAt(i)}" y="${H - 6}" class="comparativo-axis-x" text-anchor="middle">${s.etiquetaEje}</text>`).join('');
 
   const d = totales.map((v, i) => `${i === 0 ? 'M' : 'L'}${xAt(i)},${yAt(v)}`).join(' ');
   const dots = totales.map((v, i) => `<circle cx="${xAt(i)}" cy="${yAt(v)}" r="4" fill="#2e6ea0" stroke="var(--surface)" stroke-width="2" />`).join('');
@@ -378,7 +455,7 @@ function wireTendenciaHover({ semanas, totales, xAt, ML, MR, W }) {
     tooltip.innerHTML = '';
     const titulo = document.createElement('div');
     titulo.className = 'comparativo-tooltip-titulo';
-    titulo.textContent = `Semana del ${fmtFechaCorta(semanas[i].desde)}`;
+    titulo.textContent = semanas[i].etiquetaTooltip;
     tooltip.appendChild(titulo);
     const row = document.createElement('div');
     row.className = 'comparativo-tooltip-row';
@@ -423,20 +500,27 @@ function piezaLabelDe(p) {
   return `${p.linea} · ${p.tipo_pieza}${variante} — ${CALIDAD_LABEL[p.calidad] || p.calidad}`;
 }
 
-function renderPiezas(itemsSemana) {
+function renderPiezas(itemsPeriodo) {
   const porPieza = new Map();
-  for (const it of itemsSemana) {
+  let totalCantidad = 0;
+  for (const it of itemsPeriodo) {
     if (!it.piezas) continue;
+    const factura = state.facturaPorId.get(it.factura_id);
+    const empresa = factura ? factura.empresa : null;
+    const cantidad = Number(it.cantidad || 0);
+    const facturado = cantidad * Number(it.precio_unitario || 0);
     const key = piezaLabelDe(it.piezas);
-    if (!porPieza.has(key)) porPieza.set(key, { label: key, cantidad: 0, facturado: 0 });
+    if (!porPieza.has(key)) porPieza.set(key, { label: key, cantidad: 0, facturado: 0, sinIva: 0 });
     const g = porPieza.get(key);
-    g.cantidad += Number(it.cantidad || 0);
-    g.facturado += Number(it.cantidad || 0) * Number(it.precio_unitario || 0);
+    g.cantidad += cantidad;
+    g.facturado += facturado;
+    g.sinIva += sinIva(facturado, empresa);
+    totalCantidad += cantidad;
   }
   const filas = [...porPieza.values()].sort((a, b) => b.cantidad - a.cantidad).slice(0, 12);
 
   if (filas.length === 0) {
-    document.getElementById('piezas-tbody').innerHTML = '<tr><td class="empty-state" colspan="3">No hay piezas vendidas en esta semana.</td></tr>';
+    document.getElementById('piezas-tbody').innerHTML = '<tr><td class="empty-state" colspan="5">No hay piezas vendidas en este período.</td></tr>';
     return;
   }
 
@@ -445,7 +529,9 @@ function renderPiezas(itemsSemana) {
     <tr>
       <td class="col-grupo">${escapeHtml(f.label)}</td>
       <td class="bar-cell" style="--bar-pct:${Math.round((f.cantidad / maxCantidad) * 100)}%"><strong>${fmt(f.cantidad)}</strong></td>
+      <td class="col-pct">${totalCantidad > 0 ? ((f.cantidad / totalCantidad) * 100).toFixed(1) : '0.0'}%</td>
       <td>${fmtPesos(f.facturado)}</td>
+      <td>${fmtPesos(f.sinIva)}</td>
     </tr>
   `).join('');
 }
@@ -456,21 +542,41 @@ function escapeHtml(str) {
 }
 
 // --- Eventos ---
+els.tipoPeriodo.addEventListener('change', () => {
+  state.tipoPeriodo = els.tipoPeriodo.value;
+  els.campoSemana.classList.toggle('hidden', state.tipoPeriodo !== 'semana');
+  els.campoMes.classList.toggle('hidden', state.tipoPeriodo !== 'mes');
+  render();
+});
 els.semana.addEventListener('change', render);
+els.mes.addEventListener('change', render);
 els.btnAnterior.addEventListener('click', () => {
-  const { monday } = isoWeekToRange(els.semana.value);
-  monday.setUTCDate(monday.getUTCDate() - 7);
-  els.semana.value = dateToIsoWeekStr(monday);
+  if (state.tipoPeriodo === 'mes') {
+    const { primero } = monthToRange(els.mes.value);
+    primero.setUTCMonth(primero.getUTCMonth() - 1);
+    els.mes.value = dateToMonthStr(primero);
+  } else {
+    const { monday } = isoWeekToRange(els.semana.value);
+    monday.setUTCDate(monday.getUTCDate() - 7);
+    els.semana.value = dateToIsoWeekStr(monday);
+  }
   render();
 });
 els.btnSiguiente.addEventListener('click', () => {
-  const { monday } = isoWeekToRange(els.semana.value);
-  monday.setUTCDate(monday.getUTCDate() + 7);
-  els.semana.value = dateToIsoWeekStr(monday);
+  if (state.tipoPeriodo === 'mes') {
+    const { primero } = monthToRange(els.mes.value);
+    primero.setUTCMonth(primero.getUTCMonth() + 1);
+    els.mes.value = dateToMonthStr(primero);
+  } else {
+    const { monday } = isoWeekToRange(els.semana.value);
+    monday.setUTCDate(monday.getUTCDate() + 7);
+    els.semana.value = dateToIsoWeekStr(monday);
+  }
   render();
 });
 els.btnActual.addEventListener('click', () => {
   els.semana.value = dateToIsoWeekStr(new Date());
+  els.mes.value = dateToMonthStr(new Date());
   render();
 });
 

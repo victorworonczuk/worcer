@@ -34,13 +34,24 @@
     <div class="panel">
       <div class="filters">
         <div class="field-inline">
+          <label for="f-tipo-periodo">Período</label>
+          <select id="f-tipo-periodo">
+            <option value="semana">Semana</option>
+            <option value="mes">Mes</option>
+          </select>
+        </div>
+        <div class="field-inline" id="campo-semana">
           <label for="f-semana">Semana</label>
           <input type="week" id="f-semana" />
         </div>
+        <div class="field-inline hidden" id="campo-mes">
+          <label for="f-mes">Mes</label>
+          <input type="month" id="f-mes" />
+        </div>
         <div class="semanal-rango" id="semanal-rango"></div>
-        <button type="button" id="semana-anterior" class="limpiar-btn" title="Semana anterior">← Anterior</button>
-        <button type="button" id="semana-siguiente" class="limpiar-btn" title="Semana siguiente">Siguiente →</button>
-        <button type="button" id="semana-actual" class="limpiar-btn">Esta semana</button>
+        <button type="button" id="periodo-anterior" class="limpiar-btn" title="Período anterior">← Anterior</button>
+        <button type="button" id="periodo-siguiente" class="limpiar-btn" title="Período siguiente">Siguiente →</button>
+        <button type="button" id="periodo-actual" class="limpiar-btn">Actual</button>
       </div>
 
       <div class="kpi-grid" id="kpi-grid"></div>
@@ -56,25 +67,27 @@
 
     <div class="panel semanal-panel">
       <div class="semanal-panel-header">
-        <h2 class="section-title">Facturación por semana</h2>
+        <h2 class="section-title" id="tendencia-titulo">Facturación por semana</h2>
         <div class="comparativo-legend" id="tendencia-legend"></div>
       </div>
       <div class="comparativo-chart-wrap" id="tendencia-chart"></div>
     </div>
 
     <div class="panel semanal-panel">
-      <h2 class="section-title">Piezas más vendidas esta semana</h2>
+      <h2 class="section-title" id="piezas-titulo">Piezas más vendidas esta semana</h2>
       <div class="table-wrap">
         <table class="pivot" id="piezas-table">
           <thead>
             <tr>
               <th class="col-grupo">Pieza</th>
               <th>Cantidad</th>
+              <th>%</th>
               <th>Facturado</th>
+              <th>Sin IVA</th>
             </tr>
           </thead>
           <tbody id="piezas-tbody">
-            <tr><td class="loading" colspan="3">Cargando…</td></tr>
+            <tr><td class="loading" colspan="5">Cargando…</td></tr>
           </tbody>
         </table>
       </div>
