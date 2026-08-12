@@ -79,6 +79,7 @@ const state = {
   listas: [],          // listas_precios, ordenadas por fecha_vigencia ascendente
   descuentosPorLista: new Map(), // lista_id -> [{monto_desde, monto_hasta, descuento, plazo_pago}]
   tipoPeriodo: 'semana', // 'semana' | 'mes'
+  descuentoMetrica: 'cantidad', // 'cantidad' | 'monto' — qué mide la altura de las barras de escalas
 };
 
 // Qué lista de precios (y por lo tanto qué escalas de descuento) regía en
@@ -113,6 +114,7 @@ const els = {
   tendenciaTitulo: document.getElementById('tendencia-titulo'),
   piezasTitulo: document.getElementById('piezas-titulo'),
   piezasTbody: document.getElementById('piezas-tbody'),
+  descuentoMetricTabs: document.getElementById('descuento-metric-tabs'),
 };
 
 async function init() {
@@ -242,7 +244,7 @@ function renderDescuentos(facturasSemana) {
   const porcentajes = [...new Set(descuentosHoy.map((d) => Number(d.descuento)))].sort((a, b) => a - b);
   const porEscala = porcentajes.map((pct) => {
     const ref = descuentosHoy.find((d) => Number(d.descuento) === pct);
-    return { descuento: pct, plazo_pago: ref.plazo_pago, n: 0 };
+    return { descuento: pct, plazo_pago: ref.plazo_pago, n: 0, monto: 0 };
   });
 
   let sinEscala = 0;
@@ -254,7 +256,7 @@ function renderDescuentos(facturasSemana) {
     const match = escalaDe(importe, descuentosDeLaFactura);
     if (!match) { sinEscala += 1; continue; }
     const row = porEscala.find((d) => d.descuento === Number(match.descuento));
-    if (row) row.n += 1;
+    if (row) { row.n += 1; row.monto += importe; }
 
     // ¿Esta factura usa una lista que no es la más vieja, y el monto habría
     // caído en una escala distinta bajo la lista anterior? Si es así, puede
@@ -278,23 +280,27 @@ function renderDescuentos(facturasSemana) {
     : '';
   els.descuentoHint.innerHTML = `<span>${hintNormal}</span>${hintAviso}`;
 
+  const esMonto = state.descuentoMetrica === 'monto';
+  const valorDe = (d) => esMonto ? d.monto : d.n;
+  const fmtValor = (v) => esMonto ? fmtPesosCorto(v) : fmt(v);
+
   const W = 720, H = 220, ML = 46, MR = 16, MT = 20, MB = 44;
   const PW = W - ML - MR, PH = H - MT - MB;
-  const maxN = Math.max(...porEscala.map((d) => d.n), 1);
+  const maxValor = Math.max(...porEscala.map(valorDe), 1);
   const barW = Math.min(70, (PW / porEscala.length) * 0.55);
   const step = PW / porEscala.length;
 
   const barsHtml = porEscala.map((d, i) => {
-    const h = maxN > 0 ? (d.n / maxN) * PH : 0;
+    const valor = valorDe(d);
+    const h = maxValor > 0 ? (valor / maxValor) * PH : 0;
     const x = ML + step * i + (step - barW) / 2;
     const y = MT + PH - h;
-    const pct = total > 0 ? d.n / total : 0;
     const label = `${(Number(d.descuento) * 100).toFixed(0)}%`;
     return `
       <g class="descuento-barra-grupo" data-idx="${i}">
         <rect x="${x}" y="${y}" width="${barW}" height="${Math.max(h, 1)}" rx="4" class="descuento-barra" />
         <rect x="${x}" y="${MT}" width="${barW}" height="${PH}" fill="transparent" class="descuento-hitarea" data-idx="${i}" />
-        <text x="${x + barW / 2}" y="${y - 8}" class="descuento-valor" text-anchor="middle">${d.n}</text>
+        <text x="${x + barW / 2}" y="${y - 8}" class="descuento-valor" text-anchor="middle">${fmtValor(valor)}</text>
         <text x="${x + barW / 2}" y="${MT + PH + 20}" class="comparativo-axis-x" text-anchor="middle">${label}</text>
         <text x="${x + barW / 2}" y="${MT + PH + 36}" class="descuento-plazo" text-anchor="middle">${escapeHtml(d.plazo_pago || '')}</text>
       </g>`;
@@ -320,11 +326,13 @@ function renderDescuentos(facturasSemana) {
       titulo.textContent = `Escala ${(Number(d.descuento) * 100).toFixed(0)}%`;
       const row1 = document.createElement('div');
       row1.className = 'comparativo-tooltip-row';
-      row1.innerHTML = `<strong>${d.n}</strong>`;
+      row1.innerHTML = esMonto ? `<strong>${fmtPesos(d.monto)}</strong>` : `<strong>${d.n}</strong>`;
       row1.appendChild(document.createTextNode(' '));
       const lbl1 = document.createElement('span');
       lbl1.className = 'comparativo-tooltip-label';
-      lbl1.textContent = `factura(s) · ${pct} de la semana`;
+      lbl1.textContent = esMonto
+        ? `facturado · ${d.n} factura(s), ${pct} de la semana`
+        : `factura(s) · ${pct} de la semana`;
       row1.appendChild(lbl1);
       const row2 = document.createElement('div');
       row2.className = 'comparativo-tooltip-row';
@@ -517,7 +525,14 @@ function renderPiezas(itemsPeriodo) {
     g.sinIva += sinIva(facturado, empresa);
     totalCantidad += cantidad;
   }
-  const filas = [...porPieza.values()].sort((a, b) => b.cantidad - a.cantidad).slice(0, 12);
+  // Totales de TODAS las piezas del período (no solo el top 12 que se
+  // muestra), para que la fila TOTAL coincida con el KPI "Facturado" de
+  // arriba en vez de ser solo la suma de las filas visibles.
+  const todas = [...porPieza.values()];
+  const totalFacturadoTodas = todas.reduce((s, f) => s + f.facturado, 0);
+  const totalSinIvaTodas = todas.reduce((s, f) => s + f.sinIva, 0);
+
+  const filas = todas.sort((a, b) => b.cantidad - a.cantidad).slice(0, 12);
 
   if (filas.length === 0) {
     document.getElementById('piezas-tbody').innerHTML = '<tr><td class="empty-state" colspan="5">No hay piezas vendidas en este período.</td></tr>';
@@ -525,7 +540,7 @@ function renderPiezas(itemsPeriodo) {
   }
 
   const maxCantidad = Math.max(...filas.map((f) => f.cantidad), 1);
-  document.getElementById('piezas-tbody').innerHTML = filas.map((f) => `
+  const filasHtml = filas.map((f) => `
     <tr>
       <td class="col-grupo">${escapeHtml(f.label)}</td>
       <td class="bar-cell" style="--bar-pct:${Math.round((f.cantidad / maxCantidad) * 100)}%"><strong>${fmt(f.cantidad)}</strong></td>
@@ -534,6 +549,15 @@ function renderPiezas(itemsPeriodo) {
       <td>${fmtPesos(f.sinIva)}</td>
     </tr>
   `).join('');
+  const filaTotal = `
+    <tr class="fila-total">
+      <td class="col-grupo">TOTAL${todas.length > filas.length ? ` (${todas.length} piezas)` : ''}</td>
+      <td>${fmt(totalCantidad)}</td>
+      <td>100%</td>
+      <td>${fmtPesos(totalFacturadoTodas)}</td>
+      <td>${fmtPesos(totalSinIvaTodas)}</td>
+    </tr>`;
+  document.getElementById('piezas-tbody').innerHTML = filasHtml + filaTotal;
 }
 
 function escapeHtml(str) {
@@ -578,6 +602,15 @@ els.btnActual.addEventListener('click', () => {
   els.semana.value = dateToIsoWeekStr(new Date());
   els.mes.value = dateToMonthStr(new Date());
   render();
+});
+els.descuentoMetricTabs.querySelectorAll('.metric-tab').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('active')) return;
+    els.descuentoMetricTabs.querySelectorAll('.metric-tab').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.descuentoMetrica = btn.dataset.metrica;
+    render();
+  });
 });
 
 init();
