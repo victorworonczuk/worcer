@@ -28,7 +28,7 @@ const PROVINCIAS = [
   'San Luis', 'Santa Cruz', 'Santa Fe', 'Sgo Estero', 'T.Fuego', 'Tucumán',
 ];
 
-const RUBROS = ['Distribuidor', 'Venta online', 'Sanitario', 'Corralón', 'Ferretería', 'Otros'];
+const RUBROS = ['Distribuidor', 'Venta online', 'Sanitario', 'Corralón', 'Ferretería', 'Particular', 'Otros'];
 
 const META_CONTACTOS_SEMANAL = 50;
 
