@@ -106,3 +106,15 @@
   padding: 20px 12px;
   text-align: center;
 }
+
+/* Ventas por vendedor — compacto a propósito (pedido de Víctor 13/08/26:
+   que se vea todo junto y rápido, sin la grilla día a día de Pedidos por
+   vendedor, solo el total del período elegido arriba). */
+.vendedores-compacto th,
+.vendedores-compacto td {
+  padding: 3px 8px;
+  font-size: 12px;
+}
+.vendedores-compacto td.col-grupo {
+  font-weight: 600;
+}

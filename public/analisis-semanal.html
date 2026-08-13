@@ -60,6 +60,25 @@
     </div>
 
     <div class="panel semanal-panel">
+      <h2 class="section-title" id="vendedores-titulo">Ventas por vendedor esta semana</h2>
+      <div class="table-wrap">
+        <table class="pivot vendedores-compacto" id="vendedores-table">
+          <thead>
+            <tr>
+              <th class="col-grupo">Vendedor</th>
+              <th>Cant.</th>
+              <th>Monto</th>
+              <th>%</th>
+            </tr>
+          </thead>
+          <tbody id="vendedores-tbody">
+            <tr><td class="loading" colspan="4">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel semanal-panel">
       <div class="semanal-panel-header">
         <h2 class="section-title">Clientes por escala de descuento</h2>
         <div class="metric-tabs" id="descuento-metric-tabs">

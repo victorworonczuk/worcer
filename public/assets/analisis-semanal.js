@@ -92,6 +92,7 @@ const state = {
   facturasIntercompania: [], // facturas entre las 2 empresas propias — excluidas de facturas, se muestran aparte
   facturaPorId: new Map(), // id -> factura, para saber la empresa de cada factura_item
   factura_items: [],  // con pieza embebida
+  pedidosVendedor: [], // pedidos_vendedor (Tablero de pedidos) — para el cuadro compacto de Ventas por vendedor
   listas: [],          // listas_precios, ordenadas por fecha_vigencia ascendente
   descuentosPorLista: new Map(), // lista_id -> [{monto_desde, monto_hasta, descuento, plazo_pago}]
   tipoPeriodo: 'semana', // 'semana' | 'mes'
@@ -134,6 +135,8 @@ const els = {
   piezasHint: document.getElementById('piezas-hint'),
   descuentoMetricTabs: document.getElementById('descuento-metric-tabs'),
   ultimaActualizacion: document.getElementById('ultima-actualizacion'),
+  vendedoresTitulo: document.getElementById('vendedores-titulo'),
+  vendedoresTbody: document.getElementById('vendedores-tbody'),
 };
 
 // Última vez que se cargó algo acá: el más reciente entre una factura nueva
@@ -159,14 +162,15 @@ async function init() {
   els.semana.value = dateToIsoWeekStr(new Date());
   els.mes.value = dateToMonthStr(new Date());
 
-  const [{ data: facturas, error: e1 }, { data: items, error: e2 }, { data: listas, error: e3 }, { data: descuentos, error: e4 }] = await Promise.all([
+  const [{ data: facturas, error: e1 }, { data: items, error: e2 }, { data: listas, error: e3 }, { data: descuentos, error: e4 }, { data: pedidosVendedor, error: e5 }] = await Promise.all([
     fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, empresa, cuit_normalizado')),
     fetchAll(() => client.from('factura_items').select('factura_id, cantidad, precio_unitario, piezas(linea, tipo_pieza, variante, calidad)')),
     client.from('listas_precios').select('id, fecha_vigencia').order('fecha_vigencia', { ascending: true }),
     client.from('lista_precios_descuentos').select('lista_id, monto_desde, monto_hasta, descuento, plazo_pago').order('monto_desde'),
+    fetchAll(() => client.from('pedidos_vendedor').select('vendedor, fecha, cantidad, monto_ars')),
   ]);
-  if (e1 || e2 || e3 || e4) {
-    els.kpiGrid.innerHTML = `<div class="empty-state">Error al cargar: ${(e1 || e2 || e3 || e4).message}</div>`;
+  if (e1 || e2 || e3 || e4 || e5) {
+    els.kpiGrid.innerHTML = `<div class="empty-state">Error al cargar: ${(e1 || e2 || e3 || e4 || e5).message}</div>`;
     return;
   }
   const facturasConFecha = facturas.filter((f) => f.fecha);
@@ -174,6 +178,7 @@ async function init() {
   state.facturasIntercompania = facturasConFecha.filter(esFacturaIntercompania);
   state.facturaPorId = new Map(state.facturas.map((f) => [f.id, f]));
   state.factura_items = items;
+  state.pedidosVendedor = pedidosVendedor || [];
   state.listas = (listas || []).map((l) => ({ ...l, fecha_vigencia: String(l.fecha_vigencia).slice(0, 10) }));
   state.descuentosPorLista = new Map();
   for (const d of (descuentos || [])) {
@@ -205,6 +210,7 @@ function render() {
   els.rango.textContent = etiqueta;
   els.tendenciaTitulo.textContent = state.tipoPeriodo === 'mes' ? 'Facturación por mes' : 'Facturación por semana';
   els.piezasTitulo.textContent = state.tipoPeriodo === 'mes' ? 'Piezas más vendidas este mes' : 'Piezas más vendidas esta semana';
+  els.vendedoresTitulo.textContent = state.tipoPeriodo === 'mes' ? 'Ventas por vendedor este mes' : 'Ventas por vendedor esta semana';
 
   const facturasPeriodo = state.facturas.filter((f) => f.fecha >= desde && f.fecha <= hasta);
   const facturaIdsPeriodo = new Set(facturasPeriodo.map((f) => f.id));
@@ -219,6 +225,7 @@ function render() {
   }
 
   renderKpis(facturasPeriodo, itemsPeriodo);
+  renderVendedores(desde, hasta);
   renderDescuentos(facturasPeriodo);
   renderTendencia(anchor);
   renderPiezas(itemsPeriodo, facturasPeriodo);
@@ -240,6 +247,37 @@ function renderKpis(facturasSemana, itemsSemana) {
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-value">${k.value}</div>
     </div>
+  `).join('');
+}
+
+// Cuadro compacto de Ventas por vendedor (pedido de Víctor 13/08/26: tener
+// todo el análisis en una sola pantalla) — a diferencia de Pedidos por
+// vendedor, acá NO se muestra la grilla día a día, solo el total de cada
+// vendedor en el mismo período (semana o mes) que el resto de la pantalla.
+function renderVendedores(desde, hasta) {
+  const filasPeriodo = state.pedidosVendedor.filter((f) => f.fecha >= desde && f.fecha <= hasta);
+  if (filasPeriodo.length === 0) {
+    els.vendedoresTbody.innerHTML = '<tr><td class="empty-state" colspan="4">No hay pedidos cargados en este período.</td></tr>';
+    return;
+  }
+
+  const porVendedor = new Map();
+  for (const f of filasPeriodo) {
+    if (!porVendedor.has(f.vendedor)) porVendedor.set(f.vendedor, { vendedor: f.vendedor, cantidad: 0, monto: 0 });
+    const g = porVendedor.get(f.vendedor);
+    g.cantidad += Number(f.cantidad || 0);
+    g.monto += Number(f.monto_ars || 0);
+  }
+  const vendedores = [...porVendedor.values()].sort((a, b) => b.monto - a.monto);
+  const totalMonto = vendedores.reduce((s, v) => s + v.monto, 0);
+
+  els.vendedoresTbody.innerHTML = vendedores.map((v) => `
+    <tr>
+      <td class="col-grupo">${escapeHtml(v.vendedor)}</td>
+      <td>${fmt(v.cantidad)}</td>
+      <td>${fmtPesos(v.monto)}</td>
+      <td>${fmtPct(totalMonto ? v.monto / totalMonto : 0)}</td>
+    </tr>
   `).join('');
 }
 
