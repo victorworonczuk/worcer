@@ -6,8 +6,9 @@ const state = {
   all: [],
   filtered: [],
   page: 1,
-  filters: { q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false, soloCandidatosDescarte: false, tipoCliente: '', soloConDatoContacto: false },
+  filters: { q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '', vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false, soloCandidatosDescarte: false, tipoCliente: '', soloConDatoContacto: false, soloClientesNuevosMes: false },
   facturasByCliente: new Map(),
+  primeraCompraPorCliente: new Map(), // cliente_id -> fecha de su primera factura en toda la historia
   openFacturas: new Set(),
   interaccionesByCliente: new Map(),
   openHistorial: new Set(),
@@ -264,10 +265,15 @@ async function loadData() {
     console.error('Error cargando facturas', facturasError);
   } else {
     state.facturasByCliente = new Map();
+    state.primeraCompraPorCliente = new Map();
     for (const f of facturas) {
       const list = state.facturasByCliente.get(f.cliente_id) || [];
       list.push(f);
       state.facturasByCliente.set(f.cliente_id, list);
+      if (f.fecha) {
+        const actual = state.primeraCompraPorCliente.get(f.cliente_id);
+        if (!actual || f.fecha < actual) state.primeraCompraPorCliente.set(f.cliente_id, f.fecha);
+      }
     }
   }
 
@@ -324,6 +330,24 @@ function inicioSemana() {
   return lunes;
 }
 
+// {desde, hasta} del mes calendario actual, en formato YYYY-MM-DD — para
+// "clientes nuevos" (mismo criterio que public/assets/inicio.js).
+function mesActualRango() {
+  const hoy = new Date();
+  const desde = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), 1));
+  const hasta = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth() + 1, 0));
+  return { desde: desde.toISOString().slice(0, 10), hasta: hasta.toISOString().slice(0, 10) };
+}
+
+// Cliente "nuevo" = su primera factura en toda la historia cayó en el mes
+// calendario actual (no tenía ninguna compra de antes).
+function esClienteNuevoEsteMes(clienteId) {
+  const primera = state.primeraCompraPorCliente.get(clienteId);
+  if (!primera) return false;
+  const { desde, hasta } = mesActualRango();
+  return primera >= desde && primera <= hasta;
+}
+
 function contactosEstaSemana() {
   const desde = inicioSemana();
   let count = 0;
@@ -350,6 +374,7 @@ function renderStats() {
   let clientesReales = 0;
   let personas = 0;
   let candidatosDescarte = 0;
+  let clientesNuevosMes = 0;
   for (const r of state.all) {
     const seg = (r.segmento || '?').trim()[0];
     segCounts[seg] = (segCounts[seg] || 0) + 1;
@@ -364,6 +389,7 @@ function renderStats() {
     if ((state.facturasByCliente.get(r.id) || []).length > 0) clientesReales += 1;
     else personas += 1;
     if (esCandidatoADescarte(r, est)) candidatosDescarte += 1;
+    if (esClienteNuevoEsteMes(r.id)) clientesNuevosMes += 1;
   }
 
   const contactosSemana = contactosEstaSemana();
@@ -374,6 +400,7 @@ function renderStats() {
 
   const cards = [
     { label: 'Clientes', value: clientesReales, id: 'card-clientes', filterKey: 'tipoCliente', filterValue: 'cliente' },
+    { label: 'Clientes nuevos este mes', value: clientesNuevosMes, id: 'card-clientes-nuevos-mes', filterKey: 'soloClientesNuevosMes', filterValue: true },
     { label: 'Personas', value: personas, id: 'card-personas', filterKey: 'tipoCliente', filterValue: 'persona' },
     { label: 'Con dato de contacto', value: conContacto, id: 'card-con-contacto', filterKey: 'soloConDatoContacto', filterValue: true },
     { label: '📅 Seguimientos vencidos', value: vencidos, id: 'card-vencidos', special: true, filterKey: 'soloVencidos', filterValue: true },
@@ -440,7 +467,7 @@ function sinAcentos(str) {
 }
 
 function applyFilters() {
-  const { q, segmento, provincia, localidad, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana, soloCandidatosDescarte, tipoCliente, soloConDatoContacto } = state.filters;
+  const { q, segmento, provincia, localidad, confianza, estado, rubro, vendedor, canalCaptacion, soloVencidos, soloContactadosSemana, soloCandidatosDescarte, tipoCliente, soloConDatoContacto, soloClientesNuevosMes } = state.filters;
   const qLower = sinAcentos(q.trim());
 
   state.filtered = state.all.filter((r) => {
@@ -461,6 +488,7 @@ function applyFilters() {
       if (tipoCliente === 'persona' && esCliente) return false;
     }
     if (soloConDatoContacto && !(r.telefono || r.whatsapp || r.email)) return false;
+    if (soloClientesNuevosMes && !esClienteNuevoEsteMes(r.id)) return false;
     if (qLower) {
       const hay = sinAcentos(`${r.nombre || ''} ${r.nombre_fantasia || ''} ${r.nombre_contacto || ''} ${r.localidad || ''} ${r.domicilio || ''} ${r.cuit || ''}`);
       if (!hay.includes(qLower)) return false;
@@ -529,7 +557,7 @@ function limpiarFiltros() {
   state.filters = {
     q: '', segmento: '', provincia: '', localidad: '', confianza: '', estado: '', rubro: '',
     vendedor: '', canalCaptacion: '', soloVencidos: false, soloContactadosSemana: false,
-    soloCandidatosDescarte: false, tipoCliente: '', soloConDatoContacto: false,
+    soloCandidatosDescarte: false, tipoCliente: '', soloConDatoContacto: false, soloClientesNuevosMes: false,
   };
   els.search.value = '';
   els.segmento.value = '';
