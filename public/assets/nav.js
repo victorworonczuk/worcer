@@ -5,6 +5,12 @@
 // y remarca el ítem de la página actual.
 const NAV_GROUPS = [
   {
+    title: 'Inicio',
+    items: [
+      { href: '/inicio.html', label: 'Inicio', title: 'KPIs principales del negocio de un vistazo, con acceso directo a cada pantalla de detalle.' },
+    ],
+  },
+  {
     title: 'Clientes',
     items: [
       { href: '/index.html', label: 'Dashboard', title: 'Volver al listado de clientes.' },

@@ -1,0 +1,17 @@
+/* Pantalla de Inicio: los mismos KPI-card de Análisis semanal (analisis-
+   semanal.css), pero clickeables — cada uno linkea a la pantalla de detalle
+   correspondiente (pedido de Víctor 13/08/26: un punto de entrada único en
+   vez de tener que saber en qué pantalla está cada cosa). */
+.kpi-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.kpi-card-link:hover {
+  box-shadow: 0 4px 10px rgba(16, 24, 40, 0.12);
+  transform: translateY(-1px);
+}
+.kpi-card-link .kpi-value.kpi-alerta {
+  color: var(--seg-e);
+}
