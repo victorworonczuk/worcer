@@ -426,6 +426,11 @@ function renderStats() {
       }
       if (c.filterKey === 'segmento') els.segmento.value = state.filters.segmento;
       if (c.filterKey === 'estado') els.estado.value = state.filters.estado;
+      // Al entrar a "Vencidos" o "Contactados" desde la tarjeta, agrupar por
+      // fecha en vez de dejar el orden por segmento de antes — es lo que se
+      // quiere ver primero en esas dos vistas. Al salir, vuelve a Segmento.
+      if (c.id === 'card-vencidos') els.orden.value = !isActive ? 'seguimiento_asc' : 'segmento';
+      if (c.id === 'card-contactados') els.orden.value = !isActive ? 'contacto_desc' : 'segmento';
       applyFilters();
       renderStats();
     });
@@ -483,6 +488,29 @@ function applyFilters() {
       if (!a.ultima_compra) return orden === 'ultima_compra_desc' ? 1 : -1;
       if (!b.ultima_compra) return orden === 'ultima_compra_desc' ? -1 : 1;
       return signo * (new Date(a.ultima_compra) - new Date(b.ultima_compra));
+    });
+  } else if (orden === 'seguimiento_asc' || orden === 'seguimiento_desc') {
+    // Para "Seguimientos vencidos": el más viejo (más vencido) primero por
+    // defecto — sin fecha cargada queda al final, no compite con lo vencido.
+    const signo = orden === 'seguimiento_asc' ? 1 : -1;
+    state.filtered.sort((a, b) => {
+      const fa = proximoSeguimientoDe(a.id);
+      const fb = proximoSeguimientoDe(b.id);
+      if (!fa && !fb) return 0;
+      if (!fa) return 1;
+      if (!fb) return -1;
+      return signo * (new Date(fa) - new Date(fb));
+    });
+  } else if (orden === 'contacto_desc' || orden === 'contacto_asc') {
+    // Para "Contactados": por fecha del último contacto registrado.
+    const signo = orden === 'contacto_desc' ? -1 : 1;
+    state.filtered.sort((a, b) => {
+      const fa = ultimoContactoDe(a.id);
+      const fb = ultimoContactoDe(b.id);
+      if (!fa && !fb) return 0;
+      if (!fa) return 1;
+      if (!fb) return -1;
+      return signo * (new Date(fa) - new Date(fb));
     });
   }
 
@@ -1111,6 +1139,14 @@ function proximoSeguimientoDe(clienteId) {
   const lista = state.interaccionesByCliente.get(clienteId);
   if (!lista || lista.length === 0) return null;
   return lista[0].proximo_seguimiento || null;
+}
+
+// Fecha del último contacto registrado (la interacción más reciente) — para
+// ordenar "Contactados" por fecha. `lista` ya viene ordenada más nuevo primero.
+function ultimoContactoDe(clienteId) {
+  const lista = state.interaccionesByCliente.get(clienteId);
+  if (!lista || lista.length === 0) return null;
+  return lista[0].created_at || null;
 }
 
 function esVencido(fechaStr) {
