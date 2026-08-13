@@ -38,23 +38,34 @@
           <select id="f-mes"></select>
         </div>
       </div>
+    </div>
 
-      <div id="resumen" class="resumen"></div>
-
-      <div class="metric-tabs" id="metric-tabs">
-        <button type="button" class="metric-tab active" data-tipo="cantidad">Cantidad de pedidos</button>
-        <button type="button" class="metric-tab" data-tipo="monto">Pedidos valorizados ($)</button>
-      </div>
-
+    <div class="panel">
+      <h2 class="panel-title">Cantidad de pedidos</h2>
+      <div id="resumen-cantidad" class="resumen"></div>
       <div class="table-wrap">
         <table class="pivot tabla-dias">
-          <thead id="thead"></thead>
-          <tbody id="tbody">
+          <thead id="thead-cantidad"></thead>
+          <tbody id="tbody-cantidad">
             <tr><td class="loading">Cargando datos…</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="nota-pie" id="nota-pie"></p>
+      <p class="nota-pie" id="nota-pie-cantidad"></p>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Pedidos cotizados ($)</h2>
+      <div id="resumen-monto" class="resumen"></div>
+      <div class="table-wrap">
+        <table class="pivot tabla-dias">
+          <thead id="thead-monto"></thead>
+          <tbody id="tbody-monto">
+            <tr><td class="loading">Cargando datos…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="nota-pie" id="nota-pie-monto"></p>
     </div>
 
     <div class="panel">

@@ -19,18 +19,36 @@ async function fetchAll(buildQuery, pageSize = 1000) {
 const state = {
   filas: [], // { vendedor, fecha, cantidad, monto_ars }
   proyecciones: [], // { vendedor, mes, proyectado_cantidad, proyectado_monto }
-  tipo: 'cantidad', // 'cantidad' | 'monto'
 };
 
 const els = {
   userSubtitle: document.getElementById('user-subtitle'),
   mes: document.getElementById('f-mes'),
-  resumen: document.getElementById('resumen'),
-  metricTabs: document.getElementById('metric-tabs'),
-  thead: document.getElementById('thead'),
-  tbody: document.getElementById('tbody'),
-  notaPie: document.getElementById('nota-pie'),
   tbodyAnual: document.getElementById('tbody-anual'),
+};
+
+// Las dos tablas (cantidad y $) se muestran siempre juntas, completas, en
+// vez de una sola tabla con pestaña para alternar — cada una con sus
+// propios elementos de resumen/thead/tbody/nota.
+const TABLAS = {
+  cantidad: {
+    campo: 'cantidad',
+    campoProy: 'proyectado_cantidad',
+    fmtCelda: fmt,
+    resumen: document.getElementById('resumen-cantidad'),
+    thead: document.getElementById('thead-cantidad'),
+    tbody: document.getElementById('tbody-cantidad'),
+    notaPie: document.getElementById('nota-pie-cantidad'),
+  },
+  monto: {
+    campo: 'monto_ars',
+    campoProy: 'proyectado_monto',
+    fmtCelda: fmtPesos,
+    resumen: document.getElementById('resumen-monto'),
+    thead: document.getElementById('thead-monto'),
+    tbody: document.getElementById('tbody-monto'),
+    notaPie: document.getElementById('nota-pie-monto'),
+  },
 };
 
 function fmt(n) {
@@ -68,7 +86,9 @@ async function cargarDatos() {
     fetchAll(() => client.from('pedidos_vendedor_proyeccion').select('vendedor, mes, proyectado_cantidad, proyectado_monto')),
   ]);
   if (e1 || e2) {
-    els.tbody.innerHTML = `<tr><td class="empty-state">Error al cargar: ${(e1 || e2).message}</td></tr>`;
+    const msg = `<tr><td class="empty-state">Error al cargar: ${(e1 || e2).message}</td></tr>`;
+    TABLAS.cantidad.tbody.innerHTML = msg;
+    TABLAS.monto.tbody.innerHTML = msg;
     return;
   }
   state.filas = filas || [];
@@ -116,18 +136,21 @@ function renderAnual() {
 }
 
 function render() {
+  renderTabla(TABLAS.cantidad);
+  renderTabla(TABLAS.monto);
+}
+
+function renderTabla(cfg) {
   const mes = els.mes.value;
   if (!mes) {
-    els.resumen.innerHTML = '';
-    els.thead.innerHTML = '';
-    els.tbody.innerHTML = '<tr><td class="empty-state">Sin datos cargados todavía. Subilos desde "Cargar pedidos".</td></tr>';
-    els.notaPie.textContent = '';
+    cfg.resumen.innerHTML = '';
+    cfg.thead.innerHTML = '';
+    cfg.tbody.innerHTML = '<tr><td class="empty-state">Sin datos cargados todavía. Subilos desde "Cargar pedidos".</td></tr>';
+    cfg.notaPie.textContent = '';
     return;
   }
 
-  const campo = state.tipo === 'cantidad' ? 'cantidad' : 'monto_ars';
-  const campoProy = state.tipo === 'cantidad' ? 'proyectado_cantidad' : 'proyectado_monto';
-  const fmtCelda = state.tipo === 'cantidad' ? fmt : fmtPesos;
+  const { campo, campoProy, fmtCelda } = cfg;
 
   const filasDelMes = state.filas.filter((f) => f.fecha.slice(0, 7) === mes);
   // Solo los días que realmente tienen alguna fila cargada (evita mostrar
@@ -158,13 +181,13 @@ function render() {
   const totalPorDia = {};
   for (const dia of dias) totalPorDia[dia] = vendedores.reduce((a, v) => a + (v.porDia[dia] || 0), 0);
 
-  els.resumen.innerHTML = `
+  cfg.resumen.innerHTML = `
     <div><strong>${fmtCelda(totalGeneral)}</strong><span class="label">total acumulado del mes</span></div>
     <div><strong>${fmtCelda(proyectadoGeneral)}</strong><span class="label">proyectado a fin de mes</span></div>
     <div><strong>${escapeHtml(vendedores[0]?.vendedor || '—')}</strong><span class="label">mejor vendedor</span></div>
   `;
 
-  els.thead.innerHTML = `<tr>
+  cfg.thead.innerHTML = `<tr>
     <th class="col-grupo">Vendedor</th>
     ${dias.map((d) => `<th>${d.slice(8, 10)}</th>`).join('')}
     <th class="col-total">Total</th>
@@ -172,7 +195,7 @@ function render() {
     <th class="col-total">%</th>
   </tr>`;
 
-  els.tbody.innerHTML = vendedores.map((v) => `<tr>
+  cfg.tbody.innerHTML = vendedores.map((v) => `<tr>
       <td class="col-grupo">${escapeHtml(v.vendedor)}</td>
       ${dias.map((d) => celda(v.porDia[d] || 0, fmtCelda)).join('')}
       <td class="col-total ${claseVacio(v.total)} ${v.total < 0 ? 'neg' : ''}">${fmtCelda(v.total)}</td>
@@ -187,7 +210,7 @@ function render() {
       <td class="col-total">100%</td>
     </tr>`;
 
-  els.notaPie.textContent = 'Cargado desde el "Tablero de pedidos de venta" mensual. "Proyectado" es el valor que ya trae el Excel (total acumulado / días hábiles transcurridos × días hábiles del mes), no se recalcula acá. Los valores negativos (si los hay) reflejan correcciones/cancelaciones del propio archivo de origen.';
+  cfg.notaPie.textContent = 'Cargado desde el "Tablero de pedidos de venta" mensual. "Proyectado" es el valor que ya trae el Excel (total acumulado / días hábiles transcurridos × días hábiles del mes), no se recalcula acá. Los valores negativos (si los hay) reflejan correcciones/cancelaciones del propio archivo de origen.';
 }
 
 function escapeHtml(str) {
@@ -196,14 +219,6 @@ function escapeHtml(str) {
 }
 
 els.mes.addEventListener('change', render);
-els.metricTabs.addEventListener('click', (e) => {
-  const tab = e.target.closest('.metric-tab');
-  if (!tab) return;
-  els.metricTabs.querySelectorAll('.metric-tab').forEach((t) => t.classList.remove('active'));
-  tab.classList.add('active');
-  state.tipo = tab.dataset.tipo;
-  render();
-});
 
 (async () => {
   await initUser();
