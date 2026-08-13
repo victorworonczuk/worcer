@@ -1,5 +1,21 @@
 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+// Supabase/PostgREST corta cada respuesta a 1000 filas — paginar con .range().
+async function fetchAll(buildQuery, pageSize = 1000) {
+  let desde = 0;
+  let todos = [];
+  while (true) {
+    const { data, error } = await buildQuery().range(desde, desde + pageSize - 1);
+    if (error) return { data: null, error };
+    todos = todos.concat(data);
+    if (data.length < pageSize) break;
+    desde += pageSize;
+  }
+  return { data: todos, error: null };
+}
+
+const MESES_TC = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
 const els = {
   userSubtitle: document.getElementById('user-subtitle'),
   resumen: document.getElementById('resumen'),
@@ -7,6 +23,12 @@ const els = {
   tbodyDescuentos: document.getElementById('tbody-descuentos'),
   notaPie: document.getElementById('nota-pie'),
   ultimaActualizacion: document.getElementById('ultima-actualizacion'),
+  tcMes: document.getElementById('tc-mes'),
+  tcValor: document.getElementById('tc-valor'),
+  tcStatus: document.getElementById('tc-status'),
+  tcGuardarBtn: document.getElementById('tc-guardar-btn'),
+  tcFormError: document.getElementById('tc-form-error'),
+  tcMesesList: document.getElementById('tc-meses-list'),
 };
 
 function escapeHtml(str) {
@@ -36,7 +58,98 @@ async function initUser() {
   const me = await res.json();
   if (!me.user) { window.location.href = '/login'; return; }
   els.userSubtitle.textContent = `Sesión: ${me.nombre || me.user}`;
+
+  if (me.rol === 'analisis') {
+    els.tcGuardarBtn.disabled = true;
+    els.tcFormError.textContent = 'Tu usuario es de solo lectura — no podés cargar tipo de cambio.';
+  }
 }
+
+// --- Tipo de cambio (antes era una pantalla aparte, se unificó acá para no
+// tener una pantalla por cada cosa — pedido de Víctor 13/08/26) ---
+
+function tcMesLabel(ym) {
+  const [anio, mes] = ym.split('-');
+  return `${MESES_TC[Number(mes) - 1]} ${anio}`;
+}
+
+async function tcInit() {
+  const hoy = new Date();
+  els.tcMes.value = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+  await tcLoadMeses();
+}
+
+async function tcLoadMeses() {
+  els.tcMesesList.innerHTML = '<div class="loading">Cargando…</div>';
+
+  const [{ data: tc, error: e1 }, { data: facturas, error: e2 }] = await Promise.all([
+    client.from('tipo_cambio').select('mes, valor, cargado_por').order('mes', { ascending: false }),
+    fetchAll(() => client.from('facturas').select('fecha, tipo_cambio')),
+  ]);
+  if (e1 || e2) { els.tcMesesList.innerHTML = `<div class="loading">Error: ${(e1 || e2).message}</div>`; return; }
+
+  const porMes = new Map();
+  for (const f of facturas) {
+    if (!f.fecha) continue;
+    const ym = f.fecha.slice(0, 7);
+    if (!porMes.has(ym)) porMes.set(ym, { conTc: 0, sinTc: 0 });
+    const g = porMes.get(ym);
+    if (f.tipo_cambio == null) g.sinTc += 1;
+    else g.conTc += 1;
+  }
+  const tcPorMes = new Map((tc || []).map((r) => [r.mes.slice(0, 7), r]));
+
+  const meses = [...new Set([...porMes.keys(), ...tcPorMes.keys()])].sort().reverse();
+
+  if (meses.length === 0) {
+    els.tcMesesList.innerHTML = '<div class="loading">Todavía no hay facturas cargadas.</div>';
+    return;
+  }
+
+  els.tcMesesList.innerHTML = meses.map((ym) => {
+    const g = porMes.get(ym) || { conTc: 0, sinTc: 0 };
+    const cargado = tcPorMes.get(ym);
+    const pendiente = g.sinTc > 0;
+    return `<div class="recientes-item">
+      <div>
+        <div class="nombre">${tcMesLabel(ym)}${cargado ? ` — TC $${Number(cargado.valor).toLocaleString('es-AR')}` : ''}</div>
+        <div class="meta">${g.conTc} factura(s) con dólar${pendiente ? ` · <strong class="tc-pendiente">${g.sinTc} pendiente(s)</strong>` : ''}${cargado ? ` · cargado por ${escapeHtml(cargado.cargado_por || '')}` : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function tcGuardar() {
+  els.tcFormError.textContent = '';
+  const mes = els.tcMes.value;
+  const valor = Number(els.tcValor.value);
+  if (!mes) { els.tcFormError.textContent = 'Elegí el mes.'; return; }
+  if (!valor || valor <= 0) { els.tcFormError.textContent = 'Cargá el valor del tipo de cambio.'; return; }
+
+  els.tcGuardarBtn.disabled = true;
+  els.tcGuardarBtn.textContent = 'Guardando…';
+  els.tcStatus.textContent = '';
+
+  try {
+    const res = await fetch('/api/aplicar-tipo-cambio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mes, valor }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al guardar');
+    els.tcStatus.textContent = `✓ Guardado. ${data.actualizadas} factura(s) de ${tcMesLabel(mes)} actualizada(s) con TC $${valor.toLocaleString('es-AR')}.`;
+    els.tcValor.value = '';
+    await tcLoadMeses();
+  } catch (err) {
+    els.tcFormError.textContent = 'Error al guardar: ' + err.message;
+  } finally {
+    els.tcGuardarBtn.disabled = false;
+    els.tcGuardarBtn.textContent = 'Guardar y aplicar';
+  }
+}
+
+els.tcGuardarBtn.addEventListener('click', tcGuardar);
 
 async function cargar() {
   const { data: listas, error: e1 } = await client
@@ -137,4 +250,4 @@ async function cargar() {
   }
 }
 
-initUser().then(cargar);
+initUser().then(() => Promise.all([cargar(), tcInit()]));
