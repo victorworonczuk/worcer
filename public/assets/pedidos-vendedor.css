@@ -8,7 +8,7 @@
   color: #6b5900;
 }
 .tabla-dias tbody td:not(.col-grupo):not(.zero) {
-  background: #cfe8f3;
+  background: #6ec6e8;
 }
 
 /* Línea horizontal bien marcada entre cada vendedor — la de base (tbody td,
