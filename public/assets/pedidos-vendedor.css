@@ -1,14 +1,13 @@
-/* Colores tipo planilla externa: casillas vacías (sin pedido ese día) en
-   amarillo, casillas completadas (con pedido) en celeste — solo en la
-   grilla día × vendedor, no en la columna de vendedor ni en los totales. */
+/* Colores tipo planilla externa: casillas vacías (sin pedido, o sin
+   total/proyección) en amarillo, completadas en celeste — en la grilla día
+   × vendedor y también en Total/Proyectado/% (que llevan la clase "zero" a
+   mano desde pedidos-vendedor.js cuando no hay dato), pero no en la columna
+   de nombre del vendedor. */
 .tabla-dias tbody td.zero {
   background: #fff3b0;
   color: #6b5900;
 }
-.tabla-dias tbody td:not(.col-grupo):not(.col-total):not(.zero) {
-  background: #cfe8f3;
-}
-.tabla-dias tbody td.neg:not(.col-grupo):not(.col-total) {
+.tabla-dias tbody td:not(.col-grupo):not(.zero) {
   background: #cfe8f3;
 }
 

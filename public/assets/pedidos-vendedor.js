@@ -49,6 +49,11 @@ function fmtPct(val, totalGeneral) {
   if (!totalGeneral) return '·';
   return (val / totalGeneral * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%';
 }
+// Clase para pintar Total/Proyectado/% igual que las celdas diarias: amarillo
+// si no hay nada cargado (0 o sin dato), celeste si hay algo.
+function claseVacio(val) {
+  return (val === 0 || val === null || val === undefined) ? 'zero' : '';
+}
 
 async function initUser() {
   const res = await fetch('/api/me');
@@ -170,15 +175,15 @@ function render() {
   els.tbody.innerHTML = vendedores.map((v) => `<tr>
       <td class="col-grupo">${escapeHtml(v.vendedor)}</td>
       ${dias.map((d) => celda(v.porDia[d] || 0, fmtCelda)).join('')}
-      <td class="col-total ${v.total < 0 ? 'neg' : ''}">${fmtCelda(v.total)}</td>
-      <td class="col-total ${v.proyectado < 0 ? 'neg' : ''}">${v.proyectado != null ? fmtCelda(v.proyectado) : '·'}</td>
-      <td class="col-total">${fmtPct(v.proyectado || 0, proyectadoGeneral)}</td>
+      <td class="col-total ${claseVacio(v.total)} ${v.total < 0 ? 'neg' : ''}">${fmtCelda(v.total)}</td>
+      <td class="col-total ${claseVacio(v.proyectado)} ${v.proyectado < 0 ? 'neg' : ''}">${v.proyectado != null ? fmtCelda(v.proyectado) : '·'}</td>
+      <td class="col-total ${claseVacio(v.proyectado)}">${fmtPct(v.proyectado || 0, proyectadoGeneral)}</td>
     </tr>`).join('') + `
     <tr class="fila-total">
       <td class="col-grupo">Total</td>
       ${dias.map((d) => celda(totalPorDia[d], fmtCelda)).join('')}
-      <td class="col-total ${totalGeneral < 0 ? 'neg' : ''}">${fmtCelda(totalGeneral)}</td>
-      <td class="col-total ${proyectadoGeneral < 0 ? 'neg' : ''}">${fmtCelda(proyectadoGeneral)}</td>
+      <td class="col-total ${claseVacio(totalGeneral)} ${totalGeneral < 0 ? 'neg' : ''}">${fmtCelda(totalGeneral)}</td>
+      <td class="col-total ${claseVacio(proyectadoGeneral)} ${proyectadoGeneral < 0 ? 'neg' : ''}">${fmtCelda(proyectadoGeneral)}</td>
       <td class="col-total">100%</td>
     </tr>`;
 
