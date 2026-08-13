@@ -373,9 +373,7 @@ thead th {
 }
 
 /* Títulos de panel/sección (arriba de una tabla o lista) — mismo tono
-   azul que las secciones del menú hamburguesa, en vez del gris genérico.
-   No es un h2 global a propósito: panel-comercial.html tiene sus propios
-   títulos narrativos con otro estilo, que no deben pisarse. */
+   azul que las secciones del menú hamburguesa, en vez del gris genérico. */
 .section-title, .panel-title {
   color: var(--primary);
   border-bottom: 2px solid var(--primary);

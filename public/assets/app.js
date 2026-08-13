@@ -1292,8 +1292,8 @@ function onAddTelefono(e) {
 // diferencia de "ventas", que sí necesita poder actualizarlos. El rol
 // "analisis" es de solo lectura en TODO el sistema (ve todo, no carga ni
 // edita nada en ninguna pantalla — ver el mismo chequeo replicado en
-// nueva-factura.js, produccion-carga.js, recuento.js, cargar-pedidos.js,
-// movimiento-piezas.js, importar-ventas.js y cotejar-vendedores.js).
+// produccion-carga.js, recuento.js, cargar-pedidos.js, movimiento-piezas.js
+// e importar-ventas.js).
 // Esto es un límite del lado del cliente, no hay RLS de por medio (mismo
 // criterio que el resto de la base: protegido por el login del sitio, no por
 // la base) — alcanza para el caso de uso real (evitar ediciones accidentales/

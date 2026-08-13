@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { Client } from 'pg';
 import crypto from 'crypto';
 import { parsePedidosVendedorXlsx } from '../../../lib/pedidosVendedorXlsx.js';
-import { ejecutarCotejo } from '../../../lib/cotejarVendedor.js';
 
 function getSessionUser(request) {
   const cookie = request.cookies.get('worcer_auth');
@@ -82,18 +81,12 @@ export async function POST(request) {
       proyecciones.map((p) => ({ ...p, cargado_por: user }))
     );
 
-    // Con el tablero recién cargado puede haber facturas viejas que ahora sí
-    // cierran contra un día/vendedor — se corre el cruce acá también, no
-    // solo al importar ventas.
-    const cotejo = await ejecutarCotejo(client);
-
     return NextResponse.json({
       ok: true,
       filas_leidas: filas.length,
       filas_cargadas: cargadas,
       proyecciones_cargadas: proyeccionesCargadas,
       sin_mapear: sinMapear,
-      cotejo_vendedores: cotejo,
     });
   } finally {
     await client.end();
