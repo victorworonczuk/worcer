@@ -21,3 +21,17 @@
   border-top: 2px solid #4a4a4a;
   border-bottom: none;
 }
+
+/* Líneas verticales con el mismo color/forma que las horizontales, para que
+   se lea la grilla completa (fila de cada vendedor × columna de cada día). */
+.tabla-dias th,
+.tabla-dias td {
+  border-right: 1px solid #4a4a4a;
+}
+.tabla-dias th:last-child,
+.tabla-dias td:last-child {
+  border-right: none;
+}
+.tabla-dias .col-total {
+  border-left: 2px solid #4a4a4a;
+}
