@@ -897,11 +897,28 @@ async function onSubmitNuevoCliente(e) {
     return;
   }
 
+  const cuitIngresado = document.getElementById('nc-cuit').value.trim() || null;
+
+  // El CUIT es un identificador único real (AFIP) — si ya existe en otro
+  // cliente es siempre la misma persona/empresa, nunca una coincidencia.
+  // Se detectó así un duplicado real (Materiales Don Eduardo / Navarro
+  // Aduardo Alfonso, mismo CUIT, cargados a mano por separado — 11/08/26):
+  // avisar ACÁ, antes de crear, para corregirlo en el momento en vez de
+  // descubrirlo después.
+  if (cuitIngresado) {
+    const cuitNormalizado = cuitIngresado.replace(/[^0-9]/g, '');
+    const existente = state.all.find((c) => c.cuit && c.cuit.replace(/[^0-9]/g, '') === cuitNormalizado);
+    if (existente) {
+      els.ncError.textContent = `Ya existe un cliente con este CUIT: "${existente.nombre}" (${existente.cuit}). Es la misma empresa/persona — usá ese cliente en vez de crear uno nuevo, o corregí el CUIT si te equivocaste al tipear.`;
+      return;
+    }
+  }
+
   const rubrosElegidos = [...document.querySelectorAll('#nc-rubro-group input:checked')].map((c) => c.value);
 
   const nuevo = {
     nombre,
-    cuit: document.getElementById('nc-cuit').value.trim() || null,
+    cuit: cuitIngresado,
     provincia: document.getElementById('nc-provincia').value || null,
     localidad: document.getElementById('nc-localidad').value.trim() || null,
     domicilio: document.getElementById('nc-domicilio').value.trim() || null,
