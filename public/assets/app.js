@@ -38,9 +38,11 @@ const META_CONTACTOS_SEMANAL = 50;
 // solo — es un aviso para que alguien lo revise a mano.
 const UMBRAL_INTENTOS_SIN_RESULTADO = 5;
 
+// Javier Viglino dejó de ser vendedor (confirmado con Víctor 13/08/26) — sus
+// pedidos en el Tablero se funden con Jose Gil, ver lib/pedidosVendedorXlsx.js.
 const VENDEDORES = [
   'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
-  'Javier Viglino', 'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
+  'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
   'Mariano Cabarrus', 'Sebastián Guerra', 'Horacio Vostrosky', 'Víctor W.',
 ];
 

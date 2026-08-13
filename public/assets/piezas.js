@@ -23,7 +23,7 @@ const CALIDAD_LABEL = { '1era': '1ª', comercial: 'Comercial', '3era': '3ª' };
 // fetchAll() en el resto del proyecto).
 const VENDEDORES = [
   'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
-  'Javier Viglino', 'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
+  'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
   'Mariano Cabarrus', 'Sebastián Guerra', 'Horacio Vostrosky', 'Víctor W.',
 ];
 
