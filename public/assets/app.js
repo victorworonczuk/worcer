@@ -287,12 +287,6 @@ async function loadData() {
     }
   }
 
-  // Por defecto se muestra solo "Pendiente" al entrar — con 1470 clientes,
-  // ver la base entera sin filtrar de entrada abruma a un usuario nuevo.
-  // Se puede sacar el filtro en cualquier momento desde el desplegable Estado.
-  state.filters.estado = 'pendiente';
-  els.estado.value = 'pendiente';
-
   populateFilterOptions();
   renderStats();
   applyFilters();
