@@ -21,11 +21,13 @@ function fmtFecha(dateStr) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-AR');
 }
 
-// Cerámica y Porcelanas facturan al 21% general — Presupuesto al 10,5%, pero
-// no siempre se lo suman al valor de lista (a veces sale al mismo precio de
-// lista, sin IVA), así que para Presupuesto no hay fórmula: se muestra el
-// precio real de la última factura de Presupuesto de esa pieza, tal cual se
-// cobró (confirmado con Víctor 12/08/26).
+// Cerámica y Porcelanas facturan al 21% general. Presupuesto vende SIEMPRE
+// sin IVA (confirmado con los reportes reales de "Importar ventas": la
+// columna "Exento" de Presupuesto es igual a "Total" en todas las facturas),
+// pero el precio de lista no siempre coincide con lo realmente cobrado — a
+// veces se le suma un plus al neto, a veces no — así que para Presupuesto no
+// hay fórmula: se muestra el precio real de la última factura de esa pieza,
+// tal cual se cobró (confirmado con Víctor 12/08/26).
 const IVA_CERAMICA_PORCELANAS = 0.21;
 
 async function initUser() {

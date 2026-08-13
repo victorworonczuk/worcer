@@ -64,9 +64,13 @@ function dateToMonthStr(date) {
 
 const MESES_LARGO = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-// IVA por empresa — Cerámica y Porcelanas facturan al 21% general, Presupuesto
-// al 10,5% (confirmado con Víctor 12/08/26). "Sin IVA" = importe / (1+tasa).
-const IVA_RATE = { Ceramica: 0.21, Porcelanas: 0.21, Presupuesto: 0.105 };
+// IVA por empresa — Cerámica y Porcelanas facturan al 21% general. Presupuesto
+// vende SIEMPRE sin IVA (confirmado con Víctor 12/08/26, y confirmado en los
+// reportes reales de "Importar ventas": la columna "Exento" de Presupuesto es
+// siempre igual a "Total" — no hay ningún monto de IVA en esas facturas). El
+// importe_ars de una factura de Presupuesto YA es el sin-IVA real, no hay que
+// restarle nada — antes se le aplicaba por error una tasa fija del 10,5%.
+const IVA_RATE = { Ceramica: 0.21, Porcelanas: 0.21, Presupuesto: 0 };
 function sinIva(monto, empresa) {
   const tasa = IVA_RATE[empresa] ?? 0.21;
   return monto / (1 + tasa);
