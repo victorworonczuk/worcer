@@ -72,8 +72,20 @@ function sinIva(monto, empresa) {
   return monto / (1 + tasa);
 }
 
+// CUITs de las dos empresas propias de Víctor. A veces una le factura a la
+// otra (movimiento entre empresas, no una venta real a un cliente) — esas
+// facturas no cuentan como ventas acá (pedido de Víctor 12/08/26: encontró
+// $24,4M de junio y $17,3M... — en realidad era Cerámica Sanitaria facturada
+// como "cliente" por Porcelanas, y Porcelanas Alberti SRL facturada por
+// Cerámica en enero/febrero — ver CUITS_PROPIOS más abajo).
+const CUITS_PROPIOS = ['30709413208', '30714033189']; // Cerámica Sanitaria 8 de Julio SRL, Porcelanas Alberti SRL
+function esFacturaIntercompania(f) {
+  return CUITS_PROPIOS.includes(f.cuit_normalizado);
+}
+
 const state = {
-  facturas: [],       // todas las facturas (se filtra en memoria por período)
+  facturas: [],       // todas las facturas reales a clientes (se filtra en memoria por período)
+  facturasIntercompania: [], // facturas entre las 2 empresas propias — excluidas de facturas, se muestran aparte
   facturaPorId: new Map(), // id -> factura, para saber la empresa de cada factura_item
   factura_items: [],  // con pieza embebida
   listas: [],          // listas_precios, ordenadas por fecha_vigencia ascendente
@@ -107,6 +119,7 @@ const els = {
   btnSiguiente: document.getElementById('periodo-siguiente'),
   btnActual: document.getElementById('periodo-actual'),
   kpiGrid: document.getElementById('kpi-grid'),
+  kpiHint: document.getElementById('kpi-hint'),
   descuentoHint: document.getElementById('descuento-hint'),
   descuentoChart: document.getElementById('descuento-chart'),
   tendenciaChart: document.getElementById('tendencia-chart'),
@@ -127,7 +140,7 @@ async function init() {
   els.mes.value = dateToMonthStr(new Date());
 
   const [{ data: facturas, error: e1 }, { data: items, error: e2 }, { data: listas, error: e3 }, { data: descuentos, error: e4 }] = await Promise.all([
-    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, empresa')),
+    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, empresa, cuit_normalizado')),
     fetchAll(() => client.from('factura_items').select('factura_id, cantidad, precio_unitario, piezas(linea, tipo_pieza, variante, calidad)')),
     client.from('listas_precios').select('id, fecha_vigencia').order('fecha_vigencia', { ascending: true }),
     client.from('lista_precios_descuentos').select('lista_id, monto_desde, monto_hasta, descuento, plazo_pago').order('monto_desde'),
@@ -136,7 +149,9 @@ async function init() {
     els.kpiGrid.innerHTML = `<div class="empty-state">Error al cargar: ${(e1 || e2 || e3 || e4).message}</div>`;
     return;
   }
-  state.facturas = facturas.filter((f) => f.fecha);
+  const facturasConFecha = facturas.filter((f) => f.fecha);
+  state.facturas = facturasConFecha.filter((f) => !esFacturaIntercompania(f));
+  state.facturasIntercompania = facturasConFecha.filter(esFacturaIntercompania);
   state.facturaPorId = new Map(state.facturas.map((f) => [f.id, f]));
   state.factura_items = items;
   state.listas = (listas || []).map((l) => ({ ...l, fecha_vigencia: String(l.fecha_vigencia).slice(0, 10) }));
@@ -173,6 +188,14 @@ function render() {
   const facturasPeriodo = state.facturas.filter((f) => f.fecha >= desde && f.fecha <= hasta);
   const facturaIdsPeriodo = new Set(facturasPeriodo.map((f) => f.id));
   const itemsPeriodo = state.factura_items.filter((it) => facturaIdsPeriodo.has(it.factura_id));
+
+  const intercompaniaPeriodo = state.facturasIntercompania.filter((f) => f.fecha >= desde && f.fecha <= hasta);
+  if (intercompaniaPeriodo.length > 0) {
+    const montoIntercompania = intercompaniaPeriodo.reduce((s, f) => s + Number(f.importe_ars || 0), 0);
+    els.kpiHint.textContent = `No incluye ${intercompaniaPeriodo.length} factura${intercompaniaPeriodo.length === 1 ? '' : 's'} entre las dos empresas propias (${fmtPesos(montoIntercompania)}) — no son ventas a un cliente.`;
+  } else {
+    els.kpiHint.textContent = '';
+  }
 
   renderKpis(facturasPeriodo, itemsPeriodo);
   renderDescuentos(facturasPeriodo);
