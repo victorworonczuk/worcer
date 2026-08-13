@@ -32,6 +32,9 @@
 .tabla-dias td:last-child {
   border-right: none;
 }
-.tabla-dias .col-total {
-  border-left: 2px solid #4a4a4a;
+/* Más específico que "table.pivot .col-total" de produccion.css (que le
+   ganaba a ".tabla-dias .col-total" por especificidad y dejaba ese borde
+   gris clarito de base) — Total/Proyectado/% en negro, más marcado. */
+table.pivot.tabla-dias .col-total {
+  border-left: 2px solid #000000;
 }
