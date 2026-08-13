@@ -25,6 +25,7 @@ const els = {
   userSubtitle: document.getElementById('user-subtitle'),
   mes: document.getElementById('f-mes'),
   tbodyAnual: document.getElementById('tbody-anual'),
+  ultimaActualizacion: document.getElementById('ultima-actualizacion'),
 };
 
 // Las dos tablas (cantidad y $) se muestran siempre juntas, completas, en
@@ -78,6 +79,22 @@ async function initUser() {
   const me = await res.json();
   if (!me.user) { window.location.href = '/login'; return; }
   els.userSubtitle.textContent = `Sesión: ${me.nombre || me.user}`;
+}
+
+// La fecha/hora de la fila más reciente (updated_at) de cualquiera de las
+// dos tablas que carga "Cargar pedidos" — se actualiza siempre juntas en
+// la misma importación, así que el máximo de las dos es "la última carga".
+async function cargarUltimaActualizacion() {
+  const [{ data: a }, { data: b }] = await Promise.all([
+    client.from('pedidos_vendedor').select('updated_at').order('updated_at', { ascending: false }).limit(1),
+    client.from('pedidos_vendedor_proyeccion').select('updated_at').order('updated_at', { ascending: false }).limit(1),
+  ]);
+  const fechas = [a?.[0]?.updated_at, b?.[0]?.updated_at].filter(Boolean).map((f) => new Date(f));
+  if (fechas.length === 0) { els.ultimaActualizacion.textContent = ''; return; }
+  const ultima = new Date(Math.max(...fechas));
+  const fechaStr = ultima.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const horaStr = ultima.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  els.ultimaActualizacion.textContent = `Última carga de archivo: ${fechaStr}, ${horaStr} hs.`;
 }
 
 async function cargarDatos() {
@@ -222,5 +239,5 @@ els.mes.addEventListener('change', render);
 
 (async () => {
   await initUser();
-  await cargarDatos();
+  await Promise.all([cargarDatos(), cargarUltimaActualizacion()]);
 })();
