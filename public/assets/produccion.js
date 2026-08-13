@@ -28,7 +28,20 @@ const els = {
   thead: document.getElementById('thead'),
   tbody: document.getElementById('tbody'),
   notaPie: document.getElementById('nota-pie'),
+  ultimaActualizacion: document.getElementById('ultima-actualizacion'),
 };
+
+// Última fila cargada en producción: por Cargar producción, Recuento,
+// Traslado, o la sincronización automática desde Movimiento de piezas.
+async function cargarUltimaActualizacion() {
+  const { data } = await client.from('produccion').select('created_at').order('created_at', { ascending: false }).limit(1);
+  const fecha = data?.[0]?.created_at;
+  if (!fecha) { els.ultimaActualizacion.textContent = ''; return; }
+  const ultima = new Date(fecha);
+  const fechaStr = ultima.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const horaStr = ultima.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  els.ultimaActualizacion.textContent = `Última carga: ${fechaStr}, ${horaStr} hs.`;
+}
 
 function fmt(n) { return Math.round(n).toLocaleString('es-AR'); }
 function mesDe(fecha) { return Number(fecha.slice(5, 7)) - 1; } // 0-11
@@ -76,6 +89,7 @@ async function init() {
     state.lineas.map((l) => `<option value="${l}">${l}</option>`).join('');
 
   render();
+  cargarUltimaActualizacion();
 }
 
 function filtrar() {

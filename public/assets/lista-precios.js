@@ -6,6 +6,7 @@ const els = {
   tbodyPrecios: document.getElementById('tbody-precios'),
   tbodyDescuentos: document.getElementById('tbody-descuentos'),
   notaPie: document.getElementById('nota-pie'),
+  ultimaActualizacion: document.getElementById('ultima-actualizacion'),
 };
 
 function escapeHtml(str) {
@@ -40,7 +41,7 @@ async function initUser() {
 async function cargar() {
   const { data: listas, error: e1 } = await client
     .from('listas_precios')
-    .select('id, fecha_vigencia, tipo_cambio, nota')
+    .select('id, fecha_vigencia, tipo_cambio, nota, created_at')
     .order('fecha_vigencia', { ascending: false })
     .limit(1);
 
@@ -52,6 +53,12 @@ async function cargar() {
   }
 
   const lista = listas[0];
+  if (lista.created_at) {
+    const ultima = new Date(lista.created_at);
+    const fechaStr = ultima.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const horaStr = ultima.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    els.ultimaActualizacion.textContent = `Última actualización: ${fechaStr}, ${horaStr} hs.`;
+  }
   els.resumen.innerHTML = `
     <div><strong>${fmtFecha(lista.fecha_vigencia)}</strong><span class="label">vigente desde</span></div>
     ${lista.tipo_cambio ? `<div><strong>${fmtPesos(lista.tipo_cambio)}</strong><span class="label">tipo de cambio</span></div>` : ''}

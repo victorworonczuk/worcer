@@ -24,6 +24,7 @@ const state = {
   gastosGenerales: [],
   obligaciones: [],
   descuentos: [],
+  ultimaActualizacion: null,
 };
 
 const els = {
@@ -73,7 +74,7 @@ async function initUser() {
 }
 
 async function cargarDatos() {
-  const [{ data: facturas }, { data: items }, { data: clientes }, { data: costos }, { data: gastos }, { data: obligaciones }, { data: descuentos }] = await Promise.all([
+  const [{ data: facturas }, { data: items }, { data: clientes }, { data: costos }, { data: gastos }, { data: obligaciones }, { data: descuentos }, { data: ultimaFactura }, { data: ultimoItem }] = await Promise.all([
     fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, tipo_comprobante, cliente_id, vendedor, empresa').like('tipo_comprobante', 'F %')),
     fetchAll(() => client.from('factura_items').select('factura_id, cantidad, precio_unitario, pieza_id, piezas(linea, tipo_pieza, variante, calidad)')),
     fetchAll(() => client.from('clientes').select('id, segmento')),
@@ -81,7 +82,12 @@ async function cargarDatos() {
     fetchAll(() => client.from('gastos_generales_mensuales').select('anio, mes, empresa, monto')),
     fetchAll(() => client.from('obligaciones_financieras').select('anio, mes, prestamos, arca')),
     fetchAll(() => client.from('lista_precios_descuentos').select('lista_id, monto_desde, monto_hasta, descuento, plazo_pago').order('monto_desde')),
+    client.from('facturas').select('created_at').order('created_at', { ascending: false }).limit(1),
+    client.from('factura_items').select('created_at').order('created_at', { ascending: false }).limit(1),
   ]);
+
+  const fechas = [ultimaFactura?.[0]?.created_at, ultimoItem?.[0]?.created_at].filter(Boolean).map((f) => new Date(f));
+  state.ultimaActualizacion = fechas.length ? new Date(Math.max(...fechas)) : null;
 
   state.facturas = facturas || [];
   state.items = items || [];
@@ -425,7 +431,13 @@ function render(d) {
     els.metaCallout.style.display = 'none';
   }
 
-  els.fuente.innerHTML = `<strong>Fuente:</strong> facturas, piezas y costos cargados en el CRM. Contribución = ventas − costo de materia prima por pieza (no descuenta comisiones ni descuentos comerciales aplicados, que ya están reflejados en el precio facturado real). Estimación para decisión comercial, no cierre contable.`;
+  let ultimaTexto = '';
+  if (state.ultimaActualizacion) {
+    const fechaStr = state.ultimaActualizacion.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const horaStr = state.ultimaActualizacion.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    ultimaTexto = ` Última carga de archivo: ${fechaStr}, ${horaStr} hs.`;
+  }
+  els.fuente.innerHTML = `<strong>Fuente:</strong> facturas, piezas y costos cargados en el CRM. Contribución = ventas − costo de materia prima por pieza (no descuenta comisiones ni descuentos comerciales aplicados, que ya están reflejados en el precio facturado real). Estimación para decisión comercial, no cierre contable.${ultimaTexto}`;
 }
 
 els.mes.addEventListener('change', () => render(calcular(els.mes.value)));

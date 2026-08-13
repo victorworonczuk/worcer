@@ -133,7 +133,23 @@ const els = {
   piezasTbody: document.getElementById('piezas-tbody'),
   piezasHint: document.getElementById('piezas-hint'),
   descuentoMetricTabs: document.getElementById('descuento-metric-tabs'),
+  ultimaActualizacion: document.getElementById('ultima-actualizacion'),
 };
+
+// Última vez que se cargó algo acá: el más reciente entre una factura nueva
+// (Importar ventas / Cargar factura) o un ítem nuevo (Movimiento de piezas).
+async function cargarUltimaActualizacion() {
+  const [{ data: a }, { data: b }] = await Promise.all([
+    client.from('facturas').select('created_at').order('created_at', { ascending: false }).limit(1),
+    client.from('factura_items').select('created_at').order('created_at', { ascending: false }).limit(1),
+  ]);
+  const fechas = [a?.[0]?.created_at, b?.[0]?.created_at].filter(Boolean).map((f) => new Date(f));
+  if (fechas.length === 0) { els.ultimaActualizacion.textContent = ''; return; }
+  const ultima = new Date(Math.max(...fechas));
+  const fechaStr = ultima.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const horaStr = ultima.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  els.ultimaActualizacion.textContent = `Última carga de archivo: ${fechaStr}, ${horaStr} hs.`;
+}
 
 async function init() {
   const me = await (await fetch('/api/me')).json();
@@ -166,6 +182,7 @@ async function init() {
   }
 
   render();
+  cargarUltimaActualizacion();
 }
 
 // Rango {desde, hasta, anchor} del período elegido, sea semana o mes.
