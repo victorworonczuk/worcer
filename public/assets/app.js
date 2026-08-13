@@ -272,7 +272,7 @@ async function loadData() {
   const { data: interacciones, error: interaccionesError } = await fetchAll(() =>
     client
       .from('interacciones')
-      .select('id, cliente_id, usuario, canal, resultado, nota, created_at')
+      .select('id, cliente_id, usuario, canal, resultado, nota, proximo_seguimiento, created_at')
       .order('created_at', { ascending: false })
   );
 
