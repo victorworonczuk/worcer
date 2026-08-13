@@ -11,3 +11,14 @@
 .tabla-dias tbody td.neg:not(.col-grupo):not(.col-total) {
   background: #cfe8f3;
 }
+
+/* Línea horizontal bien marcada entre cada vendedor — la de base (tbody td,
+   ver style.css) es un gris casi invisible, acá conviene que se note para
+   separar la fila de cada uno con respecto a su venta. */
+.tabla-dias tbody td {
+  border-bottom: 1px solid #4a4a4a;
+}
+.tabla-dias tbody tr.fila-total td {
+  border-top: 2px solid #4a4a4a;
+  border-bottom: none;
+}
