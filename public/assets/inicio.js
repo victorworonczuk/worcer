@@ -107,11 +107,14 @@ async function init() {
   const { desde, hasta } = primerYUltimoDiaMes(hoy);
 
   const [
-    { data: facturasMes, error: e1 },
+    { data: facturasTodas, error: e1 },
     { data: interacciones, error: e2 },
     { data: produccionRows, error: e3 },
   ] = await Promise.all([
-    client.from('facturas').select('id, fecha, importe_ars, cliente_id, cuit_normalizado').gte('fecha', desde).lte('fecha', hasta),
+    // Se trae TODO el historial (no solo el mes) porque "clientes nuevos"
+    // necesita saber cuál fue la primera compra de cada uno alguna vez, no
+    // solo dentro del mes actual.
+    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, cuit_normalizado')),
     fetchAll(() => client.from('interacciones').select('cliente_id, created_at, proximo_seguimiento')),
     fetchAll(() => client.from('produccion').select('fecha, tipo, ubicacion, cantidad, piezas(linea, tipo_pieza, variante, calidad)')),
   ]);
@@ -122,10 +125,25 @@ async function init() {
   }
 
   // --- Facturado / Piezas vendidas / Clientes que compraron (mes actual) ---
-  const facturasReales = (facturasMes || []).filter((f) => !CUITS_PROPIOS.has(f.cuit_normalizado));
-  const facturaIds = facturasReales.map((f) => f.id);
-  const totalFacturado = facturasReales.reduce((s, f) => s + Number(f.importe_ars || 0), 0);
-  const clientesQueCompraron = new Set(facturasReales.filter((f) => f.cliente_id).map((f) => f.cliente_id));
+  const facturasReales = (facturasTodas || []).filter((f) => f.fecha && !CUITS_PROPIOS.has(f.cuit_normalizado));
+  const facturasMesReales = facturasReales.filter((f) => f.fecha >= desde && f.fecha <= hasta);
+  const facturaIds = facturasMesReales.map((f) => f.id);
+  const totalFacturado = facturasMesReales.reduce((s, f) => s + Number(f.importe_ars || 0), 0);
+  const clientesQueCompraron = new Set(facturasMesReales.filter((f) => f.cliente_id).map((f) => f.cliente_id));
+
+  // Cliente "nuevo" = su primera compra EN TODA LA HISTORIA cayó en este mes
+  // (no tenía ninguna factura de antes).
+  const primeraCompraPorCliente = new Map();
+  for (const f of facturasReales) {
+    if (!f.cliente_id) continue;
+    const actual = primeraCompraPorCliente.get(f.cliente_id);
+    if (!actual || f.fecha < actual) primeraCompraPorCliente.set(f.cliente_id, f.fecha);
+  }
+  let clientesNuevos = 0;
+  for (const clienteId of clientesQueCompraron) {
+    const primera = primeraCompraPorCliente.get(clienteId);
+    if (primera && primera >= desde && primera <= hasta) clientesNuevos += 1;
+  }
 
   let piezasVendidas = 0;
   if (facturaIds.length > 0) {
@@ -164,6 +182,7 @@ async function init() {
     { label: 'Facturado este mes', value: fmtPesos(totalFacturado), href: '/analisis-semanal.html' },
     { label: 'Piezas vendidas este mes', value: fmt(piezasVendidas), href: '/analisis-semanal.html' },
     { label: 'Clientes que compraron este mes', value: fmt(clientesQueCompraron.size), href: '/analisis-semanal.html' },
+    { label: 'Clientes nuevos que compraron', value: fmt(clientesNuevos), href: '/index.html' },
     { label: '📅 Seguimientos vencidos', value: fmt(seguimientosVencidos), href: '/index.html', alerta: seguimientosVencidos > 0 },
     { label: '🎯 Contactos esta semana', value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, href: '/index.html', sub: faltanContactos === 0 ? '¡Meta cumplida!' : `Faltan ${faltanContactos}` },
     { label: '📦 Piezas con stock negativo', value: fmt(piezasEnNegativo), href: '/produccion.html', alerta: piezasEnNegativo > 0 },
