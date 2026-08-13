@@ -35,12 +35,12 @@
         Cruza cada factura sin vendedor contra el total de $ por vendedor y día del
         "Tablero de pedidos de venta": busca qué combinación de facturas de ese día
         suma exacto el total de cada vendedor. Si hay una única forma posible, se
-        asigna sola. Si hay más de una (ej. dos facturas del mismo importe a
-        clientes distintos el mismo día), queda listada abajo para elegir a mano
-        según a qué cliente corresponde.
+        asigna sola — esto ya corre automáticamente cada vez que se importan ventas
+        o se carga el Tablero de pedidos, así que lo que ves acá son los casos que
+        quedaron pendientes. Si hay más de una forma posible (ej. dos facturas del
+        mismo importe a clientes distintos el mismo día), queda listada abajo para
+        elegir a mano según a qué cliente corresponde.
       </p>
-
-      <button type="button" id="btn-cotejar" class="btn-primary">Ejecutar cruce</button>
 
       <div id="resultado" class="resultado"></div>
     </div>

@@ -84,6 +84,11 @@ els.btnImportar.addEventListener('click', async () => {
          <ul>${data.sin_vincular.map((r) => `<li>${r.nombre_facturado} (${r.cuit_original || 'sin CUIT'}) — ${r.empresa} — $${Number(r.importe_ars).toLocaleString('es-AR')}</li>`).join('')}</ul>`
       : '';
 
+    const cotejo = data.cotejo_vendedores;
+    const ambiguosHtml = cotejo && cotejo.dias_ambiguos.length > 0
+      ? `<p class="resultado-warn">⚠ ${cotejo.dias_ambiguos.length} día(s) con facturas que quedaron sin poder asignar un único vendedor — revisar en <a href="/cotejar-vendedores.html">Cotejar vendedores</a>.</p>`
+      : '';
+
     els.resultado.innerHTML = `
       <p class="resultado-ok">✓ Importación terminada.</p>
       <ul>
@@ -94,8 +99,10 @@ els.btnImportar.addEventListener('click', async () => {
         <li>Clientes nuevos dados de alta automáticamente: ${data.altas_automaticas}</li>
         <li>Completados con CUIT por coincidir con un cliente sin CUIT ya cargado: ${data.vinculadas_por_nombre ?? 0}</li>
         <li>Vendedor asignado (el vendedor fijo del cliente): ${data.vendedor_asignado_por_cliente ?? 0}</li>
+        <li>Vendedor asignado por cruce de importes contra el Tablero de pedidos: ${cotejo ? cotejo.facturas_asignadas : 0}</li>
       </ul>
       ${sinVincularHtml}
+      ${ambiguosHtml}
     `;
     state.archivos = [];
     renderFileList();

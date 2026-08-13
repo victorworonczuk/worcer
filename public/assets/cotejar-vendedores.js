@@ -1,6 +1,5 @@
 const els = {
   userSubtitle: document.getElementById('user-subtitle'),
-  btnCotejar: document.getElementById('btn-cotejar'),
   resultado: document.getElementById('resultado'),
   ambiguos: document.getElementById('ambiguos'),
 };
@@ -12,9 +11,10 @@ async function initUser() {
   els.userSubtitle.textContent = `Sesión: ${me.nombre || me.user}`;
 
   if (me.rol === 'analisis') {
-    els.btnCotejar.disabled = true;
     els.resultado.innerHTML = '<p class="resultado-error">Tu usuario es de solo lectura — no podés ejecutar el cruce de vendedores.</p>';
+    return false;
   }
+  return true;
 }
 
 function fmtPesos(n) {
@@ -69,10 +69,13 @@ function renderDiaAmbiguo(dia) {
   return div;
 }
 
-els.btnCotejar.addEventListener('click', async () => {
-  els.btnCotejar.disabled = true;
-  els.btnCotejar.textContent = 'Cotejando...';
-  els.resultado.innerHTML = '';
+// El cruce ya corre solo al importar ventas o pedidos — acá se vuelve a
+// correr al entrar a la pantalla (sin botón), por si algo cambió desde el
+// último import (ej. se resolvió un caso ambiguo a mano y eso destrabó
+// otros del mismo día) o para revisar el estado actual sin tener que
+// resubir ningún archivo.
+async function cotejar() {
+  els.resultado.innerHTML = '<p class="loading">Cotejando…</p>';
   els.ambiguos.innerHTML = '';
 
   try {
@@ -97,15 +100,12 @@ els.btnCotejar.addEventListener('click', async () => {
     }
   } catch (err) {
     els.resultado.innerHTML = `<p class="resultado-error">✗ No se pudo cotejar: ${err.message}</p>`;
-  } finally {
-    els.btnCotejar.disabled = false;
-    els.btnCotejar.textContent = 'Ejecutar cruce';
   }
-});
+}
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-initUser();
+initUser().then((puedeCotejar) => { if (puedeCotejar) cotejar(); });

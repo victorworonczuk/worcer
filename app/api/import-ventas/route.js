@@ -3,6 +3,7 @@ import { Client } from 'pg';
 import crypto from 'crypto';
 import { parseVentasXml, mesDe } from '../../../lib/ventasXml.js';
 import { buscarClienteSinCuitPorNombre } from '../../../lib/clienteMatching.js';
+import { ejecutarCotejo } from '../../../lib/cotejarVendedor.js';
 
 // CUITs de las propias sociedades de Worcer (Cerámica Sanitaria 8 de Julio SRL,
 // Porcelanas Alberti SRL) — a veces se facturan cosas entre ellas mismas
@@ -165,6 +166,12 @@ export async function POST(request) {
       order by created_at desc limit 20
     `);
 
+    // El cruce por importe contra el Tablero de pedidos (antes había que
+    // entrar aparte a "Cotejar vendedores" y apretar un botón) — se corre
+    // solo acá, con la misma conexión, para las facturas que sigan sin
+    // vendedor después del paso de cartera fija de arriba.
+    const cotejo = await ejecutarCotejo(client);
+
     return NextResponse.json({
       ok: true,
       leidos: registros.length,
@@ -175,6 +182,7 @@ export async function POST(request) {
       vinculadas_por_nombre: vinculadasPorNombre,
       vendedor_asignado_por_cliente: vendedorAsignado,
       sin_vincular: sinVincular,
+      cotejo_vendedores: cotejo,
     });
   } finally {
     await client.end();

@@ -82,14 +82,21 @@ els.btnImportar.addEventListener('click', async () => {
          <ul>${data.sin_mapear.map((n) => `<li>${n}</li>`).join('')}</ul>`
       : '';
 
+    const cotejo = data.cotejo_vendedores;
+    const ambiguosHtml = cotejo && cotejo.dias_ambiguos.length > 0
+      ? `<p class="resultado-warn">⚠ ${cotejo.dias_ambiguos.length} día(s) con facturas que quedaron sin poder asignar un único vendedor — revisar en <a href="/cotejar-vendedores.html">Cotejar vendedores</a>.</p>`
+      : '';
+
     els.resultado.innerHTML = `
       <p class="resultado-ok">✓ Importación terminada.</p>
       <ul>
         <li>Filas leídas (vendedor × día): ${data.filas_leidas}</li>
         <li>Filas cargadas/actualizadas: ${data.filas_cargadas}</li>
         <li>Proyecciones de cierre de mes cargadas: ${data.proyecciones_cargadas}</li>
+        <li>Vendedor asignado a facturas por cruce de importes: ${cotejo ? cotejo.facturas_asignadas : 0}</li>
       </ul>
       ${sinMapearHtml}
+      ${ambiguosHtml}
     `;
     state.archivo = null;
     renderFileList();
