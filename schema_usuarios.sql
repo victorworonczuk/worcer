@@ -34,3 +34,8 @@ alter table public.clientes add column if not exists transporte_direccion text;
 -- Nombre de la persona de contacto (a quién pedir cuando se llama), separado
 -- de nombre/nombre_fantasia que son la razón social de la empresa.
 alter table public.clientes add column if not exists nombre_contacto text;
+
+-- domicilio queda como dirección fiscal (la de la razón social/CUIT).
+-- direccion_entrega es donde efectivamente se manda el pedido cuando difiere
+-- de la fiscal (obra, depósito, otra sucursal) — pedido de Víctor 14/08/26.
+alter table public.clientes add column if not exists direccion_entrega text;

@@ -141,6 +141,9 @@
         <label>Razón social / Nombre *
           <input type="text" id="nc-nombre" required />
         </label>
+        <label>Nombre de fantasía
+          <input type="text" id="nc-nombre-fantasia" placeholder="Nombre del negocio, si es distinto de la razón social" />
+        </label>
         <label>CUIT
           <input type="text" id="nc-cuit" placeholder="30-12345678-9" />
         </label>
@@ -178,8 +181,11 @@
             <input type="text" id="nc-localidad" />
           </label>
         </div>
-        <label>Domicilio
+        <label>Dirección fiscal
           <input type="text" id="nc-domicilio" />
+        </label>
+        <label>Dirección de entrega <span class="opcional-tag">(si es distinta de la fiscal)</span>
+          <input type="text" id="nc-direccion-entrega" />
         </label>
         <label>Nombre de contacto
           <input type="text" id="nc-nombre-contacto" placeholder="A quién pedir cuando se llama" />

@@ -948,10 +948,12 @@ async function onSubmitNuevoCliente(e) {
 
   const nuevo = {
     nombre,
+    nombre_fantasia: document.getElementById('nc-nombre-fantasia').value.trim() || null,
     cuit: cuitIngresado,
     provincia: document.getElementById('nc-provincia').value || null,
     localidad: document.getElementById('nc-localidad').value.trim() || null,
     domicilio: document.getElementById('nc-domicilio').value.trim() || null,
+    direccion_entrega: document.getElementById('nc-direccion-entrega').value.trim() || null,
     nombre_contacto: document.getElementById('nc-nombre-contacto').value.trim() || null,
     telefono: document.getElementById('nc-telefono').value.trim() || null,
     email: document.getElementById('nc-email').value.trim() || null,
@@ -1119,6 +1121,7 @@ function rowHtml(r) {
           <button type="button" class="toggle-descripcion ${r.descripcion ? 'has-desc' : ''}" data-id="${r.id}" title="Ver/editar descripción">📝</button>
           <button type="button" class="toggle-transporte ${(r.transporte_nombre || r.transporte_telefono || r.transporte_direccion) ? 'has-desc' : ''}" data-id="${r.id}" title="Ver/editar transporte/expreso">🚚</button>
         </div>
+        <input type="text" class="contacto-input" data-field="nombre_fantasia" value="${escapeHtml(r.nombre_fantasia || '')}" placeholder="Nombre de fantasía" />
         <span class="cuit">${escapeHtml(r.cuit || '')}</span>
         ${state.openDescripcion.has(r.id) ? `
         <div class="descripcion-panel">
@@ -1140,7 +1143,8 @@ function rowHtml(r) {
           ${PROVINCIAS.map((p) => `<option value="${p}" ${r.provincia === p ? 'selected' : ''}>${p}</option>`).join('')}
         </select>
         <input type="text" class="ubicacion-input" data-field="localidad" value="${escapeHtml(r.localidad || '')}" placeholder="Localidad" />
-        <input type="text" class="ubicacion-input" data-field="domicilio" value="${escapeHtml(r.domicilio || '')}" placeholder="Domicilio" />
+        <input type="text" class="ubicacion-input" data-field="domicilio" value="${escapeHtml(r.domicilio || '')}" placeholder="Dirección fiscal" />
+        <input type="text" class="ubicacion-input" data-field="direccion_entrega" value="${escapeHtml(r.direccion_entrega || '')}" placeholder="Dirección de entrega (si difiere)" />
         <span class="save-indicator">✓</span>
       </td>
       <td class="stacked-cell">

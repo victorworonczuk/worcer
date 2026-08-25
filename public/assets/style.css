@@ -468,6 +468,10 @@ tbody tr:hover {
   color: var(--text-muted);
   font-size: 12px;
 }
+.nombre-cell .contacto-input {
+  display: block;
+  margin: 3px 0;
+}
 .stacked-cell {
   display: flex;
   flex-direction: column;
@@ -964,6 +968,9 @@ button.nav-link {
   color: var(--text-muted);
   font-weight: 600;
   margin-bottom: 12px;
+}
+.modal-panel form label .opcional-tag {
+  font-weight: 400;
 }
 .modal-panel form input,
 .modal-panel form select {
