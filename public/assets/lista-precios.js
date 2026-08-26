@@ -84,7 +84,9 @@ async function tcLoadMeses() {
 
   const [{ data: tc, error: e1 }, { data: facturas, error: e2 }] = await Promise.all([
     client.from('tipo_cambio').select('mes, valor, cargado_por').order('mes', { ascending: false }),
-    fetchAll(() => client.from('facturas').select('fecha, tipo_cambio')),
+    // .order('id'): sin desempate único, fetchAll() puede saltear o repetir
+    // filas al paginar en tablas de más de 1000 filas (bug real 26/08/26).
+    fetchAll(() => client.from('facturas').select('id, fecha, tipo_cambio').order('id', { ascending: true })),
   ]);
   if (e1 || e2) { els.tcMesesList.innerHTML = `<div class="loading">Error: ${(e1 || e2).message}</div>`; return; }
 

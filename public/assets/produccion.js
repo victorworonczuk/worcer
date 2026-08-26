@@ -54,13 +54,19 @@ async function init() {
 
   // Traer producción unida al catálogo de piezas. Supabase limita las respuestas
   // REST a 1000 filas, así que se pagina con .range() hasta traer todo.
+  // El .order('id') final es imprescindible: 'fecha' se repite entre filas
+  // (no es única), y sin un desempate estable Postgres puede devolver las
+  // filas empatadas en distinto orden entre una página y la siguiente —
+  // eso hace que algunas filas se salteen y otras se repitan al paginar
+  // (bug real encontrado 26/08/26 en la consulta de clientes de app.js).
   const PAGE = 1000;
   let data = [];
   for (let from = 0; ; from += PAGE) {
     const { data: page, error } = await client
       .from('produccion')
-      .select('fecha, tipo, ubicacion, cantidad, piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
+      .select('id, fecha, tipo, ubicacion, cantidad, piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
       .order('fecha', { ascending: true })
+      .order('id', { ascending: true })
       .range(from, from + PAGE - 1);
     if (error) {
       els.tbody.innerHTML = `<tr><td class="empty-state">Error al cargar: ${error.message}</td></tr>`;

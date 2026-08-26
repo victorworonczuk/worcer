@@ -163,11 +163,14 @@ async function init() {
   els.mes.value = dateToMonthStr(new Date());
 
   const [{ data: facturas, error: e1 }, { data: items, error: e2 }, { data: listas, error: e3 }, { data: descuentos, error: e4 }, { data: pedidosVendedor, error: e5 }] = await Promise.all([
-    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, empresa, cuit_normalizado')),
-    fetchAll(() => client.from('factura_items').select('factura_id, cantidad, precio_unitario, piezas(linea, tipo_pieza, variante, calidad)')),
+    // .order('id') en las tres: sin desempate único, fetchAll() puede
+    // saltear o repetir filas al paginar en tablas de más de 1000 filas
+    // (bug real encontrado 26/08/26 en la consulta de clientes de app.js).
+    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, empresa, cuit_normalizado').order('id', { ascending: true })),
+    fetchAll(() => client.from('factura_items').select('id, factura_id, cantidad, precio_unitario, piezas(linea, tipo_pieza, variante, calidad)').order('id', { ascending: true })),
     client.from('listas_precios').select('id, fecha_vigencia').order('fecha_vigencia', { ascending: true }),
     client.from('lista_precios_descuentos').select('lista_id, monto_desde, monto_hasta, descuento, plazo_pago').order('monto_desde'),
-    fetchAll(() => client.from('pedidos_vendedor').select('vendedor, fecha, cantidad, monto_ars')),
+    fetchAll(() => client.from('pedidos_vendedor').select('id, vendedor, fecha, cantidad, monto_ars').order('id', { ascending: true })),
   ]);
   if (e1 || e2 || e3 || e4 || e5) {
     els.kpiGrid.innerHTML = `<div class="empty-state">Error al cargar: ${(e1 || e2 || e3 || e4 || e5).message}</div>`;

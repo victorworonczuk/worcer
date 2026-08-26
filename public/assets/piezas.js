@@ -98,7 +98,9 @@ async function init() {
   }
   els.userSubtitle.textContent = `Sesión: ${me.nombre || me.user}`;
 
-  const { data: clientesData } = await fetchAll(() => client.from('clientes').select('id, cuit, nombre'));
+  // .order('id'): sin esto fetchAll() puede saltear o repetir filas al
+  // paginar clientes (más de 1000 filas — bug real encontrado 26/08/26).
+  const { data: clientesData } = await fetchAll(() => client.from('clientes').select('id, cuit, nombre').order('id', { ascending: true }));
   state.clientes = clientesData || [];
 
   const { data: piezasData } = await client.from('piezas').select('id, linea, tipo_pieza, variante, calidad').eq('activo', true);
@@ -193,10 +195,13 @@ els.limpiarBtn.addEventListener('click', () => {
 async function buscar() {
   els.tbody.innerHTML = '<tr><td colspan="7" class="loading">Buscando…</td></tr>';
 
+  // .order('id'): sin esto fetchAll() puede saltear o repetir filas al
+  // paginar (más de 1000 filas — bug real encontrado 26/08/26).
   const { data, error } = await fetchAll(() =>
     client
       .from('factura_items')
-      .select('cantidad, precio_unitario, factura_id, pieza_id, facturas(fecha, cliente_id, nombre_facturado, vendedor), piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
+      .select('id, cantidad, precio_unitario, factura_id, pieza_id, facturas(fecha, cliente_id, nombre_facturado, vendedor), piezas(linea, tipo_pieza, variante, calidad, precio_ars)')
+      .order('id', { ascending: true })
   );
 
   if (error) {

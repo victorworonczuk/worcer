@@ -113,10 +113,12 @@ async function init() {
   ] = await Promise.all([
     // Se trae TODO el historial (no solo el mes) porque "clientes nuevos"
     // necesita saber cuál fue la primera compra de cada uno alguna vez, no
-    // solo dentro del mes actual.
-    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, cuit_normalizado')),
-    fetchAll(() => client.from('interacciones').select('cliente_id, created_at, proximo_seguimiento')),
-    fetchAll(() => client.from('produccion').select('fecha, tipo, ubicacion, cantidad, piezas(linea, tipo_pieza, variante, calidad)')),
+    // solo dentro del mes actual. .order('id') en las tres: sin desempate
+    // único, fetchAll() puede saltear o repetir filas al paginar en tablas
+    // de más de 1000 filas (bug real encontrado 26/08/26).
+    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, cuit_normalizado').order('id', { ascending: true })),
+    fetchAll(() => client.from('interacciones').select('id, cliente_id, created_at, proximo_seguimiento').order('id', { ascending: true })),
+    fetchAll(() => client.from('produccion').select('id, fecha, tipo, ubicacion, cantidad, piezas(linea, tipo_pieza, variante, calidad)').order('id', { ascending: true })),
   ]);
 
   if (e1 || e2 || e3) {

@@ -237,12 +237,21 @@ function actualizarSubtitulo() {
 
 async function loadData() {
   els.tbody.innerHTML = `<tr><td colspan="8" class="loading">Cargando clientes…</td></tr>`;
+  // El .order('id') final es imprescindible: fetchAll() pagina con varias
+  // consultas .range() separadas, y sin un desempate único, Postgres puede
+  // devolver las filas empatadas (mismo segmento y misma facturación — les
+  // pasa a TODAS las que tienen ambos en null) en distinto orden entre una
+  // página y la siguiente. Eso hacía que algunas filas se salteen (quedan
+  // "en el borde" entre dos páginas y no caen en ninguna) mientras otras se
+  // repiten — bug real detectado 26/08/26: 9 clientes duplicados y otros 9
+  // (entre ellos uno recién cargado) directamente ausentes del dashboard.
   const { data, error } = await fetchAll(() =>
     client
       .from('clientes')
       .select('*')
       .order('segmento', { ascending: true })
       .order('usd_total_2025_2026', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: true })
   );
 
   if (error) {
@@ -253,12 +262,16 @@ async function loadData() {
   state.all = data;
   actualizarSubtitulo();
 
+  // .order('id') al final por el mismo motivo que en la consulta de clientes
+  // de arriba: 'fecha' se repite entre facturas (no es única), y sin un
+  // desempate estable fetchAll() puede saltear u repetir filas al paginar.
   const { data: facturas, error: facturasError } = await fetchAll(() =>
     client
       .from('facturas')
-      .select('cliente_id, fecha, empresa, mes, importe_ars, importe_usd')
+      .select('id, cliente_id, fecha, empresa, mes, importe_ars, importe_usd')
       .not('cliente_id', 'is', null)
       .order('fecha', { ascending: false })
+      .order('id', { ascending: true })
   );
 
   if (facturasError) {
@@ -282,6 +295,7 @@ async function loadData() {
       .from('interacciones')
       .select('id, cliente_id, usuario, canal, resultado, nota, proximo_seguimiento, created_at')
       .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
   );
 
   if (interaccionesError) {
@@ -500,7 +514,12 @@ function applyFilters() {
   // dentro de cada segmento) — .filter() lo preserva. "Ordenar" solo entra a
   // reordenar cuando se elige explícitamente por facturación total.
   const orden = els.orden.value;
-  if (orden === 'facturacion_desc' || orden === 'facturacion_asc') {
+  if (orden === 'reciente_desc') {
+    // Para encontrar un cliente recién cargado: sin esto quedaba enterrado
+    // al final (orden por defecto es por segmento, y un alta manual nueva
+    // no tiene segmento todavía — cae al final de los 1500 clientes).
+    state.filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  } else if (orden === 'facturacion_desc' || orden === 'facturacion_asc') {
     const signo = orden === 'facturacion_desc' ? -1 : 1;
     state.filtered.sort((a, b) => signo * ((a.usd_total_2025_2026 || 0) - (b.usd_total_2025_2026 || 0)));
   } else if (orden === 'ultima_compra_desc' || orden === 'ultima_compra_asc') {

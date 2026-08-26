@@ -153,9 +153,10 @@ async function loadRecientes() {
   const { data, error } = await fetchAll(() =>
     client
       .from('produccion')
-      .select('fecha, ubicacion, cantidad, cargado_por')
+      .select('id, fecha, ubicacion, cantidad, cargado_por')
       .eq('tipo', 'recuento')
       .order('fecha', { ascending: false })
+      .order('id', { ascending: true })
   );
   if (error) { els.recientesList.innerHTML = `<div class="loading">Error: ${error.message}</div>`; return; }
   if (!data || !data.length) {

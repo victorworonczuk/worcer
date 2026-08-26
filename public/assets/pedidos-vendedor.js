@@ -98,9 +98,12 @@ async function cargarUltimaActualizacion() {
 }
 
 async function cargarDatos() {
+  // .order('id') al final en ambas: 'fecha' se repite entre vendedores, y sin
+  // un desempate único fetchAll() puede saltear o repetir filas al paginar
+  // en tablas de más de 1000 filas (bug real encontrado 26/08/26).
   const [{ data: filas, error: e1 }, { data: proyecciones, error: e2 }] = await Promise.all([
-    fetchAll(() => client.from('pedidos_vendedor').select('vendedor, fecha, cantidad, monto_ars').order('fecha')),
-    fetchAll(() => client.from('pedidos_vendedor_proyeccion').select('vendedor, mes, proyectado_cantidad, proyectado_monto')),
+    fetchAll(() => client.from('pedidos_vendedor').select('id, vendedor, fecha, cantidad, monto_ars').order('fecha').order('id', { ascending: true })),
+    fetchAll(() => client.from('pedidos_vendedor_proyeccion').select('id, vendedor, mes, proyectado_cantidad, proyectado_monto').order('id', { ascending: true })),
   ]);
   if (e1 || e2) {
     const msg = `<tr><td class="empty-state">Error al cargar: ${(e1 || e2).message}</td></tr>`;
