@@ -44,7 +44,7 @@ const UMBRAL_INTENTOS_SIN_RESULTADO = 5;
 const VENDEDORES = [
   'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
   'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
-  'Mariano Cabarrus', 'Sebastián Guerra', 'Horacio Vostrosky', 'Víctor W.',
+  'Mariano Cabarrus', 'Sebastián Guerra', 'Horacio Vostrosky', 'Víctor W.', 'Cantero',
 ];
 
 const CANALES_CAPTACION = [
