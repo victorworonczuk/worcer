@@ -309,6 +309,11 @@ async function loadData() {
     }
   }
 
+  // Deep link desde el cuadro "Clientes nuevos" del Inicio.
+  if (new URLSearchParams(location.search).get('filtro') === 'clientesNuevosMes') {
+    state.filters.soloClientesNuevosMes = true;
+  }
+
   populateFilterOptions();
   renderStats();
   applyFilters();

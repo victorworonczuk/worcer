@@ -15,3 +15,18 @@
 .kpi-card-link .kpi-value.kpi-alerta {
   color: var(--seg-e);
 }
+.kpi-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kpi-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+}
+.kpi-breakdown-row span:first-child {
+  font-weight: 400;
+  color: var(--text-muted);
+}

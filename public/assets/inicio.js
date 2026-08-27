@@ -116,7 +116,7 @@ async function init() {
     // solo dentro del mes actual. .order('id') en las tres: sin desempate
     // único, fetchAll() puede saltear o repetir filas al paginar en tablas
     // de más de 1000 filas (bug real encontrado 26/08/26).
-    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, cuit_normalizado').order('id', { ascending: true })),
+    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, cuit_normalizado, empresa').order('id', { ascending: true })),
     fetchAll(() => client.from('interacciones').select('id, cliente_id, created_at, proximo_seguimiento').order('id', { ascending: true })),
     fetchAll(() => client.from('produccion').select('id, fecha, tipo, ubicacion, cantidad, piezas(linea, tipo_pieza, variante, calidad)').order('id', { ascending: true })),
   ]);
@@ -180,23 +180,56 @@ async function init() {
     .map((r) => ({ fecha: r.fecha, tipo: r.tipo, ubicacion: r.ubicacion, cantidad: r.cantidad, ...r.piezas }));
   const piezasEnNegativo = contarPiezasEnNegativo(rowsConPieza);
 
+  // --- Facturado por empresa (mes actual) ---
+  const EMPRESA_LABEL = { Ceramica: 'Cerámica', Porcelanas: 'Porcelanas', Presupuesto: 'Presupuesto' };
+  const facturadoPorEmpresa = new Map();
+  for (const f of facturasMesReales) {
+    const emp = f.empresa || 'Sin empresa';
+    facturadoPorEmpresa.set(emp, (facturadoPorEmpresa.get(emp) || 0) + Number(f.importe_ars || 0));
+  }
+  const breakdownEmpresa = Object.keys(EMPRESA_LABEL)
+    .filter((emp) => facturadoPorEmpresa.has(emp))
+    .concat([...facturadoPorEmpresa.keys()].filter((emp) => !EMPRESA_LABEL[emp]))
+    .map((emp) => ({ label: EMPRESA_LABEL[emp] || emp, value: facturadoPorEmpresa.get(emp) }));
+
+  const mesActualStr = desde.slice(0, 7);
+  const hrefMesActual = `/analisis-semanal.html?periodo=mes&mes=${mesActualStr}`;
+
   const kpis = [
-    { label: 'Facturado este mes', value: fmtPesos(totalFacturado), href: '/analisis-semanal.html' },
-    { label: 'Piezas vendidas este mes', value: fmt(piezasVendidas), href: '/analisis-semanal.html' },
-    { label: 'Clientes que compraron este mes', value: fmt(clientesQueCompraron.size), href: '/analisis-semanal.html' },
-    { label: 'Clientes nuevos que compraron', value: fmt(clientesNuevos), href: '/index.html' },
+    { label: 'Facturado este mes', value: fmtPesos(totalFacturado), href: hrefMesActual },
+    { label: 'Piezas vendidas este mes', value: fmt(piezasVendidas), href: hrefMesActual },
+    { label: 'Clientes que compraron este mes', value: fmt(clientesQueCompraron.size), href: hrefMesActual },
+    { label: 'Facturación por empresa este mes', breakdown: breakdownEmpresa, href: hrefMesActual },
+    { label: 'Clientes nuevos que compraron', value: fmt(clientesNuevos), href: '/index.html?filtro=clientesNuevosMes' },
     { label: '📅 Seguimientos vencidos', value: fmt(seguimientosVencidos), href: '/index.html', alerta: seguimientosVencidos > 0 },
     { label: '🎯 Contactos esta semana', value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, href: '/index.html', sub: faltanContactos === 0 ? '¡Meta cumplida!' : `Faltan ${faltanContactos}` },
     { label: '📦 Piezas con stock negativo', value: fmt(piezasEnNegativo), href: '/produccion.html', alerta: piezasEnNegativo > 0 },
   ];
 
-  els.kpiGrid.innerHTML = kpis.map((k) => `
-    <a class="kpi-card kpi-card-link" href="${k.href}">
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-value${k.alerta ? ' kpi-alerta' : ''}">${k.value}</div>
-      ${k.sub ? `<div class="kpi-label">${k.sub}</div>` : ''}
-    </a>
-  `).join('');
+  els.kpiGrid.innerHTML = kpis.map((k) => {
+    if (k.breakdown) {
+      return `
+        <a class="kpi-card kpi-card-link" href="${k.href}">
+          <div class="kpi-label">${k.label}</div>
+          <div class="kpi-breakdown">
+            ${k.breakdown.map((b) => `
+              <div class="kpi-breakdown-row">
+                <span>${b.label}</span>
+                <span>${fmtPesos(b.value)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </a>
+      `;
+    }
+    return `
+      <a class="kpi-card kpi-card-link" href="${k.href}">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value${k.alerta ? ' kpi-alerta' : ''}">${k.value}</div>
+        ${k.sub ? `<div class="kpi-label">${k.sub}</div>` : ''}
+      </a>
+    `;
+  }).join('');
 
   cargarUltimaActualizacion();
 }

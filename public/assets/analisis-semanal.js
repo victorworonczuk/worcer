@@ -162,6 +162,19 @@ async function init() {
   els.semana.value = dateToIsoWeekStr(new Date());
   els.mes.value = dateToMonthStr(new Date());
 
+  // Deep link desde otras pantallas (ej. cuadro "Facturado" del Inicio):
+  // ?periodo=mes&mes=2026-08 o ?periodo=semana&semana=2026-W35.
+  const params = new URLSearchParams(window.location.search);
+  const periodoParam = params.get('periodo');
+  if (periodoParam === 'mes' || periodoParam === 'semana') {
+    state.tipoPeriodo = periodoParam;
+    els.tipoPeriodo.value = periodoParam;
+    els.campoSemana.classList.toggle('hidden', periodoParam !== 'semana');
+    els.campoMes.classList.toggle('hidden', periodoParam !== 'mes');
+  }
+  if (params.get('mes')) els.mes.value = params.get('mes');
+  if (params.get('semana')) els.semana.value = params.get('semana');
+
   const [{ data: facturas, error: e1 }, { data: items, error: e2 }, { data: listas, error: e3 }, { data: descuentos, error: e4 }, { data: pedidosVendedor, error: e5 }] = await Promise.all([
     // .order('id') en las tres: sin desempate único, fetchAll() puede
     // saltear o repetir filas al paginar en tablas de más de 1000 filas
