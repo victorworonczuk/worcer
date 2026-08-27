@@ -110,6 +110,7 @@ async function init() {
     { data: facturasTodas, error: e1 },
     { data: interacciones, error: e2 },
     { data: produccionRows, error: e3 },
+    { data: pedidosVendedor, error: e4 },
   ] = await Promise.all([
     // Se trae TODO el historial (no solo el mes) porque "clientes nuevos"
     // necesita saber cuál fue la primera compra de cada uno alguna vez, no
@@ -119,10 +120,11 @@ async function init() {
     fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, cuit_normalizado, empresa').order('id', { ascending: true })),
     fetchAll(() => client.from('interacciones').select('id, cliente_id, created_at, proximo_seguimiento').order('id', { ascending: true })),
     fetchAll(() => client.from('produccion').select('id, fecha, tipo, ubicacion, cantidad, piezas(linea, tipo_pieza, variante, calidad)').order('id', { ascending: true })),
+    fetchAll(() => client.from('pedidos_vendedor').select('id, fecha, cantidad, monto_ars').order('id', { ascending: true })),
   ]);
 
-  if (e1 || e2 || e3) {
-    els.kpiGrid.innerHTML = `<div class="empty-state">Error al cargar: ${(e1 || e2 || e3).message}</div>`;
+  if (e1 || e2 || e3 || e4) {
+    els.kpiGrid.innerHTML = `<div class="empty-state">Error al cargar: ${(e1 || e2 || e3 || e4).message}</div>`;
     return;
   }
 
@@ -195,12 +197,18 @@ async function init() {
   const mesActualStr = desde.slice(0, 7);
   const hrefMesActual = `/analisis-semanal.html?periodo=mes&mes=${mesActualStr}`;
 
+  // --- Pedidos por vendedor (mes actual) ---
+  const pedidosMes = (pedidosVendedor || []).filter((p) => p.fecha >= desde && p.fecha <= hasta);
+  const totalPedidos = pedidosMes.reduce((s, p) => s + Number(p.cantidad || 0), 0);
+  const totalMontoPedidos = pedidosMes.reduce((s, p) => s + Number(p.monto_ars || 0), 0);
+
   const kpis = [
     { label: 'Facturado este mes', value: fmtPesos(totalFacturado), href: hrefMesActual },
     { label: 'Piezas vendidas este mes', value: fmt(piezasVendidas), href: hrefMesActual },
     { label: 'Clientes que compraron este mes', value: fmt(clientesQueCompraron.size), href: hrefMesActual },
     { label: 'Facturación por empresa este mes', breakdown: breakdownEmpresa, href: hrefMesActual },
     { label: 'Clientes nuevos que compraron', value: fmt(clientesNuevos), href: '/index.html?filtro=clientesNuevosMes' },
+    { label: 'Pedidos por vendedor este mes', value: fmt(totalPedidos), sub: fmtPesos(totalMontoPedidos), href: '/pedidos-vendedor.html' },
     { label: '📅 Seguimientos vencidos', value: fmt(seguimientosVencidos), href: '/index.html', alerta: seguimientosVencidos > 0 },
     { label: '🎯 Contactos esta semana', value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, href: '/index.html', sub: faltanContactos === 0 ? '¡Meta cumplida!' : `Faltan ${faltanContactos}` },
     { label: '📦 Piezas con stock negativo', value: fmt(piezasEnNegativo), href: '/produccion.html', alerta: piezasEnNegativo > 0 },
