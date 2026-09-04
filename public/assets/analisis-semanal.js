@@ -92,7 +92,7 @@ const state = {
   facturasIntercompania: [], // facturas entre las 2 empresas propias — excluidas de facturas, se muestran aparte
   facturaPorId: new Map(), // id -> factura, para saber la empresa de cada factura_item
   factura_items: [],  // con pieza embebida
-  pedidosVendedor: [], // pedidos_vendedor (Tablero de pedidos) — para el cuadro compacto de Ventas por vendedor
+  vendedorPorCliente: new Map(), // cliente_id -> vendedor actual (cartera fija) — para el cuadro de Ventas por vendedor
   listas: [],          // listas_precios, ordenadas por fecha_vigencia ascendente
   descuentosPorLista: new Map(), // lista_id -> [{monto_desde, monto_hasta, descuento, plazo_pago}]
   tipoPeriodo: 'semana', // 'semana' | 'mes'
@@ -175,15 +175,15 @@ async function init() {
   if (params.get('mes')) els.mes.value = params.get('mes');
   if (params.get('semana')) els.semana.value = params.get('semana');
 
-  const [{ data: facturas, error: e1 }, { data: items, error: e2 }, { data: listas, error: e3 }, { data: descuentos, error: e4 }, { data: pedidosVendedor, error: e5 }] = await Promise.all([
-    // .order('id') en las tres: sin desempate único, fetchAll() puede
-    // saltear o repetir filas al paginar en tablas de más de 1000 filas
-    // (bug real encontrado 26/08/26 en la consulta de clientes de app.js).
+  const [{ data: facturas, error: e1 }, { data: items, error: e2 }, { data: listas, error: e3 }, { data: descuentos, error: e4 }, { data: clientes, error: e5 }] = await Promise.all([
+    // .order('id') en todas: sin desempate único, fetchAll() puede saltear o
+    // repetir filas al paginar en tablas de más de 1000 filas (bug real
+    // encontrado 26/08/26 en la consulta de clientes de app.js).
     fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, empresa, cuit_normalizado').order('id', { ascending: true })),
     fetchAll(() => client.from('factura_items').select('id, factura_id, cantidad, precio_unitario, piezas(linea, tipo_pieza, variante, calidad)').order('id', { ascending: true })),
     client.from('listas_precios').select('id, fecha_vigencia').order('fecha_vigencia', { ascending: true }),
     client.from('lista_precios_descuentos').select('lista_id, monto_desde, monto_hasta, descuento, plazo_pago').order('monto_desde'),
-    fetchAll(() => client.from('pedidos_vendedor').select('id, vendedor, fecha, cantidad, monto_ars').order('id', { ascending: true })),
+    fetchAll(() => client.from('clientes').select('id, vendedor').order('id', { ascending: true })),
   ]);
   if (e1 || e2 || e3 || e4 || e5) {
     els.kpiGrid.innerHTML = `<div class="empty-state">Error al cargar: ${(e1 || e2 || e3 || e4 || e5).message}</div>`;
@@ -194,7 +194,7 @@ async function init() {
   state.facturasIntercompania = facturasConFecha.filter(esFacturaIntercompania);
   state.facturaPorId = new Map(state.facturas.map((f) => [f.id, f]));
   state.factura_items = items;
-  state.pedidosVendedor = pedidosVendedor || [];
+  state.vendedorPorCliente = new Map((clientes || []).map((c) => [c.id, c.vendedor]));
   state.listas = (listas || []).map((l) => ({ ...l, fecha_vigencia: String(l.fecha_vigencia).slice(0, 10) }));
   state.descuentosPorLista = new Map();
   for (const d of (descuentos || [])) {
@@ -241,7 +241,7 @@ function render() {
   }
 
   renderKpis(facturasPeriodo, itemsPeriodo);
-  renderVendedores(desde, hasta);
+  renderVendedores(facturasPeriodo, itemsPeriodo);
   renderDescuentos(facturasPeriodo);
   renderTendencia(anchor);
   renderPiezas(itemsPeriodo, facturasPeriodo);
@@ -270,20 +270,37 @@ function renderKpis(facturasSemana, itemsSemana) {
 // todo el análisis en una sola pantalla) — a diferencia de Pedidos por
 // vendedor, acá NO se muestra la grilla día a día, solo el total de cada
 // vendedor en el mismo período (semana o mes) que el resto de la pantalla.
-function renderVendedores(desde, hasta) {
-  const filasPeriodo = state.pedidosVendedor.filter((f) => f.fecha >= desde && f.fecha <= hasta);
-  if (filasPeriodo.length === 0) {
-    els.vendedoresTbody.innerHTML = '<tr><td class="empty-state" colspan="4">No hay pedidos cargados en este período.</td></tr>';
-    return;
+//
+// Hasta el 04/09/26 esto salía de pedidos_vendedor (carga manual día a día
+// en Cargar pedidos) — se desincronizaba fácil: a Víctor le faltaron
+// $6,6M de agosto en su propia fila porque nadie tipeó esos días. Ahora
+// se calcula directo de las facturas ya importadas (monto) y sus piezas
+// (cantidad, de factura_items) agrupando por el vendedor ACTUAL de cada
+// cliente (state.vendedorPorCliente) — no el que tenía al momento de
+// facturar, porque la cartera es fija (ver import-ventas/route.js). Así
+// nunca puede faltar una venta mientras la factura esté cargada, y no
+// hace falta cargar nada a mano en paralelo dentro del sistema.
+function renderVendedores(facturasPeriodo, itemsPeriodo) {
+  const piezasPorFactura = new Map();
+  for (const it of itemsPeriodo) {
+    piezasPorFactura.set(it.factura_id, (piezasPorFactura.get(it.factura_id) || 0) + Number(it.cantidad || 0));
   }
 
   const porVendedor = new Map();
-  for (const f of filasPeriodo) {
-    if (!porVendedor.has(f.vendedor)) porVendedor.set(f.vendedor, { vendedor: f.vendedor, cantidad: 0, monto: 0 });
-    const g = porVendedor.get(f.vendedor);
-    g.cantidad += Number(f.cantidad || 0);
-    g.monto += Number(f.monto_ars || 0);
+  for (const f of facturasPeriodo) {
+    const vendedor = f.cliente_id ? state.vendedorPorCliente.get(f.cliente_id) : null;
+    if (!vendedor) continue;
+    if (!porVendedor.has(vendedor)) porVendedor.set(vendedor, { vendedor, cantidad: 0, monto: 0 });
+    const g = porVendedor.get(vendedor);
+    g.cantidad += piezasPorFactura.get(f.id) || 0;
+    g.monto += Number(f.importe_ars || 0);
   }
+
+  if (porVendedor.size === 0) {
+    els.vendedoresTbody.innerHTML = '<tr><td class="empty-state" colspan="4">No hay facturas de clientes con vendedor asignado en este período.</td></tr>';
+    return;
+  }
+
   const vendedores = [...porVendedor.values()].sort((a, b) => b.monto - a.monto);
   const totalMonto = vendedores.reduce((s, v) => s + v.monto, 0);
 
