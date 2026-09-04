@@ -21,7 +21,7 @@ const state = {
 };
 
 const CANAL_LABEL = { llamado: '☎ Llamado', whatsapp: 'WhatsApp', email: 'Email', otro: 'Otro' };
-const RESULTADO_LABEL = { contactado: 'Contactado', recuperado: 'Recuperado', descartado: 'Descartado' };
+const RESULTADO_LABEL = { contactado: 'Contactado', sin_respuesta: 'Sin respuesta', recuperado: 'Recuperado', descartado: 'Descartado' };
 
 const PROVINCIAS = [
   'Bs As', 'Capital', 'Catamarca', 'Chaco', 'Chubut', 'Corrientes', 'Córdoba', 'Entre Ríos', 'Formosa',
@@ -423,7 +423,7 @@ function renderStats() {
     { label: 'Personas', value: personas, id: 'card-personas', filterKey: 'tipoCliente', filterValue: 'persona' },
     { label: 'Con dato de contacto', value: conContacto, id: 'card-con-contacto', filterKey: 'soloConDatoContacto', filterValue: true },
     { label: '📅 Seguimientos vencidos', value: vencidos, id: 'card-vencidos', special: true, filterKey: 'soloVencidos', filterValue: true },
-    { label: `⚠️ ${UMBRAL_INTENTOS_SIN_RESULTADO}+ intentos sin resultado`, value: candidatosDescarte, id: 'card-candidatos-descarte', special: true, filterKey: 'soloCandidatosDescarte', filterValue: true },
+    { label: `⚠️ ${UMBRAL_INTENTOS_SIN_RESULTADO}+ intentos sin respuesta`, value: candidatosDescarte, id: 'card-candidatos-descarte', special: true, filterKey: 'soloCandidatosDescarte', filterValue: true },
     { label: metaLabel, value: `${contactosSemana} / ${META_CONTACTOS_SEMANAL}`, id: 'card-contactados-semana', clickMeta: true, metaCumplida: faltan === 0, filterKey: 'soloContactadosSemana', filterValue: true },
     { label: 'Recuperados', value: estadoCounts.recuperado || 0, id: 'card-recuperados', filterKey: 'estado', filterValue: 'recuperado' },
     { label: 'Contactados', value: estadoCounts.contactado || 0, id: 'card-contactados', filterKey: 'estado', filterValue: 'contactado' },
@@ -766,13 +766,25 @@ function clienteContactadoHoy(clienteId) {
   return lista.find((i) => esMismoDiaLocal(new Date(i.created_at), hoy)) || null;
 }
 
-// Candidato a revisar/descartar: llegó al umbral de intentos sin haber
-// conseguido recuperarlo, y todavía no está descartado (si ya lo está, no
-// hay nada que revisar de nuevo). `est` se recibe ya calculado porque
-// renderStats() y applyFilters() ya lo necesitan para otra cosa cada uno.
+// Candidato a revisar/descartar: llegó al umbral de intentos SIN RESPUESTA
+// CONSECUTIVOS (no el total de contactos — antes contaba cualquier
+// interacción, así que un cliente con el que se venía hablando seguido de
+// verdad terminaba flageado igual, y la única forma de sacarlo era mentir
+// con "Recuperado" o resignarse a "Descartado". Pedido de Víctor 04/09/26:
+// vender puede llevar más de 5 contactos reales — lo que importa es cuándo
+// se quedó en silencio, no cuánto se lo contactó). state.interaccionesByCliente
+// ya viene ordenado más reciente primero (ver loadData), así que basta con
+// contar desde el principio hasta el primer resultado que no sea
+// "sin_respuesta" — un "Contactado" real reinicia el conteo a cero.
 function esCandidatoADescarte(r, est) {
-  const intentos = (state.interaccionesByCliente.get(r.id) || []).length;
-  return intentos >= UMBRAL_INTENTOS_SIN_RESULTADO && est !== 'recuperado' && est !== 'descartado';
+  if (est === 'recuperado' || est === 'descartado') return false;
+  const lista = state.interaccionesByCliente.get(r.id) || [];
+  let intentosSinRespuesta = 0;
+  for (const i of lista) {
+    if (i.resultado !== 'sin_respuesta') break;
+    intentosSinRespuesta += 1;
+  }
+  return intentosSinRespuesta >= UMBRAL_INTENTOS_SIN_RESULTADO;
 }
 
 function historialDetailHtml(r) {
@@ -803,6 +815,7 @@ function historialDetailHtml(r) {
           </select>
           <select class="int-resultado">
             <option value="contactado">Contactado</option>
+            <option value="sin_respuesta">Sin respuesta</option>
             <option value="recuperado">Recuperado</option>
             <option value="descartado">Descartado</option>
           </select>
@@ -1193,6 +1206,7 @@ function rowHtml(r) {
         <select class="estado-select ${estadoClass(r.estado_contacto)}" data-field="estado_contacto">
           <option value="pendiente" ${r.estado_contacto === 'pendiente' || !r.estado_contacto ? 'selected' : ''}>Pendiente</option>
           <option value="contactado" ${r.estado_contacto === 'contactado' ? 'selected' : ''}>Contactado</option>
+          <option value="sin_respuesta" ${r.estado_contacto === 'sin_respuesta' ? 'selected' : ''}>Sin respuesta</option>
           <option value="recuperado" ${r.estado_contacto === 'recuperado' ? 'selected' : ''}>Recuperado</option>
           <option value="descartado" ${r.estado_contacto === 'descartado' ? 'selected' : ''}>Descartado</option>
         </select>

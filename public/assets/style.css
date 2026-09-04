@@ -26,6 +26,7 @@
 
   --estado-pendiente: #9ca3af;
   --estado-contactado: #2e6ea0;
+  --estado-sin_respuesta: #b8860b;
   --estado-recuperado: #1a9d5c;
   --estado-descartado: #d64545;
 }
@@ -644,12 +645,14 @@ select.estado-select {
 }
 select.estado-pendiente { background: var(--estado-pendiente); }
 select.estado-contactado { background: var(--estado-contactado); }
+select.estado-sin_respuesta { background: var(--estado-sin_respuesta); }
 select.estado-recuperado { background: var(--estado-recuperado); }
 select.estado-descartado { background: var(--estado-descartado); }
 select.estado-select option { color: #000; background: #fff; }
 
 .badge.estado-pendiente { background: var(--estado-pendiente); }
 .badge.estado-contactado { background: var(--estado-contactado); }
+.badge.estado-sin_respuesta { background: var(--estado-sin_respuesta); }
 .badge.estado-recuperado { background: var(--estado-recuperado); }
 .badge.estado-descartado { background: var(--estado-descartado); }
 
