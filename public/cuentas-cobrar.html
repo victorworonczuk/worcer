@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Cuentas a cobrar</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#408CC8" />
+  <link rel="stylesheet" href="assets/piezas.css" />
+  <link rel="stylesheet" href="assets/produccion.css" />
+  <link rel="stylesheet" href="assets/analisis-semanal.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="/icons/logo-worcer.jpg" alt="Worcer" class="topbar-logo" />
+      <div>
+        <h1>Worcer · Cuentas a cobrar</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    </div>
+    <div class="nav-menu">
+      <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-dropdown" id="nav-dropdown"></nav>
+    </div>
+  </header>
+
+  <main class="piezas-main">
+    <div class="panel">
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="loading">Cargando…</div>
+      </div>
+      <p class="nota-pie" id="ultima-actualizacion"></p>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Pendientes de cobro</h2>
+      <div class="filters">
+        <label><input type="checkbox" id="f-solo-vencidas" /> Solo vencidas</label>
+      </div>
+      <div class="table-wrap">
+        <table class="pivot">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Emisión</th>
+              <th>Factura</th>
+              <th class="col-grupo">Cliente</th>
+              <th>Monto</th>
+              <th>Vence</th>
+              <th class="col-grupo">Vendedor</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-pendientes">
+            <tr><td class="loading" colspan="7">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Morosos</h2>
+      <div class="table-wrap">
+        <table class="pivot">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Emisión</th>
+              <th>Factura</th>
+              <th class="col-grupo">Cliente</th>
+              <th>Monto</th>
+              <th>Vence</th>
+              <th class="col-grupo">Vendedor</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-morosos">
+            <tr><td class="loading" colspan="7">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Cheques rechazados</h2>
+      <div class="table-wrap">
+        <table class="pivot">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Fecha ND</th>
+              <th class="col-grupo">Cliente</th>
+              <th>Monto debido</th>
+              <th>Recuperado</th>
+              <th>Saldo</th>
+              <th>Estado</th>
+              <th class="col-grupo">Vendedor</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-cheques">
+            <tr><td class="loading" colspan="8">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/config.js"></script>
+  <script src="assets/cuentas-cobrar.js"></script>
+  <script src="assets/nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Importar cuentas a cobrar</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#408CC8" />
+  <link rel="stylesheet" href="assets/importar-ventas.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="/icons/logo-worcer.jpg" alt="Worcer" class="topbar-logo" />
+      <div>
+        <h1>Worcer · Importar cuentas a cobrar</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    </div>
+    <div class="nav-menu">
+      <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-dropdown" id="nav-dropdown"></nav>
+    </div>
+  </header>
+
+  <main class="importar-main">
+    <div class="panel importar-panel">
+      <p class="importar-intro">
+        Subí acá "Cuentas a cobrar.xlsx" (hojas "2026", "Morosos" y "Cheques rechazados"). Se
+        puede volver a subir sin miedo: lo que ya estaba cargado se saltea automáticamente. Como
+        el archivo no trae CUIT, cada cliente se vincula por nombre — lo que no se pueda vincular
+        con confianza, o tenga un vendedor ambiguo, queda listado abajo para revisar a mano.
+      </p>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="file-input" accept=".xlsx" multiple hidden />
+        <div class="dropzone-text">
+          <strong>Arrastrá el archivo acá</strong> o hacé clic para elegirlo
+        </div>
+        <ul id="file-list" class="file-list"></ul>
+      </div>
+
+      <button type="button" id="btn-importar" class="btn-primary" disabled>Importar</button>
+
+      <div id="resultado" class="resultado"></div>
+    </div>
+  </main>
+
+  <script src="assets/importar-cuentas-cobrar.js"></script>
+  <script src="assets/nav.js"></script>
+</body>
+</html>
