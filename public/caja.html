@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Caja</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#408CC8" />
+  <link rel="stylesheet" href="assets/piezas.css" />
+  <link rel="stylesheet" href="assets/produccion.css" />
+  <link rel="stylesheet" href="assets/analisis-semanal.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="/icons/logo-worcer.jpg" alt="Worcer" class="topbar-logo" />
+      <div>
+        <h1>Worcer · Caja</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    </div>
+    <div class="nav-menu">
+      <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-dropdown" id="nav-dropdown"></nav>
+    </div>
+  </header>
+
+  <main class="piezas-main">
+    <div class="panel">
+      <div class="filters">
+        <div class="field-inline">
+          <label for="f-mes">Mes</label>
+          <select id="f-mes"></select>
+        </div>
+      </div>
+      <p class="nota-pie" id="ultima-actualizacion"></p>
+    </div>
+
+    <div class="panel">
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="loading">Cargando…</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Por categoría este mes</h2>
+      <div class="table-wrap">
+        <table class="pivot">
+          <thead>
+            <tr>
+              <th class="col-grupo">Cuenta</th>
+              <th>Entradas</th>
+              <th>Salidas</th>
+              <th>Neto</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-categorias">
+            <tr><td class="loading" colspan="4">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Movimientos del mes</h2>
+      <div class="table-wrap">
+        <table class="pivot">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th class="col-grupo">Cuenta</th>
+              <th class="col-grupo">Detalle</th>
+              <th>Entrada</th>
+              <th>Salida</th>
+              <th>Saldo</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-movimientos">
+            <tr><td class="loading" colspan="6">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/config.js"></script>
+  <script src="assets/caja.js"></script>
+  <script src="assets/nav.js"></script>
+</body>
+</html>

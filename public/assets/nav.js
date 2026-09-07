@@ -38,6 +38,13 @@ const NAV_GROUPS = [
       { href: '/movimiento-piezas.html', label: '+ Movimiento de piezas', title: 'Subí acá los reportes "Salidas de Stocks" (.xlsx) — siempre después de Importar ventas, nunca antes.' },
     ],
   },
+  {
+    title: 'Finanzas',
+    items: [
+      { href: '/caja.html', label: 'Caja', title: 'Libro de caja diario: cobranzas, gastos y comisiones por categoría, con saldo. Solo consulta, no se carga nada acá.' },
+      { href: '/importar-caja.html', label: '+ Importar caja', title: 'Subí acá "Caja 2026.xlsx" (el libro de caja diario) cuando haya una versión nueva.' },
+    ],
+  },
 ];
 
 function renderNav(dropdown) {
