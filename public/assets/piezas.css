@@ -150,3 +150,42 @@
   font-size: 12px;
   color: var(--text-muted);
 }
+
+/* Proveedores: fila de compras plegable, igual criterio que el historial de
+   interacciones de clientes (index.html/app.js). */
+.toggle-historial {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--primary);
+  white-space: nowrap;
+}
+.toggle-historial:hover { background: var(--bg); }
+.historial-detail {
+  padding: 12px 16px;
+  background: var(--bg);
+}
+.nueva-compra-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+.nueva-compra-form input {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.eliminar-compra {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+.eliminar-compra:hover { color: var(--seg-e); }

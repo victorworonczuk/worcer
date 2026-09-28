@@ -47,6 +47,12 @@ const NAV_GROUPS = [
       { href: '/importar-cuentas-cobrar.html', label: '+ Importar cuentas a cobrar', title: 'Subí acá "Cuentas a cobrar.xlsx" cuando haya una versión nueva.' },
     ],
   },
+  {
+    title: 'Proveedores',
+    items: [
+      { href: '/proveedores.html', label: 'Proveedores', title: 'Ficha de cada proveedor (contacto, rubro) y su historial de compras.' },
+    ],
+  },
 ];
 
 function renderNav(dropdown) {
