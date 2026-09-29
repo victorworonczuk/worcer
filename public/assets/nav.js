@@ -39,15 +39,6 @@ const NAV_GROUPS = [
     ],
   },
   {
-    title: 'Finanzas',
-    items: [
-      { href: '/caja.html', label: 'Caja', title: 'Libro de caja diario: cobranzas, gastos y comisiones por categoría, con saldo. Solo consulta, no se carga nada acá.' },
-      { href: '/importar-caja.html', label: '+ Importar caja', title: 'Subí acá "Caja 2026.xlsx" (el libro de caja diario) cuando haya una versión nueva.' },
-      { href: '/cuentas-cobrar.html', label: 'Cuentas a cobrar', title: 'Facturas pendientes de cobro, morosos y cheques rechazados. Solo consulta, no se carga nada acá.' },
-      { href: '/importar-cuentas-cobrar.html', label: '+ Importar cuentas a cobrar', title: 'Subí acá "Cuentas a cobrar.xlsx" cuando haya una versión nueva.' },
-    ],
-  },
-  {
     title: 'Proveedores',
     items: [
       { href: '/proveedores.html', label: 'Proveedores', title: 'Ficha de cada proveedor (contacto, rubro) y su historial de compras.' },
