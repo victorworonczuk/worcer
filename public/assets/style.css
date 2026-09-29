@@ -649,8 +649,9 @@ select.estado-select {
 select.estado-pendiente { background: var(--estado-pendiente); }
 select.estado-contactado { background: var(--estado-contactado); }
 select.estado-sin_respuesta { background: var(--estado-sin_respuesta); }
-select.estado-recuperado { background: var(--estado-recuperado); }
-select.estado-descartado { background: var(--estado-descartado); }
+select.estado-recuperado, select.estado-comprado { background: var(--estado-recuperado); }
+select.estado-descartado, select.estado-rechazado { background: var(--estado-descartado); }
+select.estado-aprobado { background: var(--estado-contactado); }
 select.estado-select option { color: #000; background: #fff; }
 
 .badge.estado-pendiente { background: var(--estado-pendiente); }

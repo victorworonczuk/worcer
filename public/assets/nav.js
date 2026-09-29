@@ -45,6 +45,12 @@ const NAV_GROUPS = [
       { href: '/importar-compras-proveedor.html', label: '+ Importar compras', title: 'Subí acá "Solicitud de Compra.xlsx" para cargar compras y dar de alta proveedores nuevos automáticamente.' },
     ],
   },
+  {
+    title: 'Compras',
+    items: [
+      { href: '/solicitudes-compra.html', label: 'Solicitudes de compra', title: 'Cargá y seguí cada pedido de compra (pendiente, aprobado, comprado, rechazado). Al pasar a "Comprado" se suma solo al historial del proveedor.' },
+    ],
+  },
 ];
 
 function renderNav(dropdown) {

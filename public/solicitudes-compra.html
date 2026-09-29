@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Compras</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#408CC8" />
+  <link rel="stylesheet" href="assets/piezas.css" />
+  <link rel="stylesheet" href="assets/produccion.css" />
+  <link rel="stylesheet" href="assets/analisis-semanal.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="/icons/logo-worcer.jpg" alt="Worcer" class="topbar-logo" />
+      <div>
+        <h1>Worcer · Compras</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    </div>
+    <div class="nav-menu">
+      <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-dropdown" id="nav-dropdown"></nav>
+    </div>
+  </header>
+
+  <main class="piezas-main">
+    <div class="panel">
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="loading">Cargando…</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="filters">
+        <div class="field-inline">
+          <label for="f-estado">Estado</label>
+          <select id="f-estado">
+            <option value="">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="aprobado">Aprobado</option>
+            <option value="comprado">Comprado</option>
+            <option value="rechazado">Rechazado</option>
+          </select>
+        </div>
+        <div class="field-inline">
+          <label for="f-search">Buscar</label>
+          <input type="text" id="f-search" placeholder="Descripción, proveedor..." />
+        </div>
+        <button type="button" id="btn-nueva-solicitud" class="btn-primary">+ Nueva solicitud</button>
+      </div>
+      <p class="nota-pie" id="contador"></p>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="pivot">
+          <thead>
+            <tr>
+              <th>Pedido</th>
+              <th class="col-grupo">Proveedor</th>
+              <th class="col-grupo">Descripción</th>
+              <th>Cant.</th>
+              <th>Precio u.</th>
+              <th>Total</th>
+              <th>Necesidad</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td class="loading" colspan="9">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal-panel">
+      <h2>Nueva solicitud de compra</h2>
+      <form id="form-nueva-solicitud">
+        <label>Descripción *
+          <input type="text" id="ns-descripcion" required placeholder="Qué hay que comprar" />
+        </label>
+        <div class="modal-row">
+          <label>Cantidad
+            <input type="number" step="0.01" id="ns-cantidad" />
+          </label>
+          <label>Precio unitario
+            <input type="number" step="0.01" id="ns-precio-unitario" />
+          </label>
+        </div>
+        <label>Proveedor sugerido
+          <input type="text" id="ns-proveedor" list="proveedores-datalist" placeholder="Nombre del proveedor (si no está, se da de alta)" />
+          <datalist id="proveedores-datalist"></datalist>
+        </label>
+        <label>Fecha de necesidad
+          <input type="date" id="ns-fecha-necesidad" />
+        </label>
+        <label>Forma de pago
+          <input type="text" id="ns-forma-pago" placeholder="Transferencia, efectivo, factura..." />
+        </label>
+        <label>Solicitante
+          <input type="text" id="ns-solicitante" />
+        </label>
+        <p class="modal-error" id="form-error"></p>
+        <div class="modal-actions">
+          <button type="button" id="btn-cancelar" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/config.js"></script>
+  <script src="assets/solicitudes-compra.js"></script>
+  <script src="assets/nav.js"></script>
+</body>
+</html>
