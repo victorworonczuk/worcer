@@ -99,7 +99,7 @@ async function initUser() {
 
 async function cargarDatos() {
   const [{ data: proveedores, error: e1 }, { data: compras, error: e2 }] = await Promise.all([
-    fetchAll(() => client.from('proveedores').select('id, nombre, cuit, rubro, telefono, telefono_2, email, localidad, direccion, condiciones, palabra_clave').order('nombre', { ascending: true }).order('id', { ascending: true })),
+    fetchAll(() => client.from('proveedores').select('id, nombre, cuit, rubro, telefono, telefono_2, email, localidad, direccion, condiciones, palabra_clave, nombre_contacto').order('nombre', { ascending: true }).order('id', { ascending: true })),
     fetchAll(() => client.from('compras_proveedor').select('id, proveedor_id, fecha, descripcion, monto').order('fecha', { ascending: false }).order('id', { ascending: true })),
   ]);
   if (e1 || e2) {
@@ -151,7 +151,7 @@ function renderBusquedaArticulo() {
 
 function coincide(p, q) {
   if (!q) return true;
-  const texto = `${p.nombre} ${p.cuit || ''} ${p.rubro || ''} ${p.localidad || ''}`.toLowerCase();
+  const texto = `${p.nombre} ${p.cuit || ''} ${p.rubro || ''} ${p.localidad || ''} ${p.nombre_contacto || ''}`.toLowerCase();
   return texto.includes(q.toLowerCase());
 }
 
@@ -184,6 +184,7 @@ function render() {
         <td><input type="text" class="contacto-input" data-field="cuit" data-id="${p.id}" value="${escapeHtml(p.cuit || '')}" placeholder="CUIT" /></td>
         <td><select class="contacto-input" data-field="rubro" data-id="${p.id}">${rubroOptionsHtml(p.rubro)}</select></td>
         <td class="col-grupo">
+          <input type="text" class="contacto-input" data-field="nombre_contacto" data-id="${p.id}" value="${escapeHtml(p.nombre_contacto || '')}" placeholder="Nombre de contacto" />
           <input type="text" class="contacto-input" data-field="telefono" data-id="${p.id}" value="${escapeHtml(p.telefono || '')}" placeholder="Teléfono" />
           <input type="email" class="contacto-input" data-field="email" data-id="${p.id}" value="${escapeHtml(p.email || '')}" placeholder="Email" />
         </td>
@@ -339,6 +340,7 @@ els.formNuevo.addEventListener('submit', async (e) => {
     cuit: document.getElementById('np-cuit').value.trim() || null,
     rubro: document.getElementById('np-rubro').value.trim() || null,
     localidad: document.getElementById('np-localidad').value.trim() || null,
+    nombre_contacto: document.getElementById('np-nombre-contacto').value.trim() || null,
     telefono: document.getElementById('np-telefono').value.trim() || null,
     telefono_2: document.getElementById('np-telefono-2').value.trim() || null,
     email: document.getElementById('np-email').value.trim() || null,

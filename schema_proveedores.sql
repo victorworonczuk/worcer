@@ -21,6 +21,8 @@ alter table public.proveedores add column if not exists telefono_2 text;
 alter table public.proveedores add column if not exists direccion text;
 alter table public.proveedores add column if not exists condiciones text;
 alter table public.proveedores add column if not exists palabra_clave text;
+-- A quién pedir cuando se llama — mismo campo/nombre que clientes.nombre_contacto.
+alter table public.proveedores add column if not exists nombre_contacto text;
 
 create table if not exists public.compras_proveedor (
   id bigint generated always as identity primary key,
