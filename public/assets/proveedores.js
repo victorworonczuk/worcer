@@ -14,15 +14,19 @@ async function fetchAll(buildQuery, pageSize = 1000) {
   return { data: todos, error: null };
 }
 
+// value -> leyenda oculta (se ve al pasar el mouse sobre la opción, vía
+// title). Solo las que Víctor definió tienen leyenda (29/09/26); el resto
+// queda sin, no hay que inventarle una definición que no pidió.
 const RUBROS_PROVEEDOR = [
-  'Materia prima',
-  'Insumos y repuestos',
-  'Transporte / Fletes',
-  'Servicios',
-  'Mantenimiento',
-  'Combustible',
-  'Maquinaria y herramientas',
-  'Otros',
+  { value: 'Materia prima' },
+  { value: 'Insumos de producción', leyenda: 'Elementos que se consumen al fabricar pero no forman parte del producto final.' },
+  { value: 'Repuestos y componentes', leyenda: 'Piezas para máquinas, equipos e instalaciones.' },
+  { value: 'Transporte / Fletes' },
+  { value: 'Servicios' },
+  { value: 'Servicios de mantenimiento', leyenda: 'Proveedores que hacen reparaciones, instalaciones o mantenimiento preventivo.' },
+  { value: 'Combustible' },
+  { value: 'Maquinaria y herramientas' },
+  { value: 'Otros' },
 ];
 
 const state = {
@@ -62,15 +66,26 @@ function escapeHtml(str) {
 function sinAcentos(s) {
   return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
-// Si el rubro actual no está en la lista fija (ej. algo tipeado antes de que
-// existiera este select), se agrega igual como opción para no perder el dato.
+// Si el rubro actual no está en la lista fija (ej. "Insumos y repuestos",
+// que se separó en dos rubros nuevos — ver RUBROS_PROVEEDOR), se agrega
+// igual como opción para no perder el dato ni reasignarlo a ciegas: hace
+// falta criterio de Víctor para saber si cada uno era insumo o repuesto.
 function rubroOptionsHtml(valorActual) {
-  const opciones = RUBROS_PROVEEDOR.includes(valorActual) || !valorActual
+  const opciones = RUBROS_PROVEEDOR.some((r) => r.value === valorActual) || !valorActual
     ? RUBROS_PROVEEDOR
-    : [...RUBROS_PROVEEDOR, valorActual];
+    : [...RUBROS_PROVEEDOR, { value: valorActual }];
   return '<option value="">—</option>' + opciones
-    .map((r) => `<option value="${escapeHtml(r)}" ${r === valorActual ? 'selected' : ''}>${escapeHtml(r)}</option>`)
+    .map((r) => `<option value="${escapeHtml(r.value)}" ${r.leyenda ? `title="${escapeHtml(r.leyenda)}"` : ''} ${r.value === valorActual ? 'selected' : ''}>${escapeHtml(r.value)}</option>`)
     .join('');
+}
+// "primera letra mayúscula, el resto minúscula" en cada palabra, para que
+// todos los nombres de proveedor se vean uniformes en la lista (pedido de
+// Víctor 29/09/26) — se aplica al cargar uno nuevo y al editar el nombre.
+function capitalizarNombre(s) {
+  if (!s) return s;
+  // Mayúscula tras el inicio, un espacio, "/" o "-" (para nombres compuestos
+  // como "Saemsa/Unifrax" o "Dist Titta/Silock"), resto en minúscula.
+  return s.trim().toLowerCase().replace(/(^|[\s/-])(\S)/g, (_, sep, letra) => sep + letra.toUpperCase());
 }
 
 async function initUser() {
@@ -225,7 +240,12 @@ function wireRowEvents() {
     const evento = input.tagName === 'SELECT' ? 'change' : 'blur';
     input.addEventListener(evento, (e) => {
       const id = Number(e.target.dataset.id);
-      saveField(id, e.target.dataset.field, e.target.value.trim());
+      let valor = e.target.value.trim();
+      if (e.target.dataset.field === 'nombre') {
+        valor = capitalizarNombre(valor);
+        e.target.value = valor;
+      }
+      saveField(id, e.target.dataset.field, valor);
     });
   });
 
@@ -295,7 +315,7 @@ els.modalOverlay.addEventListener('click', (e) => {
 els.formNuevo.addEventListener('submit', async (e) => {
   e.preventDefault();
   els.formError.textContent = '';
-  const nombre = document.getElementById('np-nombre').value.trim();
+  const nombre = capitalizarNombre(document.getElementById('np-nombre').value.trim());
   if (!nombre) { els.formError.textContent = 'Falta el nombre.'; return; }
 
   const nuevo = {
