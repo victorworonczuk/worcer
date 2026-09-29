@@ -129,24 +129,45 @@ function renderBusquedaArticulo() {
   }
   els.wrapBusquedaArticulo.hidden = false;
 
-  const resultados = state.comprasFlat
+  const resultadosCompras = state.comprasFlat
     .filter((c) => sinAcentos(c.descripcion).includes(q)
       || sinAcentos(c.proveedor?.nombre).includes(q)
       || sinAcentos(c.proveedor?.rubro).includes(q)
       || sinAcentos(c.proveedor?.palabra_clave).includes(q))
     .slice(0, 150); // ya vienen ordenadas por fecha desc desde cargarDatos
 
-  els.tbodyBusquedaArticulo.innerHTML = resultados.length
-    ? resultados.map((c) => `
-        <tr>
-          <td>${fmtFecha(c.fecha)}</td>
-          <td class="col-grupo">${escapeHtml(c.descripcion || '')}</td>
-          <td class="col-grupo">${escapeHtml(c.proveedor?.nombre || '(proveedor eliminado)')}</td>
-          <td class="col-grupo">${escapeHtml(c.proveedor?.telefono || '')} ${escapeHtml(c.proveedor?.email || '')}</td>
-          <td>${fmtPesos(c.monto)}</td>
-        </tr>
-      `).join('')
-    : '<tr><td class="empty-state" colspan="5">Sin resultados para esa búsqueda.</td></tr>';
+  // Un proveedor puede tener la palabra clave cargada (ej. "Arena para
+  // matrices") sin tener ninguna compra suya todavía — igual tiene que
+  // aparecer, si no la búsqueda no sirve para el caso más simple: "¿a quién
+  // le compro esto?" cuando recién se dio de alta el proveedor (pedido de
+  // Víctor 29/09/26). Se muestra aparte, sin fecha ni monto, y solo si ese
+  // proveedor no apareció ya por una compra real (para no duplicar la fila).
+  const proveedorIdsConCompra = new Set(resultadosCompras.map((c) => c.proveedor?.id).filter(Boolean));
+  const proveedoresSinCompra = state.proveedores.filter((p) => !proveedorIdsConCompra.has(p.id)
+    && (sinAcentos(p.nombre).includes(q) || sinAcentos(p.rubro).includes(q) || sinAcentos(p.palabra_clave).includes(q)));
+
+  const filasCompras = resultadosCompras.map((c) => `
+    <tr>
+      <td>${fmtFecha(c.fecha)}</td>
+      <td class="col-grupo">${escapeHtml(c.descripcion || '')}</td>
+      <td class="col-grupo">${escapeHtml(c.proveedor?.nombre || '(proveedor eliminado)')}</td>
+      <td class="col-grupo">${escapeHtml(c.proveedor?.telefono || '')} ${escapeHtml(c.proveedor?.email || '')}</td>
+      <td>${fmtPesos(c.monto)}</td>
+    </tr>
+  `).join('');
+
+  const filasProveedores = proveedoresSinCompra.map((p) => `
+    <tr class="fila-sin-compra">
+      <td>·</td>
+      <td class="col-grupo">${escapeHtml(p.palabra_clave || p.rubro || '(sin compras cargadas todavía)')}</td>
+      <td class="col-grupo">${escapeHtml(p.nombre)}</td>
+      <td class="col-grupo">${escapeHtml(p.telefono || '')} ${escapeHtml(p.email || '')}</td>
+      <td>·</td>
+    </tr>
+  `).join('');
+
+  els.tbodyBusquedaArticulo.innerHTML = (filasCompras + filasProveedores)
+    || '<tr><td class="empty-state" colspan="5">Sin resultados para esa búsqueda.</td></tr>';
 }
 
 function coincide(p, q) {

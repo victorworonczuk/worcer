@@ -211,3 +211,8 @@
   font-size: 13px;
 }
 .eliminar-compra:hover { color: var(--seg-e); }
+/* Fila del buscador de artículos que matchea por proveedor (nombre/rubro/
+   palabra clave) en vez de por una compra real ya cargada — se distingue en
+   itálica y más tenue para no confundirla con una compra concreta. */
+.fila-sin-compra { font-style: italic; color: var(--text-muted); }
+.fila-sin-compra td { color: inherit; }
