@@ -1,3 +1,19 @@
+.hidden { display: none !important; }
+
+/* Alarma de facturas sin vendedor asignado (pedido de Víctor 03/10/26: "no
+   tiene que pasar nunca") — roja/llamativa a propósito, a diferencia del
+   resto de la pantalla que es neutra, porque hay que notarla apenas se
+   entra, no hace falta buscarla. */
+.alerta-panel {
+  border-left: 4px solid var(--seg-e, #c0392b);
+  background: #fdecea;
+}
+.alerta-texto {
+  margin: 0 0 12px;
+  font-weight: 600;
+  color: var(--seg-e, #c0392b);
+}
+
 /* Colores tipo planilla externa: casillas vacías (sin pedido, o sin
    total/proyección) en amarillo, completadas en celeste — en la grilla día
    × vendedor y también en Total/Proyectado/% (que llevan la clase "zero" a

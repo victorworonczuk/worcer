@@ -55,6 +55,9 @@ const els = {
   mes: document.getElementById('f-mes'),
   tbodyAnual: document.getElementById('tbody-anual'),
   ultimaActualizacion: document.getElementById('ultima-actualizacion'),
+  alertaPanel: document.getElementById('alerta-sin-vendedor-panel'),
+  alertaTexto: document.getElementById('alerta-sin-vendedor-texto'),
+  alertaTbody: document.getElementById('alerta-sin-vendedor-tbody'),
 };
 
 const TABLAS = {
@@ -117,7 +120,7 @@ async function cargarDatos() {
   // encontrado 26/08/26).
   const [{ data: facturas, error: e1 }, { data: clientes, error: e2 }] = await Promise.all([
     fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, empresa, cliente_id, cuit_normalizado').order('fecha').order('id', { ascending: true })),
-    fetchAll(() => client.from('clientes').select('id, vendedor').order('id', { ascending: true })),
+    fetchAll(() => client.from('clientes').select('id, nombre, vendedor').order('id', { ascending: true })),
   ]);
   if (e1 || e2) {
     const msg = `<tr><td class="empty-state">Error al cargar: ${(e1 || e2).message}</td></tr>`;
@@ -126,18 +129,46 @@ async function cargarDatos() {
     return;
   }
 
-  const vendedorPorCliente = new Map((clientes || []).map((c) => [c.id, c.vendedor]));
-  state.facturas = (facturas || [])
+  const clientePorId = new Map((clientes || []).map((c) => [c.id, c]));
+  const todasConVendedor = (facturas || [])
     .filter((f) => f.fecha && f.cliente_id && !CUITS_PROPIOS.has(f.cuit_normalizado))
-    .map((f) => ({ ...f, vendedor: vendedorPorCliente.get(f.cliente_id), importe_sin_iva: sinIva(Number(f.importe_ars || 0), f.empresa) }))
-    .filter((f) => f.vendedor);
+    .map((f) => ({
+      ...f,
+      vendedor: clientePorId.get(f.cliente_id)?.vendedor,
+      cliente_nombre: clientePorId.get(f.cliente_id)?.nombre || '(sin nombre)',
+      importe_sin_iva: sinIva(Number(f.importe_ars || 0), f.empresa),
+    }));
+
+  state.facturas = todasConVendedor.filter((f) => f.vendedor);
+
+  // Alarma: facturas de un cliente sin vendedor asignado — no debería pasar
+  // nunca (pedido de Víctor 29/09/26), quedarían afuera de todas las
+  // planillas de esta pantalla sin que nadie lo note.
+  state.facturasSinVendedor = todasConVendedor
+    .filter((f) => !f.vendedor)
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
 
   const meses = [...new Set(state.facturas.map((f) => f.fecha.slice(0, 7)))].sort();
   els.mes.innerHTML = meses.map((m) => `<option value="${m}">${m}</option>`).join('');
   if (meses.length) els.mes.value = meses[meses.length - 1]; // último mes con datos por defecto
 
+  renderAlertaSinVendedor();
   render();
   renderAnual();
+}
+
+function renderAlertaSinVendedor() {
+  const facturas = state.facturasSinVendedor || [];
+  if (!facturas.length) {
+    els.alertaPanel.classList.add('hidden');
+    return;
+  }
+  els.alertaPanel.classList.remove('hidden');
+  const total = facturas.reduce((acc, f) => acc + f.importe_sin_iva, 0);
+  els.alertaTexto.textContent = `⚠ ${facturas.length} factura(s) sin vendedor asignado (cliente sin vendedor en su ficha), por un total de ${fmtPesos(total)}. No se cuentan en ninguna planilla de esta pantalla hasta que se les asigne un vendedor al cliente.`;
+  els.alertaTbody.innerHTML = facturas
+    .map((f) => `<tr><td>${f.fecha}</td><td class="col-grupo">${escapeHtml(f.cliente_nombre)}</td><td>${f.empresa}</td><td>${fmtPesos(f.importe_sin_iva)}</td></tr>`)
+    .join('');
 }
 
 // Total acumulado del año calendario actual (no "todo lo cargado alguna
