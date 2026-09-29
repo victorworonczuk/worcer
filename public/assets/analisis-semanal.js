@@ -87,6 +87,15 @@ function esFacturaIntercompania(f) {
   return CUITS_PROPIOS.includes(f.cuit_normalizado);
 }
 
+// Debe estar sincronizado con VENDEDORES en public/assets/app.js — se usa
+// para que todos los vendedores aparezcan en "Ventas por vendedor" aunque
+// no hayan facturado nada en el período (pedido de Víctor 29/09/26).
+const VENDEDORES = [
+  'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
+  'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
+  'Mariano Cabarrus', 'Sebastián Guerra', 'Horacio Vostrosky', 'Víctor W.', 'Cantero',
+];
+
 const state = {
   facturas: [],       // todas las facturas reales a clientes (se filtra en memoria por período)
   facturasIntercompania: [], // facturas entre las 2 empresas propias — excluidas de facturas, se muestran aparte
@@ -286,7 +295,7 @@ function renderVendedores(facturasPeriodo, itemsPeriodo) {
     piezasPorFactura.set(it.factura_id, (piezasPorFactura.get(it.factura_id) || 0) + Number(it.cantidad || 0));
   }
 
-  const porVendedor = new Map();
+  const porVendedor = new Map(VENDEDORES.map((v) => [v, { vendedor: v, cantidad: 0, monto: 0 }]));
   for (const f of facturasPeriodo) {
     const vendedor = f.cliente_id ? state.vendedorPorCliente.get(f.cliente_id) : null;
     if (!vendedor) continue;
@@ -294,11 +303,6 @@ function renderVendedores(facturasPeriodo, itemsPeriodo) {
     const g = porVendedor.get(vendedor);
     g.cantidad += piezasPorFactura.get(f.id) || 0;
     g.monto += Number(f.importe_ars || 0);
-  }
-
-  if (porVendedor.size === 0) {
-    els.vendedoresTbody.innerHTML = '<tr><td class="empty-state" colspan="4">No hay facturas de clientes con vendedor asignado en este período.</td></tr>';
-    return;
   }
 
   const vendedores = [...porVendedor.values()].sort((a, b) => b.monto - a.monto);

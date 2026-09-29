@@ -20,6 +20,16 @@ async function fetchAll(buildQuery, pageSize = 1000) {
 // Alberti SRL) — una factura entre ellas no es una venta real a un cliente.
 const CUITS_PROPIOS = new Set(['30709413208', '30714033189']);
 
+// Debe estar sincronizado con VENDEDORES en public/assets/app.js — se usa
+// para que todos los vendedores aparezcan en las tablas aunque no hayan
+// vendido nada en el período (pedido de Víctor 29/09/26), no solo los que
+// tuvieron alguna factura.
+const VENDEDORES = [
+  'Sergio Nastaskin', 'Hernán Acosta', 'Walter Vernola', 'Alejandro Vernola', 'Jose Gil',
+  'Francisco Baez', 'Martín Argento', 'Darío Frank', 'Walter Fogar',
+  'Mariano Cabarrus', 'Sebastián Guerra', 'Horacio Vostrosky', 'Víctor W.', 'Cantero',
+];
+
 // Hasta el 29/09/26 estas tablas salían de pedidos_vendedor (carga manual
 // desde "Cargar pedidos") — se desincronizaba fácil, mismo problema que ya
 // resolvimos en Análisis semanal e Inicio (ver commit 41b1bf4). Ahora "un
@@ -125,11 +135,7 @@ async function cargarDatos() {
 function renderAnual() {
   const anioActual = String(new Date().getFullYear());
   const facturasDelAnio = state.facturas.filter((f) => f.fecha.slice(0, 4) === anioActual);
-  if (facturasDelAnio.length === 0) {
-    els.tbodyAnual.innerHTML = '<tr><td class="empty-state">Sin facturas de clientes con vendedor asignado este año.</td></tr>';
-    return;
-  }
-  const porVendedor = new Map();
+  const porVendedor = new Map(VENDEDORES.map((v) => [v, { cantidad: 0, monto_ars: 0 }]));
   for (const f of facturasDelAnio) {
     if (!porVendedor.has(f.vendedor)) porVendedor.set(f.vendedor, { cantidad: 0, monto_ars: 0 });
     const g = porVendedor.get(f.vendedor);
@@ -210,7 +216,7 @@ function renderTabla(cfg) {
   // para sábados/domingos/feriados sin ventas).
   const dias = [...new Set(facturasDelMes.map((f) => f.fecha))].sort();
 
-  const porVendedor = new Map();
+  const porVendedor = new Map(VENDEDORES.map((v) => [v, {}]));
   for (const f of facturasDelMes) {
     if (!porVendedor.has(f.vendedor)) porVendedor.set(f.vendedor, {});
     const valor = campo === 'cantidad' ? 1 : Number(f.importe_ars || 0);
