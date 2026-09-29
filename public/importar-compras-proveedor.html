@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worcer · Importar compras</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#408CC8" />
+  <link rel="stylesheet" href="assets/importar-ventas.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="/icons/logo-worcer.jpg" alt="Worcer" class="topbar-logo" />
+      <div>
+        <h1>Worcer · Importar compras</h1>
+      <div class="subtitle" id="user-subtitle">Cargando…</div>
+    </div>
+    </div>
+    <div class="nav-menu">
+      <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-dropdown" id="nav-dropdown"></nav>
+    </div>
+  </header>
+
+  <main class="importar-main">
+    <div class="panel importar-panel">
+      <p class="importar-intro">
+        Subí acá "Solicitud de Compra.xlsx". Solo se cargan las filas con Estado "OK" que ya
+        tengan fecha de compra (F.Compra) — un pedido aprobado pero todavía no comprado no cuenta
+        todavía. El proveedor de cada fila se crea automáticamente si no existe (con nombre nada
+        más — completá el resto de sus datos después desde Proveedores). Se puede volver a subir
+        sin miedo: lo que ya estaba cargado se saltea.
+      </p>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="file-input" accept=".xlsx" hidden />
+        <div class="dropzone-text">
+          <strong>Arrastrá el archivo acá</strong> o hacé clic para elegirlo
+        </div>
+        <ul id="file-list" class="file-list"></ul>
+      </div>
+
+      <button type="button" id="btn-importar" class="btn-primary" disabled>Importar</button>
+
+      <div id="resultado" class="resultado"></div>
+    </div>
+  </main>
+
+  <script src="assets/importar-compras-proveedor.js"></script>
+  <script src="assets/nav.js"></script>
+</body>
+</html>

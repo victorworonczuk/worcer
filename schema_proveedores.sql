@@ -18,14 +18,21 @@ create table if not exists public.compras_proveedor (
   id bigint generated always as identity primary key,
   proveedor_id bigint not null references public.proveedores(id) on delete cascade,
   fecha date not null,
+  cantidad numeric,
   descripcion text,
   monto numeric,
   created_at timestamptz not null default now(),
   cargado_por text
 );
+alter table public.compras_proveedor add column if not exists cantidad numeric;
 
 create index if not exists idx_compras_proveedor_proveedor on public.compras_proveedor(proveedor_id);
 create index if not exists idx_compras_proveedor_fecha on public.compras_proveedor(fecha);
+
+-- Evita duplicar filas si se vuelve a subir el mismo "Solicitud de
+-- Compra.xlsx" (o uno con filas superpuestas) por /api/import-compras-proveedor.
+create unique index if not exists idx_compras_proveedor_fila_unica
+  on public.compras_proveedor(proveedor_id, fecha, descripcion, monto);
 
 alter table public.proveedores disable row level security;
 alter table public.compras_proveedor disable row level security;

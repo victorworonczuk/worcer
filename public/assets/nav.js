@@ -51,6 +51,7 @@ const NAV_GROUPS = [
     title: 'Proveedores',
     items: [
       { href: '/proveedores.html', label: 'Proveedores', title: 'Ficha de cada proveedor (contacto, rubro) y su historial de compras.' },
+      { href: '/importar-compras-proveedor.html', label: '+ Importar compras', title: 'Subí acá "Solicitud de Compra.xlsx" para cargar compras y dar de alta proveedores nuevos automáticamente.' },
     ],
   },
 ];
