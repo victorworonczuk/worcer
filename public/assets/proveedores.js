@@ -36,6 +36,7 @@ const state = {
   comprasFlat: [], // todas las compras con el proveedor ya embebido, para el buscador de artículos
   openHistorial: new Set(),
   openDireccion: new Set(),
+  openPalabraClave: new Set(),
   search: '',
   busquedaArticulo: '',
 };
@@ -195,11 +196,16 @@ function render() {
           <div class="nombre-row">
             <input type="text" class="contacto-input" data-field="nombre" data-id="${p.id}" value="${escapeHtml(p.nombre)}" />
             <button type="button" class="toggle-descripcion ${(p.direccion || p.localidad) ? 'has-desc' : ''}" data-id="${p.id}" title="Ver/editar dirección y localidad">📍</button>
+            <button type="button" class="toggle-transporte ${p.palabra_clave ? 'has-desc' : ''}" data-id="${p.id}" title="Ver/editar palabra clave (para el buscador de artículos)">🏷️</button>
           </div>
           ${state.openDireccion.has(p.id) ? `
           <div class="descripcion-panel">
             <input type="text" class="contacto-input" data-field="direccion" data-id="${p.id}" value="${escapeHtml(p.direccion || '')}" placeholder="Dirección" />
             <input type="text" class="contacto-input" data-field="localidad" data-id="${p.id}" value="${escapeHtml(p.localidad || '')}" placeholder="Localidad" />
+          </div>` : ''}
+          ${state.openPalabraClave.has(p.id) ? `
+          <div class="descripcion-panel">
+            <input type="text" class="contacto-input" data-field="palabra_clave" data-id="${p.id}" value="${escapeHtml(p.palabra_clave || '')}" placeholder="Qué le compramos (para el buscador)" />
           </div>` : ''}
         </td>
         <td><input type="text" class="contacto-input" data-field="cuit" data-id="${p.id}" value="${escapeHtml(p.cuit || '')}" placeholder="CUIT" /></td>
@@ -235,9 +241,6 @@ function historialComprasHtml(p, compras) {
             </label>
             <label>Condiciones de pago
               <input type="text" class="contacto-input" data-field="condiciones" data-id="${p.id}" value="${escapeHtml(p.condiciones || '')}" placeholder="Transferencia, efectivo, factura..." />
-            </label>
-            <label>Palabra clave <span class="opcional-tag">(qué le compramos, para el buscador)</span>
-              <input type="text" class="contacto-input" data-field="palabra_clave" data-id="${p.id}" value="${escapeHtml(p.palabra_clave || '')}" />
             </label>
           </div>
           <table class="pivot">
@@ -292,6 +295,15 @@ function wireRowEvents() {
       const id = Number(e.target.dataset.id);
       if (state.openDireccion.has(id)) state.openDireccion.delete(id);
       else state.openDireccion.add(id);
+      render();
+    });
+  });
+
+  els.tbody.querySelectorAll('.toggle-transporte').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      const id = Number(e.target.dataset.id);
+      if (state.openPalabraClave.has(id)) state.openPalabraClave.delete(id);
+      else state.openPalabraClave.add(id);
       render();
     });
   });
