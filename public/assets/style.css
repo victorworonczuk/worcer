@@ -249,42 +249,6 @@ main {
   overflow: hidden;
 }
 
-/* Alarma de posibles clientes duplicados sin ninguna compra (pedido de
-   Víctor 29/09/26: "sino tenemos datos erroneos") — roja/llamativa a
-   propósito, mismo criterio que la de facturas sin vendedor en Pedidos por
-   vendedor: hay que notarla apenas se entra, no hace falta ir a buscarla. */
-.alerta-panel {
-  border-left: 4px solid var(--seg-e);
-  background: #fdecea;
-  padding: 16px;
-  margin-bottom: 16px;
-}
-.alerta-panel.hidden { display: none; }
-.alerta-texto {
-  margin: 0 0 12px;
-  font-weight: 600;
-  color: var(--seg-e);
-}
-.alerta-panel table { width: 100%; border-collapse: collapse; }
-.alerta-panel th, .alerta-panel td {
-  text-align: left;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-}
-.dup-loc { color: var(--text-muted); font-size: 12px; }
-.btn-no-duplicado {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 12px;
-  background: var(--surface);
-  color: var(--text-muted);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.btn-no-duplicado:hover { border-color: var(--seg-e); color: var(--seg-e); }
-
 .filters-search {
   display: flex;
   align-items: center;
