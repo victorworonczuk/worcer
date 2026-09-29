@@ -81,6 +81,9 @@ const els = {
   formNuevoCliente: document.getElementById('form-nuevo-cliente'),
   btnCancelarNuevoCliente: document.getElementById('btn-cancelar-nuevo-cliente'),
   ncError: document.getElementById('nc-error'),
+  alertaDuplicadosPanel: document.getElementById('alerta-duplicados-panel'),
+  alertaDuplicadosTexto: document.getElementById('alerta-duplicados-texto'),
+  alertaDuplicadosTbody: document.getElementById('alerta-duplicados-tbody'),
 };
 
 const LEGAL_SUFFIX_RE = /\s+(s\.?\s*a\.?(\s*u\.?)?|s\.?\s*r\.?\s*l\.?|s\.?\s*c\.?\s*a\.?|s\.?\s*a\.?\s*s\.?|s\.?\s*h\.?|sociedad\s+an[oó]nima|sociedad\s+de\s+responsabilidad\s+limitada|sociedad\s+de\s+hecho|sociedad\s+simple)\s*$/i;
@@ -316,6 +319,7 @@ async function loadData() {
 
   populateFilterOptions();
   renderStats();
+  renderAlertaDuplicados();
   applyFilters();
 }
 
@@ -383,6 +387,107 @@ function clienteContactadoEstaSemana(clienteId) {
   const lista = state.interaccionesByCliente.get(clienteId);
   if (!lista) return false;
   return lista.some((i) => new Date(i.created_at) >= desde);
+}
+
+// --- Alarma de posibles clientes duplicados sin ninguna compra -------------
+// Mismo criterio de matching que lib/clienteMatching.js (usado al importar
+// del lado del servidor) — se re-implementa acá porque esta pantalla usa
+// <script> planos, no módulos ES (ver nota general al principio del archivo
+// sobre duplicar helpers chicos entre app.js y el resto).
+const DUP_STOPWORDS = new Set(['SA', 'SRL', 'SH', 'SAS', 'SACI', 'SCA', 'DE', 'DEL', 'LA', 'LOS', 'LAS', 'Y', 'S', 'H']);
+
+function normalizarNombreDup(s) {
+  if (!s) return '';
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function tokensSignificativosDup(nombreNormalizado) {
+  return nombreNormalizado.split(' ').filter((t) => t.length >= 2 && !DUP_STOPWORDS.has(t));
+}
+// Cuántas palabras significativas del más corto aparecen TODAS en el más
+// largo (0 si falta alguna) — Infinity si los nombres normalizados son
+// idénticos, sin importar cuántos tokens tengan.
+function fuerzaDeMatchDup(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return Infinity;
+  const ta = new Set(tokensSignificativosDup(a));
+  const tb = new Set(tokensSignificativosDup(b));
+  const corta = ta.size <= tb.size ? ta : tb;
+  const larga = ta.size <= tb.size ? tb : ta;
+  for (const tok of corta) {
+    if (!larga.has(tok)) return 0;
+  }
+  return corta.size;
+}
+
+// Busca, entre TODOS los clientes, pares donde uno no tiene ninguna factura
+// cargada y su nombre matchea fuerte con el de otro cliente — el caso típico
+// es una ficha nueva del import de Llamados que en realidad es el mismo
+// cliente que ya existe con historial de compras (encontrado a mano 29/09/26
+// con "Mecall SRL" / "MECALL S R L"). Usa un índice invertido por palabra
+// para no comparar cada cliente sin compras contra los ~1500 completos.
+function detectarDuplicadosSinVentas() {
+  const normalizados = state.all.map((c) => ({
+    cliente: c,
+    norm: normalizarNombreDup(c.nombre),
+    tieneFacturas: (state.facturasByCliente.get(c.id) || []).length > 0,
+  }));
+
+  const indice = new Map();
+  normalizados.forEach((n, i) => {
+    for (const tok of tokensSignificativosDup(n.norm)) {
+      if (!indice.has(tok)) indice.set(tok, []);
+      indice.get(tok).push(i);
+    }
+  });
+
+  const pares = [];
+  const vistos = new Set();
+  normalizados.forEach((n, i) => {
+    if (n.tieneFacturas || !n.norm) return; // solo interesa el lado sin ninguna compra
+    const candidatos = new Set();
+    for (const tok of tokensSignificativosDup(n.norm)) {
+      for (const j of indice.get(tok) || []) {
+        if (j !== i) candidatos.add(j);
+      }
+    }
+    let mejor = null;
+    for (const j of candidatos) {
+      const fuerza = fuerzaDeMatchDup(n.norm, normalizados[j].norm);
+      if (fuerza >= 2 && (!mejor || fuerza > mejor.fuerza)) mejor = { j, fuerza };
+    }
+    if (mejor) {
+      const otro = normalizados[mejor.j].cliente;
+      const key = [n.cliente.id, otro.id].sort().join('-');
+      if (!vistos.has(key)) {
+        vistos.add(key);
+        pares.push({ sinVentas: n.cliente, otro });
+      }
+    }
+  });
+  return pares;
+}
+
+function renderAlertaDuplicados() {
+  if (!els.alertaDuplicadosPanel) return;
+  const pares = detectarDuplicadosSinVentas();
+  if (!pares.length) {
+    els.alertaDuplicadosPanel.classList.add('hidden');
+    return;
+  }
+  els.alertaDuplicadosPanel.classList.remove('hidden');
+  els.alertaDuplicadosTexto.textContent = `⚠ ${pares.length} cliente(s) sin ninguna compra que podrían ser un duplicado de otro ya cargado. Revisalos y avisame cuáles fusionar.`;
+  const conUbicacion = (c) => {
+    const partes = [c.localidad, c.provincia].filter(Boolean).join(', ');
+    return partes ? ` <span class="dup-loc">(${escapeHtml(partes)})</span>` : '';
+  };
+  els.alertaDuplicadosTbody.innerHTML = pares
+    .map(
+      (p) => `<tr>
+        <td>${escapeHtml(p.sinVentas.nombre)}${conUbicacion(p.sinVentas)}</td>
+        <td>${escapeHtml(p.otro.nombre)}${conUbicacion(p.otro)}</td>
+      </tr>`
+    )
+    .join('');
 }
 
 function renderStats() {

@@ -30,6 +30,18 @@
   <main>
     <div id="stats" class="stats-grid"></div>
 
+    <div class="panel alerta-panel hidden" id="alerta-duplicados-panel">
+      <p class="alerta-texto" id="alerta-duplicados-texto"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Cliente sin ninguna compra</th><th>Posible duplicado de</th></tr>
+          </thead>
+          <tbody id="alerta-duplicados-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="panel">
       <div class="filters-search">
         <div class="search-wrap">
