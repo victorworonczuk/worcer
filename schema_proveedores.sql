@@ -13,6 +13,14 @@ create table if not exists public.proveedores (
   created_at timestamptz not null default now(),
   cargado_por text
 );
+-- Sumados al importar "Proveedores - Porcelanas Alberti.xlsx" (29/09/26):
+-- telefono_2 (línea alternativa), direccion (calle/altura, separado de
+-- localidad), condiciones (forma de pago habitual) y palabra_clave (qué le
+-- compramos, en pocas palabras — para el buscador de artículos).
+alter table public.proveedores add column if not exists telefono_2 text;
+alter table public.proveedores add column if not exists direccion text;
+alter table public.proveedores add column if not exists condiciones text;
+alter table public.proveedores add column if not exists palabra_clave text;
 
 create table if not exists public.compras_proveedor (
   id bigint generated always as identity primary key,

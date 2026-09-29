@@ -83,7 +83,7 @@ async function initUser() {
 
 async function cargarDatos() {
   const [{ data: proveedores, error: e1 }, { data: compras, error: e2 }] = await Promise.all([
-    fetchAll(() => client.from('proveedores').select('id, nombre, cuit, rubro, telefono, email, localidad').order('nombre', { ascending: true }).order('id', { ascending: true })),
+    fetchAll(() => client.from('proveedores').select('id, nombre, cuit, rubro, telefono, telefono_2, email, localidad, direccion, condiciones, palabra_clave').order('nombre', { ascending: true }).order('id', { ascending: true })),
     fetchAll(() => client.from('compras_proveedor').select('id, proveedor_id, fecha, descripcion, monto').order('fecha', { ascending: false }).order('id', { ascending: true })),
   ]);
   if (e1 || e2) {
@@ -114,7 +114,10 @@ function renderBusquedaArticulo() {
   els.wrapBusquedaArticulo.hidden = false;
 
   const resultados = state.comprasFlat
-    .filter((c) => sinAcentos(c.descripcion).includes(q) || sinAcentos(c.proveedor?.nombre).includes(q) || sinAcentos(c.proveedor?.rubro).includes(q))
+    .filter((c) => sinAcentos(c.descripcion).includes(q)
+      || sinAcentos(c.proveedor?.nombre).includes(q)
+      || sinAcentos(c.proveedor?.rubro).includes(q)
+      || sinAcentos(c.proveedor?.palabra_clave).includes(q))
     .slice(0, 150); // ya vienen ordenadas por fecha desc desde cargarDatos
 
   els.tbodyBusquedaArticulo.innerHTML = resultados.length
@@ -179,6 +182,20 @@ function historialComprasHtml(p, compras) {
     <tr class="historial-detail-row">
       <td colspan="6">
         <div class="historial-detail">
+          <div class="mas-datos-form">
+            <label>Tel. alternativo
+              <input type="text" class="contacto-input" data-field="telefono_2" data-id="${p.id}" value="${escapeHtml(p.telefono_2 || '')}" />
+            </label>
+            <label>Dirección
+              <input type="text" class="contacto-input" data-field="direccion" data-id="${p.id}" value="${escapeHtml(p.direccion || '')}" />
+            </label>
+            <label>Condiciones de pago
+              <input type="text" class="contacto-input" data-field="condiciones" data-id="${p.id}" value="${escapeHtml(p.condiciones || '')}" placeholder="Transferencia, efectivo, factura..." />
+            </label>
+            <label>Palabra clave <span class="opcional-tag">(qué le compramos, para el buscador)</span>
+              <input type="text" class="contacto-input" data-field="palabra_clave" data-id="${p.id}" value="${escapeHtml(p.palabra_clave || '')}" />
+            </label>
+          </div>
           <table class="pivot">
             <thead><tr><th>Fecha</th><th>Descripción</th><th>Monto</th><th></th></tr></thead>
             <tbody>${filas || '<tr><td class="empty-state" colspan="4">Sin compras cargadas.</td></tr>'}</tbody>
@@ -287,7 +304,11 @@ els.formNuevo.addEventListener('submit', async (e) => {
     rubro: document.getElementById('np-rubro').value.trim() || null,
     localidad: document.getElementById('np-localidad').value.trim() || null,
     telefono: document.getElementById('np-telefono').value.trim() || null,
+    telefono_2: document.getElementById('np-telefono-2').value.trim() || null,
     email: document.getElementById('np-email').value.trim() || null,
+    direccion: document.getElementById('np-direccion').value.trim() || null,
+    condiciones: document.getElementById('np-condiciones').value.trim() || null,
+    palabra_clave: document.getElementById('np-palabra-clave').value.trim() || null,
     cargado_por: state.currentUser,
   };
 
