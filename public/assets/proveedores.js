@@ -103,7 +103,7 @@ async function cargarDatos() {
     fetchAll(() => client.from('compras_proveedor').select('id, proveedor_id, fecha, descripcion, monto').order('fecha', { ascending: false }).order('id', { ascending: true })),
   ]);
   if (e1 || e2) {
-    els.tbody.innerHTML = `<tr><td class="empty-state" colspan="6">Error al cargar: ${(e1 || e2).message}</td></tr>`;
+    els.tbody.innerHTML = `<tr><td class="empty-state" colspan="5">Error al cargar: ${(e1 || e2).message}</td></tr>`;
     return;
   }
   state.proveedores = proveedores || [];
@@ -160,7 +160,7 @@ function render() {
   els.contador.textContent = `${filtrados.length} proveedor(es)`;
 
   if (filtrados.length === 0) {
-    els.tbody.innerHTML = '<tr><td class="empty-state" colspan="6">Sin proveedores todavía — usá "+ Nuevo proveedor" para cargar el primero.</td></tr>';
+    els.tbody.innerHTML = '<tr><td class="empty-state" colspan="5">Sin proveedores todavía — usá "+ Nuevo proveedor" para cargar el primero.</td></tr>';
     return;
   }
 
@@ -173,11 +173,12 @@ function render() {
         <td class="col-grupo">
           <div class="nombre-row">
             <input type="text" class="contacto-input" data-field="nombre" data-id="${p.id}" value="${escapeHtml(p.nombre)}" />
-            <button type="button" class="toggle-descripcion ${p.direccion ? 'has-desc' : ''}" data-id="${p.id}" title="Ver/editar dirección">📍</button>
+            <button type="button" class="toggle-descripcion ${(p.direccion || p.localidad) ? 'has-desc' : ''}" data-id="${p.id}" title="Ver/editar dirección y localidad">📍</button>
           </div>
           ${state.openDireccion.has(p.id) ? `
           <div class="descripcion-panel">
             <input type="text" class="contacto-input" data-field="direccion" data-id="${p.id}" value="${escapeHtml(p.direccion || '')}" placeholder="Dirección" />
+            <input type="text" class="contacto-input" data-field="localidad" data-id="${p.id}" value="${escapeHtml(p.localidad || '')}" placeholder="Localidad" />
           </div>` : ''}
         </td>
         <td><input type="text" class="contacto-input" data-field="cuit" data-id="${p.id}" value="${escapeHtml(p.cuit || '')}" placeholder="CUIT" /></td>
@@ -186,7 +187,6 @@ function render() {
           <input type="text" class="contacto-input" data-field="telefono" data-id="${p.id}" value="${escapeHtml(p.telefono || '')}" placeholder="Teléfono" />
           <input type="email" class="contacto-input" data-field="email" data-id="${p.id}" value="${escapeHtml(p.email || '')}" placeholder="Email" />
         </td>
-        <td><input type="text" class="contacto-input" data-field="localidad" data-id="${p.id}" value="${escapeHtml(p.localidad || '')}" placeholder="Localidad" /></td>
         <td><button type="button" class="toggle-historial" data-id="${p.id}">${abierto ? 'Ocultar' : 'Compras'} (${compras.length})</button></td>
       </tr>`;
     if (abierto) html += historialComprasHtml(p, compras);
@@ -205,7 +205,7 @@ function historialComprasHtml(p, compras) {
     </tr>`).join('');
   return `
     <tr class="historial-detail-row">
-      <td colspan="6">
+      <td colspan="5">
         <div class="historial-detail">
           <div class="mas-datos-form">
             <label>Tel. alternativo

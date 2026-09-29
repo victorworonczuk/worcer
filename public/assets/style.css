@@ -437,6 +437,9 @@ tbody tr:hover {
   margin-top: 6px;
   min-width: 200px;
   max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .transporte-panel {
   margin-top: 6px;
