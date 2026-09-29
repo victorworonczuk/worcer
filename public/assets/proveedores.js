@@ -14,6 +14,17 @@ async function fetchAll(buildQuery, pageSize = 1000) {
   return { data: todos, error: null };
 }
 
+const RUBROS_PROVEEDOR = [
+  'Materia prima',
+  'Insumos y repuestos',
+  'Transporte / Fletes',
+  'Servicios',
+  'Mantenimiento',
+  'Combustible',
+  'Maquinaria y herramientas',
+  'Otros',
+];
+
 const state = {
   currentUser: null,
   proveedores: [],
@@ -50,6 +61,16 @@ function escapeHtml(str) {
 // oficina tiene que poder encontrarlo escribiendo como le salga).
 function sinAcentos(s) {
   return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+// Si el rubro actual no está en la lista fija (ej. algo tipeado antes de que
+// existiera este select), se agrega igual como opción para no perder el dato.
+function rubroOptionsHtml(valorActual) {
+  const opciones = RUBROS_PROVEEDOR.includes(valorActual) || !valorActual
+    ? RUBROS_PROVEEDOR
+    : [...RUBROS_PROVEEDOR, valorActual];
+  return '<option value="">—</option>' + opciones
+    .map((r) => `<option value="${escapeHtml(r)}" ${r === valorActual ? 'selected' : ''}>${escapeHtml(r)}</option>`)
+    .join('');
 }
 
 async function initUser() {
@@ -132,7 +153,7 @@ function render() {
       <tr data-proveedor="${p.id}">
         <td class="col-grupo"><input type="text" class="contacto-input" data-field="nombre" data-id="${p.id}" value="${escapeHtml(p.nombre)}" /></td>
         <td><input type="text" class="contacto-input" data-field="cuit" data-id="${p.id}" value="${escapeHtml(p.cuit || '')}" placeholder="CUIT" /></td>
-        <td><input type="text" class="contacto-input" data-field="rubro" data-id="${p.id}" value="${escapeHtml(p.rubro || '')}" placeholder="Rubro" /></td>
+        <td><select class="contacto-input" data-field="rubro" data-id="${p.id}">${rubroOptionsHtml(p.rubro)}</select></td>
         <td class="col-grupo">
           <input type="text" class="contacto-input" data-field="telefono" data-id="${p.id}" value="${escapeHtml(p.telefono || '')}" placeholder="Teléfono" />
           <input type="email" class="contacto-input" data-field="email" data-id="${p.id}" value="${escapeHtml(p.email || '')}" placeholder="Email" />
@@ -182,7 +203,10 @@ async function saveField(id, field, value) {
 
 function wireRowEvents() {
   els.tbody.querySelectorAll('.contacto-input').forEach((input) => {
-    input.addEventListener('blur', (e) => {
+    // 'change' para el <select> de rubro (guarda apenas se elige una
+    // opción); 'blur' para los <input> de texto (guarda al salir del campo).
+    const evento = input.tagName === 'SELECT' ? 'change' : 'blur';
+    input.addEventListener(evento, (e) => {
       const id = Number(e.target.dataset.id);
       saveField(id, e.target.dataset.field, e.target.value.trim());
     });
@@ -242,6 +266,7 @@ els.busquedaArticulo.addEventListener('input', (e) => {
 
 els.btnNuevo.addEventListener('click', () => {
   els.formNuevo.reset();
+  document.getElementById('np-rubro').innerHTML = rubroOptionsHtml('');
   els.formError.textContent = '';
   els.modalOverlay.classList.remove('hidden');
 });
