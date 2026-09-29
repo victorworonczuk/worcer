@@ -160,21 +160,37 @@ function render() {
   renderTabla(TABLAS.monto);
 }
 
-// Proyección lineal simple a fin de mes: total acumulado / días
-// transcurridos × días totales del mes. Si el mes ya terminó, no se
-// extrapola — el "proyectado" es directamente el total real.
+// Cuenta días hábiles (lunes a viernes) entre dos fechas, ambas incluidas.
+// No descuenta feriados — no hay calendario de feriados cargado en el
+// sistema — solo fines de semana.
+function diasHabilesEntre(desde, hasta) {
+  let count = 0;
+  const d = new Date(desde);
+  while (d <= hasta) {
+    const diaSemana = d.getDay(); // 0 = domingo, 6 = sábado
+    if (diaSemana !== 0 && diaSemana !== 6) count += 1;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+// Proyección a fin de mes con el mismo criterio que usaba la planilla vieja
+// (pedido de Víctor 29/09/26: "seguramente toma los días hábiles"): total
+// acumulado / días hábiles transcurridos × días hábiles del mes. Si el mes
+// ya terminó, no se extrapola — el "proyectado" es directamente el total real.
 function proyectarFinDeMes(mes, totalAcumulado) {
   const [anio, mesNum] = mes.split('-').map(Number);
-  const totalDias = new Date(anio, mesNum, 0).getDate();
+  const primerDia = new Date(anio, mesNum - 1, 1);
+  const ultimoDia = new Date(anio, mesNum, 0);
   const hoy = new Date();
   const esMesActual = hoy.getFullYear() === anio && hoy.getMonth() + 1 === mesNum;
   if (!esMesActual) {
-    const esMesFuturo = new Date(anio, mesNum - 1, 1) > hoy;
-    return esMesFuturo ? null : totalAcumulado;
+    return primerDia > hoy ? null : totalAcumulado;
   }
-  const diasTranscurridos = hoy.getDate();
-  if (diasTranscurridos <= 0) return null;
-  return totalAcumulado / diasTranscurridos * totalDias;
+  const habilesDelMes = diasHabilesEntre(primerDia, ultimoDia);
+  const habilesTranscurridos = diasHabilesEntre(primerDia, hoy);
+  if (habilesTranscurridos <= 0) return null;
+  return totalAcumulado / habilesTranscurridos * habilesDelMes;
 }
 
 function renderTabla(cfg) {
@@ -242,7 +258,7 @@ function renderTabla(cfg) {
       <td class="col-total">100%</td>
     </tr>`;
 
-  cfg.notaPie.textContent = 'Cada "pedido" es una factura real de un cliente con vendedor asignado — se arma solo con las facturas ya importadas, no hace falta cargar nada acá. "Proyectado" es una proyección lineal simple (acumulado / días pasados × días del mes). Los valores negativos (si los hay) son notas de crédito.';
+  cfg.notaPie.textContent = 'Cada "pedido" es una factura real de un cliente con vendedor asignado — se arma solo con las facturas ya importadas, no hace falta cargar nada acá. "Proyectado" es acumulado / días hábiles transcurridos × días hábiles del mes (lunes a viernes, sin descontar feriados). Los valores negativos (si los hay) son notas de crédito.';
 }
 
 function escapeHtml(str) {
