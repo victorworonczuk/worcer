@@ -47,9 +47,15 @@ export async function POST(request) {
       [mesInicio, valorNum, user]
     );
 
+    // Cerámica y Porcelanas facturan con el 21% de IVA adentro del importe_ars,
+    // Presupuesto nunca tiene IVA — hay que sacarlo antes de pasar a dólares,
+    // si no el dólar de Cerámica/Porcelanas queda inflado un 21% respecto al
+    // de Presupuesto (pedido de Víctor 29/09/26, mismo criterio que
+    // analisis-semanal.js/inicio.js/pedidos-vendedor.js).
     const upd = await client.query(
       `update public.facturas
-       set importe_usd = importe_ars / $1, tipo_cambio = $1
+       set importe_usd = (importe_ars / (case empresa when 'Ceramica' then 1.21 when 'Porcelanas' then 1.21 else 1 end)) / $1,
+           tipo_cambio = $1
        where tipo_cambio is null
          and fecha >= $2::date and fecha < ($2::date + interval '1 month')`,
       [valorNum, mesInicio]

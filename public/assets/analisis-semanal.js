@@ -198,7 +198,17 @@ async function init() {
     els.kpiGrid.innerHTML = `<div class="empty-state">Error al cargar: ${(e1 || e2 || e3 || e4 || e5).message}</div>`;
     return;
   }
-  const facturasConFecha = facturas.filter((f) => f.fecha);
+  // importe_sin_iva se calcula una sola vez acá y se usa en todos los
+  // totales/reportes de esta pantalla — pedido de Víctor 29/09/26: Cerámica
+  // y Porcelanas facturan CON el 21% de IVA adentro, Presupuesto no tiene
+  // IVA nunca, así que sumar importe_ars tal cual mezcla bruto con neto y
+  // pisa todo lo que compara empresas o vendedores entre sí. El monto
+  // "Facturado" bruto de cada factura individual sigue disponible en
+  // importe_ars por si hace falta (ver renderPiezas, que muestra las dos
+  // columnas a propósito).
+  const facturasConFecha = facturas
+    .filter((f) => f.fecha)
+    .map((f) => ({ ...f, importe_sin_iva: sinIva(Number(f.importe_ars || 0), f.empresa) }));
   state.facturas = facturasConFecha.filter((f) => !esFacturaIntercompania(f));
   state.facturasIntercompania = facturasConFecha.filter(esFacturaIntercompania);
   state.facturaPorId = new Map(state.facturas.map((f) => [f.id, f]));
@@ -243,7 +253,7 @@ function render() {
 
   const intercompaniaPeriodo = state.facturasIntercompania.filter((f) => f.fecha >= desde && f.fecha <= hasta);
   if (intercompaniaPeriodo.length > 0) {
-    const montoIntercompania = intercompaniaPeriodo.reduce((s, f) => s + Number(f.importe_ars || 0), 0);
+    const montoIntercompania = intercompaniaPeriodo.reduce((s, f) => s + Number(f.importe_sin_iva || 0), 0);
     els.kpiHint.textContent = `No incluye ${intercompaniaPeriodo.length} factura${intercompaniaPeriodo.length === 1 ? '' : 's'} entre las dos empresas propias (${fmtPesos(montoIntercompania)}) — no son ventas a un cliente.`;
   } else {
     els.kpiHint.textContent = '';
@@ -257,7 +267,7 @@ function render() {
 }
 
 function renderKpis(facturasSemana, itemsSemana) {
-  const totalFacturado = facturasSemana.reduce((s, f) => s + Number(f.importe_ars || 0), 0);
+  const totalFacturado = facturasSemana.reduce((s, f) => s + Number(f.importe_sin_iva || 0), 0);
   const piezasVendidas = itemsSemana.reduce((s, it) => s + Number(it.cantidad || 0), 0);
   const clientes = new Set(facturasSemana.filter((f) => f.cliente_id).map((f) => f.cliente_id));
 
@@ -302,7 +312,7 @@ function renderVendedores(facturasPeriodo, itemsPeriodo) {
     if (!porVendedor.has(vendedor)) porVendedor.set(vendedor, { vendedor, cantidad: 0, monto: 0 });
     const g = porVendedor.get(vendedor);
     g.cantidad += piezasPorFactura.get(f.id) || 0;
-    g.monto += Number(f.importe_ars || 0);
+    g.monto += Number(f.importe_sin_iva || 0);
   }
 
   const vendedores = [...porVendedor.values()].sort((a, b) => b.monto - a.monto);
@@ -321,7 +331,7 @@ function renderVendedores(facturasPeriodo, itemsPeriodo) {
 // --- Escalas de descuento: cada escala de lista_precios_descuentos define un
 // rango de $ de factura con un % de descuento y plazo de pago asociado (ver
 // schema_listas_precios.sql). Se clasifica cada factura de la semana según
-// su importe_ars real contra las escalas de la lista que regía en SU fecha
+// su importe_sin_iva contra las escalas de la lista que regía en SU fecha
 // (puede haber más de una lista vigente en distintos momentos — ver
 // listaVigenteEn) — no hay forma de reconstruir el "% de descuento
 // efectivamente aplicado" pieza por pieza porque la lista de precios solo
@@ -365,7 +375,11 @@ function renderDescuentos(facturasSemana) {
 
   let sinEscala = 0;
   for (const f of facturasSemana) {
-    const importe = Number(f.importe_ars || 0);
+    // Sin IVA (pedido de Víctor 29/09/26) — antes clasificaba contra el
+    // monto bruto de Cerámica/Porcelanas (con 21% adentro) mezclado con el
+    // neto de Presupuesto, corriendo esas dos empresas hacia una escala más
+    // alta de la que les correspondía en la práctica.
+    const importe = Number(f.importe_sin_iva || 0);
     const listaDeLaFactura = listaVigenteEn(f.fecha) || listaMasVieja;
     const descuentosDeLaFactura = state.descuentosPorLista.get(listaDeLaFactura.id) || [];
     const match = escalaDe(importe, descuentosDeLaFactura);
@@ -494,7 +508,7 @@ function renderTendencia(anchor) {
 
   const totales = semanas.map((s) => state.facturas
     .filter((f) => f.fecha >= s.desde && f.fecha <= s.hasta)
-    .reduce((acc, f) => acc + Number(f.importe_ars || 0), 0));
+    .reduce((acc, f) => acc + Number(f.importe_sin_iva || 0), 0));
 
   const etiquetaSerie = state.tipoPeriodo === 'mes' ? 'Facturado por mes' : 'Facturado por semana';
   els.tendenciaLegend.innerHTML = `<span class="legend-item"><span class="legend-swatch" style="background:#2e6ea0"></span>${etiquetaSerie}</span>`;
@@ -674,7 +688,7 @@ function renderPiezas(itemsPeriodo, facturasPeriodo) {
   if (els.piezasHint) {
     const facturaIdsConItems = new Set(itemsPeriodo.filter((it) => it.piezas).map((it) => it.factura_id));
     const facturasSinItems = (facturasPeriodo || []).filter((f) => !facturaIdsConItems.has(f.id));
-    const montoSinItems = facturasSinItems.reduce((s, f) => s + Number(f.importe_ars || 0), 0);
+    const montoSinItems = facturasSinItems.reduce((s, f) => s + Number(f.importe_sin_iva || 0), 0);
     const montoSinItemsTexto = (montoSinItems < 0 ? '-' : '') + fmtPesos(Math.abs(montoSinItems));
     els.piezasHint.textContent = facturasSinItems.length > 0
       ? `Facturado real por factura, prorrateado entre sus piezas. ${facturasSinItems.length} factura${facturasSinItems.length === 1 ? '' : 's'} sin detalle de piezas cargado (${montoSinItemsTexto}) no están en esta tabla, aunque sí en el KPI "Facturado" de arriba.`

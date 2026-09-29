@@ -18,6 +18,15 @@ async function fetchAll(buildQuery, pageSize = 1000) {
 // ellas no es una venta real a un cliente (ver analisis-semanal.js).
 const CUITS_PROPIOS = new Set(['30709413208', '30714033189']);
 
+// Mismo criterio que analisis-semanal.js (pedido de Víctor 29/09/26):
+// Cerámica/Porcelanas facturan CON el 21% de IVA adentro, Presupuesto nunca
+// tiene IVA — sumar importe_ars tal cual mezclaría bruto con neto.
+const IVA_RATE = { Ceramica: 0.21, Porcelanas: 0.21, Presupuesto: 0 };
+function sinIva(monto, empresa) {
+  const tasa = IVA_RATE[empresa] ?? 0.21;
+  return monto / (1 + tasa);
+}
+
 const META_CONTACTOS_SEMANAL = 50; // debe estar sincronizado con app.js
 
 const els = {
@@ -129,10 +138,12 @@ async function init() {
   }
 
   // --- Facturado / Piezas vendidas / Clientes que compraron (mes actual) ---
-  const facturasReales = (facturasTodas || []).filter((f) => f.fecha && !CUITS_PROPIOS.has(f.cuit_normalizado));
+  const facturasReales = (facturasTodas || [])
+    .filter((f) => f.fecha && !CUITS_PROPIOS.has(f.cuit_normalizado))
+    .map((f) => ({ ...f, importe_sin_iva: sinIva(Number(f.importe_ars || 0), f.empresa) }));
   const facturasMesReales = facturasReales.filter((f) => f.fecha >= desde && f.fecha <= hasta);
   const facturaIds = facturasMesReales.map((f) => f.id);
-  const totalFacturado = facturasMesReales.reduce((s, f) => s + Number(f.importe_ars || 0), 0);
+  const totalFacturado = facturasMesReales.reduce((s, f) => s + Number(f.importe_sin_iva || 0), 0);
   const clientesQueCompraron = new Set(facturasMesReales.filter((f) => f.cliente_id).map((f) => f.cliente_id));
 
   // Cliente "nuevo" = su primera compra EN TODA LA HISTORIA cayó en este mes
@@ -187,7 +198,7 @@ async function init() {
   const facturadoPorEmpresa = new Map();
   for (const f of facturasMesReales) {
     const emp = f.empresa || 'Sin empresa';
-    facturadoPorEmpresa.set(emp, (facturadoPorEmpresa.get(emp) || 0) + Number(f.importe_ars || 0));
+    facturadoPorEmpresa.set(emp, (facturadoPorEmpresa.get(emp) || 0) + Number(f.importe_sin_iva || 0));
   }
   const breakdownEmpresa = Object.keys(EMPRESA_LABEL)
     .filter((emp) => facturadoPorEmpresa.has(emp))
@@ -206,7 +217,7 @@ async function init() {
   const vendedorPorCliente = new Map((clientes || []).map((c) => [c.id, c.vendedor]));
   const facturasConVendedorMes = facturasMesReales.filter((f) => f.cliente_id && vendedorPorCliente.get(f.cliente_id));
   const totalVentasVendedor = facturasConVendedorMes.length;
-  const totalMontoVendedor = facturasConVendedorMes.reduce((s, f) => s + Number(f.importe_ars || 0), 0);
+  const totalMontoVendedor = facturasConVendedorMes.reduce((s, f) => s + Number(f.importe_sin_iva || 0), 0);
 
   const kpis = [
     { label: 'Facturado este mes', value: fmtPesos(totalFacturado), href: hrefMesActual },

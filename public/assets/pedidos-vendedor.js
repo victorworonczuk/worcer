@@ -20,6 +20,16 @@ async function fetchAll(buildQuery, pageSize = 1000) {
 // Alberti SRL) — una factura entre ellas no es una venta real a un cliente.
 const CUITS_PROPIOS = new Set(['30709413208', '30714033189']);
 
+// Mismo criterio que analisis-semanal.js/inicio.js (pedido de Víctor
+// 29/09/26): Cerámica/Porcelanas facturan CON el 21% de IVA adentro,
+// Presupuesto nunca tiene IVA — sumar importe_ars tal cual mezclaría bruto
+// con neto entre vendedores con distinta mezcla de empresas.
+const IVA_RATE = { Ceramica: 0.21, Porcelanas: 0.21, Presupuesto: 0 };
+function sinIva(monto, empresa) {
+  const tasa = IVA_RATE[empresa] ?? 0.21;
+  return monto / (1 + tasa);
+}
+
 // Debe estar sincronizado con VENDEDORES en public/assets/app.js — se usa
 // para que todos los vendedores aparezcan en las tablas aunque no hayan
 // vendido nada en el período (pedido de Víctor 29/09/26), no solo los que
@@ -106,7 +116,7 @@ async function cargarDatos() {
   // repetir filas al paginar en tablas de más de 1000 filas (bug real
   // encontrado 26/08/26).
   const [{ data: facturas, error: e1 }, { data: clientes, error: e2 }] = await Promise.all([
-    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, cuit_normalizado').order('fecha').order('id', { ascending: true })),
+    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, empresa, cliente_id, cuit_normalizado').order('fecha').order('id', { ascending: true })),
     fetchAll(() => client.from('clientes').select('id, vendedor').order('id', { ascending: true })),
   ]);
   if (e1 || e2) {
@@ -119,7 +129,7 @@ async function cargarDatos() {
   const vendedorPorCliente = new Map((clientes || []).map((c) => [c.id, c.vendedor]));
   state.facturas = (facturas || [])
     .filter((f) => f.fecha && f.cliente_id && !CUITS_PROPIOS.has(f.cuit_normalizado))
-    .map((f) => ({ ...f, vendedor: vendedorPorCliente.get(f.cliente_id) }))
+    .map((f) => ({ ...f, vendedor: vendedorPorCliente.get(f.cliente_id), importe_sin_iva: sinIva(Number(f.importe_ars || 0), f.empresa) }))
     .filter((f) => f.vendedor);
 
   const meses = [...new Set(state.facturas.map((f) => f.fecha.slice(0, 7)))].sort();
@@ -140,7 +150,7 @@ function renderAnual() {
     if (!porVendedor.has(f.vendedor)) porVendedor.set(f.vendedor, { cantidad: 0, monto_ars: 0 });
     const g = porVendedor.get(f.vendedor);
     g.cantidad += 1;
-    g.monto_ars += Number(f.importe_ars || 0);
+    g.monto_ars += Number(f.importe_sin_iva || 0);
   }
   const vendedores = [...porVendedor.entries()]
     .map(([vendedor, g]) => ({ vendedor, ...g }))
@@ -219,7 +229,7 @@ function renderTabla(cfg) {
   const porVendedor = new Map(VENDEDORES.map((v) => [v, {}]));
   for (const f of facturasDelMes) {
     if (!porVendedor.has(f.vendedor)) porVendedor.set(f.vendedor, {});
-    const valor = campo === 'cantidad' ? 1 : Number(f.importe_ars || 0);
+    const valor = campo === 'cantidad' ? 1 : Number(f.importe_sin_iva || 0);
     porVendedor.get(f.vendedor)[f.fecha] = (porVendedor.get(f.vendedor)[f.fecha] || 0) + valor;
   }
 
