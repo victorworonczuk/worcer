@@ -357,7 +357,13 @@ els.formNuevo.addEventListener('submit', async (e) => {
   if (error) { els.formError.textContent = `No se pudo guardar: ${error.message}`; return; }
 
   els.modalOverlay.classList.add('hidden');
+  // La lista se ordena alfabéticamente, así que el recién creado puede
+  // quedar lejos de la vista — se filtra por su nombre para que aparezca
+  // de entrada (si no, "se guardó y no lo encuentro", bug real 29/09/26).
+  state.search = nombre;
+  els.search.value = nombre;
   await cargarDatos();
+  els.tbody.querySelector('tr[data-proveedor]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 
 (async () => {
