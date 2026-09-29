@@ -15,6 +15,7 @@ const state = {
   openDescripcion: new Set(),
   openTransporte: new Set(),
   vendedorOtro: new Set(),
+  duplicadosIgnorados: new Set(), // pares "id_menor-id_mayor" ya revisados y confirmados como clientes distintos
   currentUser: null,
   currentUserRol: null,
   currentUserNombre: null,
@@ -317,6 +318,15 @@ async function loadData() {
     state.filters.soloClientesNuevosMes = true;
   }
 
+  const { data: ignorados, error: ignoradosError } = await client
+    .from('duplicados_ignorados')
+    .select('cliente_id_menor, cliente_id_mayor');
+  if (ignoradosError) {
+    console.error('Error cargando duplicados_ignorados', ignoradosError);
+  } else {
+    state.duplicadosIgnorados = new Set((ignorados || []).map((d) => `${d.cliente_id_menor}-${d.cliente_id_mayor}`));
+  }
+
   populateFilterOptions();
   renderStats();
   renderAlertaDuplicados();
@@ -457,14 +467,30 @@ function detectarDuplicadosSinVentas() {
     }
     if (mejor) {
       const otro = normalizados[mejor.j].cliente;
-      const key = [n.cliente.id, otro.id].sort().join('-');
-      if (!vistos.has(key)) {
+      const key = [n.cliente.id, otro.id].sort((a, b) => a - b).join('-');
+      if (!vistos.has(key) && !state.duplicadosIgnorados.has(key)) {
         vistos.add(key);
-        pares.push({ sinVentas: n.cliente, otro });
+        pares.push({ sinVentas: n.cliente, otro, key });
       }
     }
   });
   return pares;
+}
+
+// Guarda un par como "no es duplicado" para que la alarma deje de mostrarlo
+// (pedido de Víctor 29/09/26: revisó varios pares a mano por chat y quiere
+// que esa revisión quede resuelta, no que se repita cada vez que entra).
+async function descartarDuplicado(idA, idB) {
+  const [menor, mayor] = [Number(idA), Number(idB)].sort((a, b) => a - b);
+  const { error } = await client
+    .from('duplicados_ignorados')
+    .insert({ cliente_id_menor: menor, cliente_id_mayor: mayor, ignorado_por: state.currentUser });
+  if (error) {
+    alert('Error al descartar: ' + error.message);
+    return;
+  }
+  state.duplicadosIgnorados.add(`${menor}-${mayor}`);
+  renderAlertaDuplicados();
 }
 
 function renderAlertaDuplicados() {
@@ -485,9 +511,13 @@ function renderAlertaDuplicados() {
       (p) => `<tr>
         <td>${escapeHtml(p.sinVentas.nombre)}${conUbicacion(p.sinVentas)}</td>
         <td>${escapeHtml(p.otro.nombre)}${conUbicacion(p.otro)}</td>
+        <td><button type="button" class="btn-no-duplicado" data-id-a="${p.sinVentas.id}" data-id-b="${p.otro.id}">No es duplicado</button></td>
       </tr>`
     )
     .join('');
+  els.alertaDuplicadosTbody.querySelectorAll('.btn-no-duplicado').forEach((btn) => {
+    btn.addEventListener('click', () => descartarDuplicado(btn.dataset.idA, btn.dataset.idB));
+  });
 }
 
 function renderStats() {
