@@ -18,8 +18,10 @@ const state = {
   currentUser: null,
   proveedores: [],
   comprasByProveedor: new Map(), // proveedor_id -> [compra, ...]
+  comprasFlat: [], // todas las compras con el proveedor ya embebido, para el buscador de artículos
   openHistorial: new Set(),
   search: '',
+  busquedaArticulo: '',
 };
 
 const els = {
@@ -32,6 +34,9 @@ const els = {
   formNuevo: document.getElementById('form-nuevo-proveedor'),
   btnCancelar: document.getElementById('btn-cancelar'),
   formError: document.getElementById('form-error'),
+  busquedaArticulo: document.getElementById('f-busqueda-articulo'),
+  wrapBusquedaArticulo: document.getElementById('wrap-busqueda-articulo'),
+  tbodyBusquedaArticulo: document.getElementById('tbody-busqueda-articulo'),
 };
 
 function fmtPesos(n) { return n == null ? '·' : '$' + Math.round(Number(n)).toLocaleString('es-AR'); }
@@ -39,6 +44,12 @@ function fmtFecha(f) { return f ? new Date(f + 'T00:00:00').toLocaleDateString('
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+// Sin acentos y en minúscula, para que buscar "arcilla" encuentre "Arcilla" y
+// "teflon" encuentre "teflón" (pedido de Víctor 29/09/26: cualquiera de la
+// oficina tiene que poder encontrarlo escribiendo como le salga).
+function sinAcentos(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
 async function initUser() {
@@ -60,12 +71,42 @@ async function cargarDatos() {
   }
   state.proveedores = proveedores || [];
   state.comprasByProveedor = new Map();
+  const proveedorPorId = new Map(state.proveedores.map((p) => [p.id, p]));
+  state.comprasFlat = [];
   for (const c of (compras || [])) {
     const lista = state.comprasByProveedor.get(c.proveedor_id) || [];
     lista.push(c);
     state.comprasByProveedor.set(c.proveedor_id, lista);
+    state.comprasFlat.push({ ...c, proveedor: proveedorPorId.get(c.proveedor_id) || null });
   }
   render();
+  renderBusquedaArticulo();
+}
+
+function renderBusquedaArticulo() {
+  const q = sinAcentos(state.busquedaArticulo.trim());
+  if (!q) {
+    els.wrapBusquedaArticulo.hidden = true;
+    els.tbodyBusquedaArticulo.innerHTML = '';
+    return;
+  }
+  els.wrapBusquedaArticulo.hidden = false;
+
+  const resultados = state.comprasFlat
+    .filter((c) => sinAcentos(c.descripcion).includes(q) || sinAcentos(c.proveedor?.nombre).includes(q) || sinAcentos(c.proveedor?.rubro).includes(q))
+    .slice(0, 150); // ya vienen ordenadas por fecha desc desde cargarDatos
+
+  els.tbodyBusquedaArticulo.innerHTML = resultados.length
+    ? resultados.map((c) => `
+        <tr>
+          <td>${fmtFecha(c.fecha)}</td>
+          <td class="col-grupo">${escapeHtml(c.descripcion || '')}</td>
+          <td class="col-grupo">${escapeHtml(c.proveedor?.nombre || '(proveedor eliminado)')}</td>
+          <td class="col-grupo">${escapeHtml(c.proveedor?.telefono || '')} ${escapeHtml(c.proveedor?.email || '')}</td>
+          <td>${fmtPesos(c.monto)}</td>
+        </tr>
+      `).join('')
+    : '<tr><td class="empty-state" colspan="5">Sin resultados para esa búsqueda.</td></tr>';
 }
 
 function coincide(p, q) {
@@ -192,6 +233,11 @@ function wireRowEvents() {
 els.search.addEventListener('input', (e) => {
   state.search = e.target.value;
   render();
+});
+
+els.busquedaArticulo.addEventListener('input', (e) => {
+  state.busquedaArticulo = e.target.value;
+  renderBusquedaArticulo();
 });
 
 els.btnNuevo.addEventListener('click', () => {

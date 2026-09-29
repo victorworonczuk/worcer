@@ -32,8 +32,32 @@
   <main class="piezas-main">
     <div class="panel">
       <div class="filters">
+        <div class="field-inline field-cliente">
+          <label for="f-busqueda-articulo">Buscar artículo comprado</label>
+          <input type="text" id="f-busqueda-articulo" placeholder="Ej: teflon, disco de corte, arcilla..." />
+        </div>
+      </div>
+      <p class="nota-pie">Busca por palabra clave en todas las compras cargadas, sin importar el proveedor. Para cada resultado se muestra a quién comprárselo y a qué precio la última vez.</p>
+      <div class="table-wrap" id="wrap-busqueda-articulo" hidden>
+        <table class="pivot">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th class="col-grupo">Artículo</th>
+              <th class="col-grupo">Proveedor</th>
+              <th class="col-grupo">Contacto</th>
+              <th>Monto</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-busqueda-articulo"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="filters">
         <div class="field-inline">
-          <label for="f-search">Buscar</label>
+          <label for="f-search">Buscar proveedor</label>
           <input type="text" id="f-search" placeholder="Nombre, CUIT, rubro..." />
         </div>
         <button type="button" id="btn-nuevo-proveedor" class="btn-primary">+ Nuevo proveedor</button>
