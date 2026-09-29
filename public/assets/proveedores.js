@@ -35,6 +35,7 @@ const state = {
   comprasByProveedor: new Map(), // proveedor_id -> [compra, ...]
   comprasFlat: [], // todas las compras con el proveedor ya embebido, para el buscador de artículos
   openHistorial: new Set(),
+  openDireccion: new Set(),
   search: '',
   busquedaArticulo: '',
 };
@@ -169,7 +170,16 @@ function render() {
     const abierto = state.openHistorial.has(p.id);
     html += `
       <tr data-proveedor="${p.id}">
-        <td class="col-grupo"><input type="text" class="contacto-input" data-field="nombre" data-id="${p.id}" value="${escapeHtml(p.nombre)}" /></td>
+        <td class="col-grupo">
+          <div class="nombre-row">
+            <input type="text" class="contacto-input" data-field="nombre" data-id="${p.id}" value="${escapeHtml(p.nombre)}" />
+            <button type="button" class="toggle-descripcion ${p.direccion ? 'has-desc' : ''}" data-id="${p.id}" title="Ver/editar dirección">📍</button>
+          </div>
+          ${state.openDireccion.has(p.id) ? `
+          <div class="descripcion-panel">
+            <input type="text" class="contacto-input" data-field="direccion" data-id="${p.id}" value="${escapeHtml(p.direccion || '')}" placeholder="Dirección" />
+          </div>` : ''}
+        </td>
         <td><input type="text" class="contacto-input" data-field="cuit" data-id="${p.id}" value="${escapeHtml(p.cuit || '')}" placeholder="CUIT" /></td>
         <td><select class="contacto-input" data-field="rubro" data-id="${p.id}">${rubroOptionsHtml(p.rubro)}</select></td>
         <td class="col-grupo">
@@ -200,9 +210,6 @@ function historialComprasHtml(p, compras) {
           <div class="mas-datos-form">
             <label>Tel. alternativo
               <input type="text" class="contacto-input" data-field="telefono_2" data-id="${p.id}" value="${escapeHtml(p.telefono_2 || '')}" />
-            </label>
-            <label>Dirección
-              <input type="text" class="contacto-input" data-field="direccion" data-id="${p.id}" value="${escapeHtml(p.direccion || '')}" />
             </label>
             <label>Condiciones de pago
               <input type="text" class="contacto-input" data-field="condiciones" data-id="${p.id}" value="${escapeHtml(p.condiciones || '')}" placeholder="Transferencia, efectivo, factura..." />
@@ -254,6 +261,15 @@ function wireRowEvents() {
       const id = Number(e.target.dataset.id);
       if (state.openHistorial.has(id)) state.openHistorial.delete(id);
       else state.openHistorial.add(id);
+      render();
+    });
+  });
+
+  els.tbody.querySelectorAll('.toggle-descripcion').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      const id = Number(e.target.dataset.id);
+      if (state.openDireccion.has(id)) state.openDireccion.delete(id);
+      else state.openDireccion.add(id);
       render();
     });
   });
