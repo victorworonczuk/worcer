@@ -22,7 +22,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/importar-ventas.html', label: '+ Importar ventas', title: 'Subí acá los reportes .xml de facturas del sistema de facturación (Cerámica, Porcelanas y/o Presupuesto).' },
       { href: '/cargar-pedidos.html', label: '+ Cargar pedidos', title: 'Subí acá el Tablero de pedidos de venta (Excel, una hoja por mes) cuando haya una versión nueva.' },
-      { href: '/pedidos-vendedor.html', label: 'Pedidos por vendedor', title: 'Reporte de pedidos cargados por vendedor y día. Solo consulta, no se carga nada acá.' },
+      { href: '/pedidos-vendedor.html', label: 'Pedidos por vendedor', title: 'Cantidad y monto de pedidos por vendedor y día, armado solo con las facturas ya importadas. Solo consulta, no se carga nada acá.' },
       { href: '/lista-precios.html', label: 'Lista de precios', title: 'Lista de precios vigente, descuentos por escala, y carga del tipo de cambio del mes.' },
       { href: '/analisis-semanal.html', label: 'Análisis semanal', title: 'Facturación, piezas y escalas de descuento por semana. Solo consulta, no se carga nada acá.' },
       { href: '/piezas.html', label: 'Análisis de piezas', title: 'Reporte de piezas vendidas por cliente y período. Solo consulta, no se carga nada acá.' },

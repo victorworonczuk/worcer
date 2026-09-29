@@ -16,9 +16,18 @@ async function fetchAll(buildQuery, pageSize = 1000) {
   return { data: todos, error: null };
 }
 
+// CUITs propios de Víctor (Cerámica Sanitaria 8 de Julio SRL, Porcelanas
+// Alberti SRL) — una factura entre ellas no es una venta real a un cliente.
+const CUITS_PROPIOS = new Set(['30709413208', '30714033189']);
+
+// Hasta el 29/09/26 estas tablas salían de pedidos_vendedor (carga manual
+// desde "Cargar pedidos") — se desincronizaba fácil, mismo problema que ya
+// resolvimos en Análisis semanal e Inicio (ver commit 41b1bf4). Ahora "un
+// pedido" es directamente una factura real, agrupada por el vendedor ACTUAL
+// del cliente (cartera fija) — nunca puede faltar mientras la factura esté
+// cargada, y no hace falta que nadie tipee nada acá.
 const state = {
-  filas: [], // { vendedor, fecha, cantidad, monto_ars }
-  proyecciones: [], // { vendedor, mes, proyectado_cantidad, proyectado_monto }
+  facturas: [], // { id, fecha, importe_ars, vendedor }
 };
 
 const els = {
@@ -28,13 +37,9 @@ const els = {
   ultimaActualizacion: document.getElementById('ultima-actualizacion'),
 };
 
-// Las dos tablas (cantidad y $) se muestran siempre juntas, completas, en
-// vez de una sola tabla con pestaña para alternar — cada una con sus
-// propios elementos de resumen/thead/tbody/nota.
 const TABLAS = {
   cantidad: {
     campo: 'cantidad',
-    campoProy: 'proyectado_cantidad',
     fmtCelda: fmt,
     resumen: document.getElementById('resumen-cantidad'),
     thead: document.getElementById('thead-cantidad'),
@@ -43,7 +48,6 @@ const TABLAS = {
   },
   monto: {
     campo: 'monto_ars',
-    campoProy: 'proyectado_monto',
     fmtCelda: fmtPesos,
     resumen: document.getElementById('resumen-monto'),
     thead: document.getElementById('thead-monto'),
@@ -58,20 +62,16 @@ function fmt(n) {
 function fmtPesos(n) {
   return '$' + fmt(n);
 }
-// Celda de la tabla pivot: '·' para cero, en rojo si es negativo (corrección/cancelación).
 function celda(val, fmtFn) {
-  if (val === 0) return `<td class="zero">·</td>`;
+  if (!val) return `<td class="zero">·</td>`;
   return `<td class="${val < 0 ? 'neg' : ''}">${fmtFn(val)}</td>`;
 }
-// % de participación de un vendedor sobre el total de todos — 100% = la venta total.
 function fmtPct(val, totalGeneral) {
   if (!totalGeneral) return '·';
   return (val / totalGeneral * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%';
 }
-// Clase para pintar Total/Proyectado/% igual que las celdas diarias: amarillo
-// si no hay nada cargado (0 o sin dato), celeste si hay algo.
 function claseVacio(val) {
-  return (val === 0 || val === null || val === undefined) ? 'zero' : '';
+  return (!val) ? 'zero' : '';
 }
 
 async function initUser() {
@@ -81,29 +81,23 @@ async function initUser() {
   els.userSubtitle.textContent = `Sesión: ${me.nombre || me.user}`;
 }
 
-// La fecha/hora de la fila más reciente (updated_at) de cualquiera de las
-// dos tablas que carga "Cargar pedidos" — se actualiza siempre juntas en
-// la misma importación, así que el máximo de las dos es "la última carga".
 async function cargarUltimaActualizacion() {
-  const [{ data: a }, { data: b }] = await Promise.all([
-    client.from('pedidos_vendedor').select('updated_at').order('updated_at', { ascending: false }).limit(1),
-    client.from('pedidos_vendedor_proyeccion').select('updated_at').order('updated_at', { ascending: false }).limit(1),
-  ]);
-  const fechas = [a?.[0]?.updated_at, b?.[0]?.updated_at].filter(Boolean).map((f) => new Date(f));
-  if (fechas.length === 0) { els.ultimaActualizacion.textContent = ''; return; }
-  const ultima = new Date(Math.max(...fechas));
-  const fechaStr = ultima.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const horaStr = ultima.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const { data } = await client.from('facturas').select('created_at').order('created_at', { ascending: false }).limit(1);
+  const fecha = data?.[0]?.created_at;
+  if (!fecha) { els.ultimaActualizacion.textContent = ''; return; }
+  const d = new Date(fecha);
+  const fechaStr = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const horaStr = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
   els.ultimaActualizacion.textContent = `Última carga de archivo: ${fechaStr}, ${horaStr} hs.`;
 }
 
 async function cargarDatos() {
-  // .order('id') al final en ambas: 'fecha' se repite entre vendedores, y sin
-  // un desempate único fetchAll() puede saltear o repetir filas al paginar
-  // en tablas de más de 1000 filas (bug real encontrado 26/08/26).
-  const [{ data: filas, error: e1 }, { data: proyecciones, error: e2 }] = await Promise.all([
-    fetchAll(() => client.from('pedidos_vendedor').select('id, vendedor, fecha, cantidad, monto_ars').order('fecha').order('id', { ascending: true })),
-    fetchAll(() => client.from('pedidos_vendedor_proyeccion').select('id, vendedor, mes, proyectado_cantidad, proyectado_monto').order('id', { ascending: true })),
+  // .order('id') al final: sin desempate único, fetchAll() puede saltear o
+  // repetir filas al paginar en tablas de más de 1000 filas (bug real
+  // encontrado 26/08/26).
+  const [{ data: facturas, error: e1 }, { data: clientes, error: e2 }] = await Promise.all([
+    fetchAll(() => client.from('facturas').select('id, fecha, importe_ars, cliente_id, cuit_normalizado').order('fecha').order('id', { ascending: true })),
+    fetchAll(() => client.from('clientes').select('id, vendedor').order('id', { ascending: true })),
   ]);
   if (e1 || e2) {
     const msg = `<tr><td class="empty-state">Error al cargar: ${(e1 || e2).message}</td></tr>`;
@@ -111,10 +105,14 @@ async function cargarDatos() {
     TABLAS.monto.tbody.innerHTML = msg;
     return;
   }
-  state.filas = filas || [];
-  state.proyecciones = proyecciones || [];
 
-  const meses = [...new Set(state.filas.map((f) => f.fecha.slice(0, 7)))].sort();
+  const vendedorPorCliente = new Map((clientes || []).map((c) => [c.id, c.vendedor]));
+  state.facturas = (facturas || [])
+    .filter((f) => f.fecha && f.cliente_id && !CUITS_PROPIOS.has(f.cuit_normalizado))
+    .map((f) => ({ ...f, vendedor: vendedorPorCliente.get(f.cliente_id) }))
+    .filter((f) => f.vendedor);
+
+  const meses = [...new Set(state.facturas.map((f) => f.fecha.slice(0, 7)))].sort();
   els.mes.innerHTML = meses.map((m) => `<option value="${m}">${m}</option>`).join('');
   if (meses.length) els.mes.value = meses[meses.length - 1]; // último mes con datos por defecto
 
@@ -122,19 +120,21 @@ async function cargarDatos() {
   renderAnual();
 }
 
-// Total acumulado de TODO lo cargado (todos los meses juntos), sin filtro de
-// mes — cantidad y monto en la misma tabla, no depende de la pestaña Cantidad/Monto.
+// Total acumulado del año calendario actual (no "todo lo cargado alguna
+// vez" — con facturas como fuente, eso sería todo el historial).
 function renderAnual() {
-  if (state.filas.length === 0) {
-    els.tbodyAnual.innerHTML = '<tr><td class="empty-state">Sin datos cargados todavía.</td></tr>';
+  const anioActual = String(new Date().getFullYear());
+  const facturasDelAnio = state.facturas.filter((f) => f.fecha.slice(0, 4) === anioActual);
+  if (facturasDelAnio.length === 0) {
+    els.tbodyAnual.innerHTML = '<tr><td class="empty-state">Sin facturas de clientes con vendedor asignado este año.</td></tr>';
     return;
   }
   const porVendedor = new Map();
-  for (const f of state.filas) {
+  for (const f of facturasDelAnio) {
     if (!porVendedor.has(f.vendedor)) porVendedor.set(f.vendedor, { cantidad: 0, monto_ars: 0 });
     const g = porVendedor.get(f.vendedor);
-    g.cantidad += f.cantidad;
-    g.monto_ars += f.monto_ars;
+    g.cantidad += 1;
+    g.monto_ars += Number(f.importe_ars || 0);
   }
   const vendedores = [...porVendedor.entries()]
     .map(([vendedor, g]) => ({ vendedor, ...g }))
@@ -160,50 +160,62 @@ function render() {
   renderTabla(TABLAS.monto);
 }
 
+// Proyección lineal simple a fin de mes: total acumulado / días
+// transcurridos × días totales del mes. Si el mes ya terminó, no se
+// extrapola — el "proyectado" es directamente el total real.
+function proyectarFinDeMes(mes, totalAcumulado) {
+  const [anio, mesNum] = mes.split('-').map(Number);
+  const totalDias = new Date(anio, mesNum, 0).getDate();
+  const hoy = new Date();
+  const esMesActual = hoy.getFullYear() === anio && hoy.getMonth() + 1 === mesNum;
+  if (!esMesActual) {
+    const esMesFuturo = new Date(anio, mesNum - 1, 1) > hoy;
+    return esMesFuturo ? null : totalAcumulado;
+  }
+  const diasTranscurridos = hoy.getDate();
+  if (diasTranscurridos <= 0) return null;
+  return totalAcumulado / diasTranscurridos * totalDias;
+}
+
 function renderTabla(cfg) {
   const mes = els.mes.value;
   if (!mes) {
     cfg.resumen.innerHTML = '';
     cfg.thead.innerHTML = '';
-    cfg.tbody.innerHTML = '<tr><td class="empty-state">Sin datos cargados todavía. Subilos desde "Cargar pedidos".</td></tr>';
+    cfg.tbody.innerHTML = '<tr><td class="empty-state">Sin facturas de clientes con vendedor asignado todavía.</td></tr>';
     cfg.notaPie.textContent = '';
     return;
   }
 
-  const { campo, campoProy, fmtCelda } = cfg;
+  const { campo, fmtCelda } = cfg;
 
-  const filasDelMes = state.filas.filter((f) => f.fecha.slice(0, 7) === mes);
-  // Solo los días que realmente tienen alguna fila cargada (evita mostrar
-  // columnas vacías para sábados/domingos/feriados, que el archivo no trae).
-  const dias = [...new Set(filasDelMes.map((f) => f.fecha))].sort();
+  const facturasDelMes = state.facturas.filter((f) => f.fecha.slice(0, 7) === mes);
+  // Solo los días que realmente tienen alguna factura (evita columnas vacías
+  // para sábados/domingos/feriados sin ventas).
+  const dias = [...new Set(facturasDelMes.map((f) => f.fecha))].sort();
 
   const porVendedor = new Map();
-  for (const f of filasDelMes) {
+  for (const f of facturasDelMes) {
     if (!porVendedor.has(f.vendedor)) porVendedor.set(f.vendedor, {});
-    porVendedor.get(f.vendedor)[f.fecha] = (porVendedor.get(f.vendedor)[f.fecha] || 0) + f[campo];
-  }
-  const proyectadoPorVendedor = new Map();
-  for (const p of state.proyecciones) {
-    if (p.mes === mes && p[campoProy] != null) proyectadoPorVendedor.set(p.vendedor, p[campoProy]);
+    const valor = campo === 'cantidad' ? 1 : Number(f.importe_ars || 0);
+    porVendedor.get(f.vendedor)[f.fecha] = (porVendedor.get(f.vendedor)[f.fecha] || 0) + valor;
   }
 
   const vendedores = [...porVendedor.entries()]
-    .map(([vendedor, porDia]) => ({
-      vendedor,
-      porDia,
-      total: Object.values(porDia).reduce((a, b) => a + b, 0),
-      proyectado: proyectadoPorVendedor.get(vendedor) ?? null,
-    }))
+    .map(([vendedor, porDia]) => {
+      const total = Object.values(porDia).reduce((a, b) => a + b, 0);
+      return { vendedor, porDia, total, proyectado: proyectarFinDeMes(mes, total) };
+    })
     .sort((a, b) => b.total - a.total);
 
   const totalGeneral = vendedores.reduce((a, v) => a + v.total, 0);
-  const proyectadoGeneral = vendedores.reduce((a, v) => a + (v.proyectado || 0), 0);
+  const proyectadoGeneral = proyectarFinDeMes(mes, totalGeneral);
   const totalPorDia = {};
   for (const dia of dias) totalPorDia[dia] = vendedores.reduce((a, v) => a + (v.porDia[dia] || 0), 0);
 
   cfg.resumen.innerHTML = `
     <div><strong>${fmtCelda(totalGeneral)}</strong><span class="label">total acumulado del mes</span></div>
-    <div><strong>${fmtCelda(proyectadoGeneral)}</strong><span class="label">proyectado a fin de mes</span></div>
+    <div><strong>${proyectadoGeneral != null ? fmtCelda(proyectadoGeneral) : '·'}</strong><span class="label">proyectado a fin de mes</span></div>
     <div><strong>${escapeHtml(vendedores[0]?.vendedor || '—')}</strong><span class="label">mejor vendedor</span></div>
   `;
 
@@ -226,11 +238,11 @@ function renderTabla(cfg) {
       <td class="col-grupo">Total</td>
       ${dias.map((d) => celda(totalPorDia[d], fmtCelda)).join('')}
       <td class="col-total ${claseVacio(totalGeneral)} ${totalGeneral < 0 ? 'neg' : ''}">${fmtCelda(totalGeneral)}</td>
-      <td class="col-total ${claseVacio(proyectadoGeneral)} ${proyectadoGeneral < 0 ? 'neg' : ''}">${fmtCelda(proyectadoGeneral)}</td>
+      <td class="col-total ${claseVacio(proyectadoGeneral)} ${proyectadoGeneral < 0 ? 'neg' : ''}">${proyectadoGeneral != null ? fmtCelda(proyectadoGeneral) : '·'}</td>
       <td class="col-total">100%</td>
     </tr>`;
 
-  cfg.notaPie.textContent = 'Cargado desde el "Tablero de pedidos de venta" mensual. "Proyectado" es el valor que ya trae el Excel (total acumulado / días hábiles transcurridos × días hábiles del mes), no se recalcula acá. Los valores negativos (si los hay) reflejan correcciones/cancelaciones del propio archivo de origen.';
+  cfg.notaPie.textContent = 'Cada "pedido" es una factura real de un cliente con vendedor asignado — se arma solo con las facturas ya importadas, no hace falta cargar nada acá. "Proyectado" es una proyección lineal simple (acumulado / días pasados × días del mes). Los valores negativos (si los hay) son notas de crédito.';
 }
 
 function escapeHtml(str) {
